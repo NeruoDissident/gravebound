@@ -1,0 +1,3 @@
+[{"eval":"(G.balls=[],G.balls.push(newBall(250,TY[2]+700,0,0)),G.toast=null,document.getElementById('banner').innerHTML='',act('keys'),__gb.draw(6,.6),JSON.stringify({post:R3.postOn,noMsaa:!!R3.noMsaa,noPost:!!R3.noPost}))","shot":"hollow"},
+ {"eval":"(G.balls=[],G.balls.push(newBall(380,TY[0]+640,0,0)),G.focusTier=0,__gb.draw(8,.6),1)","shot":"keep"},
+ {"eval":"(G.balls=[],G.balls.push(newBall(300,TY[1]+600,0,0)),G.focusTier=1,__gb.draw(8,.6),1)","shot":"wilds"}]

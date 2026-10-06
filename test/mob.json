@@ -1,0 +1,2 @@
+[{"eval":"(act('title'),__gb.advance(1,2),1)","shot":"m0-title"},
+ {"eval":"(act('play'),UI.touch=true,UI.menu(null),G.balls=[],G.balls.push(newBall(250,TY[2]+700,0,0)),__gb.draw(6,.6),[R3.w,R3.h,document.documentElement.scrollWidth])","shot":"m1-hollow"}]

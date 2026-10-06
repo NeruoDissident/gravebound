@@ -1,0 +1,135 @@
+<title>Gravebound Pinball 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* layout: the table fills the window; score and level sit on the top edge, the key card on the bottom-left */
+:root{
+  --void:#07070b; --stone:#14131c; --stone-2:#201d2d; --line:#3a3650; --bone:#ece4cf; --ash:#a39cb2;
+  --gold:#d9a441; --blood:#c0283c; --frost:#62d8ff; --moss:#7dffb0; --violet:#b79cff;
+  --display:"Grenze Gotisch","Old English Text MT",Georgia,serif;
+  --label:Cinzel,"Trajan Pro",Georgia,serif;
+  --body:Spectral,Georgia,"Times New Roman",serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--bone);font:15px/1.5 var(--body);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#stage{position:relative;height:100%;overflow:hidden;background:var(--void);touch-action:none}
+#gl,#fx{position:absolute;inset:0;width:100%;height:100%;display:block}
+#fx{pointer-events:none}
+h1,h2,p,dl,dd,dt{margin:0;padding:0}
+
+#hud{position:absolute;inset:0 0 auto 0;box-sizing:border-box;padding:10px 16px 26px;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:12px;pointer-events:none;background:linear-gradient(#07070be6,#07070b80 60%,#07070b00)}
+.brand{font:700 11px/1.35 var(--label);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.brand span{display:block;color:var(--ash);letter-spacing:.16em;font-size:10px}
+.mid{text-align:center;display:grid;gap:2px;justify-items:center}
+#hScore{font:700 clamp(30px,6.2vmin,50px)/.9 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 0 22px rgba(217,164,65,.55),0 2px 0 #000}
+#hTier{font:700 10.5px/1.2 var(--label);letter-spacing:.3em;text-indent:.3em;text-transform:uppercase;color:var(--ash)}
+.stats{justify-self:end;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;max-width:330px}
+.chip{font:700 9px/1 var(--label);letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;background:#000b;border:1px solid var(--line);color:var(--bone);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip b{color:var(--ash);font-weight:700;margin-right:5px}
+.chip.moss{border-color:var(--moss);color:var(--moss)}
+
+#banner{position:absolute;left:0;right:0;top:19%;display:grid;justify-items:center;pointer-events:none}
+.bn{width:100%;box-sizing:border-box;padding:10px 22px;text-align:center;display:grid;gap:3px;background:linear-gradient(90deg,#07070b00,#07070bd0 26%,#07070bd0 74%,#07070b00);border-block:1px solid #d9a44155;animation:bn 2s both}
+.bn h2{font:700 clamp(24px,5.4vmin,40px)/1 var(--display);color:var(--bone);text-shadow:0 0 22px currentColor,0 2px 0 #000;text-wrap:balance}
+.bn p{font:600 15px/1.3 var(--body);color:#efe3c2;text-wrap:balance}
+.k-main h2{color:var(--gold)}.k-boss h2{color:#ff5a68}.k-bad h2{color:#ff8a94}.k-good h2{color:var(--moss)}.k-mb h2{color:#ffd24a}
+@keyframes bn{0%{opacity:0;transform:scale(1.1)}9%{opacity:1;transform:none}84%{opacity:1}100%{opacity:0}}
+
+#keys{position:absolute;left:16px;bottom:16px;box-sizing:border-box;width:min(300px,calc(100% - 32px));padding:12px 14px;background:#0c0b12d9;border:1px solid var(--line);pointer-events:none}
+#keys h2{font:700 10px/1.2 var(--label);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+#keys dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;line-height:1.35}
+#keys dt{font:700 10px/1.75 var(--label);letter-spacing:.08em;color:var(--bone);white-space:nowrap}
+#keys dd{color:#cfc7b6}
+#keys .sep{grid-column:1/-1;height:1px;background:var(--line);margin-block:4px}
+#keyTip{position:absolute;left:16px;bottom:16px;pointer-events:none}
+#launch{position:absolute;right:16px;bottom:16px;display:grid;gap:5px;justify-items:end;pointer-events:none}
+#launch span{font:700 9.5px var(--label);letter-spacing:.2em;text-transform:uppercase;color:var(--ash)}
+#launch i{display:block;width:150px;height:8px;border:1px solid var(--line);background:#000a;position:relative}
+#launch i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--c,0%);background:linear-gradient(90deg,var(--gold),#ffe6a0)}
+
+#touch{position:absolute;inset:0;pointer-events:none}
+#tL,#tR{position:absolute;top:22%;bottom:0;width:50%;pointer-events:auto}
+#tL{left:0}#tR{right:0}
+#tL::after,#tR::after{content:"Flip";position:absolute;bottom:22px;font:700 10px var(--label);letter-spacing:.2em;text-transform:uppercase;color:#ece4cf66;padding:22px 20px;border:1px solid #ece4cf2e;border-radius:50%}
+#tL::after{left:16px}#tR::after{right:16px}
+#tN{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);pointer-events:auto}
+#tools{position:absolute;right:10px;top:74px;display:grid;gap:6px;pointer-events:auto}
+#tools button,#tN{padding:11px 12px;font-size:10px;background:#14131cb3}
+
+#menu{position:absolute;inset:0;z-index:5;box-sizing:border-box;display:grid;place-items:center;padding-block:20px;padding-inline:16px;overflow-y:auto;background:radial-gradient(70% 55% at 50% 46%,#07070bd9,#07070b73 72%,#07070b33);-webkit-user-select:text;user-select:text;touch-action:pan-y}
+.pane{width:min(100%,470px);box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;text-align:center;justify-items:center}
+.eyebrow{font:700 11px var(--label);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+h1{font:700 clamp(46px,13vmin,104px)/.82 var(--display);color:var(--bone);text-shadow:0 0 34px rgba(192,40,60,.75),0 3px 0 #000}
+h1 span{display:block;margin-top:14px;font:700 clamp(13px,3.2vmin,18px)/1 var(--label);letter-spacing:.5em;text-indent:.5em;text-transform:uppercase;color:var(--gold);text-shadow:none}
+.lead{color:#d9d0bc;font-size:15px;max-width:44ch;text-wrap:pretty;text-shadow:0 1px 3px #000}
+.hint{font:italic 13.5px var(--body);color:var(--ash)}
+.pane h2{font:700 44px/1 var(--display)}
+nav{display:grid;gap:8px;width:min(100%,300px)}
+button{font:700 12.5px/1.2 var(--label);letter-spacing:.16em;text-transform:uppercase;color:var(--bone);background:linear-gradient(var(--stone-2),var(--stone));border:1px solid var(--line);padding:13px 16px;cursor:pointer;border-radius:0}
+button.go{border-color:#d9a44188;padding-block:16px}
+button:hover{border-color:var(--gold)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-color:var(--gold)}
+.err{max-width:46ch;padding:16px 18px;background:#14131c;border:1px solid var(--blood);color:var(--bone);text-align:left}
+@media (max-width:720px){#keys,#keyTip{display:none}#hud{grid-template-columns:auto 1fr;padding-inline:16px}.brand{display:none}.mid{justify-items:start;text-align:left}#hTier{text-indent:0}.stats{max-width:170px}}
+@media (pointer:coarse){#keys,#launch,#keyTip{display:none}.stats .chip:not(#hFps):not(#hGrave){display:none}}
+@media (prefers-reduced-motion:reduce){.bn{animation-name:bnr}}
+@keyframes bnr{0%,100%{opacity:0}9%,84%{opacity:1}}
+</style>
+<main id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="fx"></canvas>
+  <div id="hud" hidden>
+    <div class="brand">Gravebound<span>3D table test</span></div>
+    <div class="mid"><div id="hScore">0</div><div id="hTier">Grave Hollow</div></div>
+    <div class="stats">
+      <span class="chip moss" id="hGrave" hidden></span>
+      <span class="chip"><b>Ball</b><span id="hBall">Knight</span></span>
+      <span class="chip"><b>View</b><span id="hCam">Player</span></span>
+      <span class="chip"><b>Detail</b><span id="hQ">High</span></span>
+      <span class="chip" id="hFps">60 fps</span>
+    </div>
+  </div>
+  <div id="banner" aria-live="polite"></div>
+  <aside id="keys" hidden aria-label="Controls">
+    <h2>Controls</h2>
+    <dl>
+      <dt>Z &nbsp;/&nbsp; ←</dt><dd>Left flippers</dd>
+      <dt>/ &nbsp;/&nbsp; →</dt><dd>Right flippers</dd>
+      <dt>Space</dt><dd>Hold and release to launch. Nudge in play.</dd>
+      <dt class="sep" role="presentation"></dt>
+      <dt>C</dt><dd>Change the view</dd>
+      <dt>1 2 3 4</dt><dd>Drop the ball on the Keep, Wilds, Hollow or Grave</dd>
+      <dt>V</dt><dd>Swap the ball: Knight, Rogue, Mage, Cleric</dd>
+      <dt>B</dt><dd>Add a ball</dd>
+      <dt>G</dt><dd>Open or close the Grave</dd>
+      <dt>R</dt><dd>Return the ball to the plunger</dd>
+      <dt>Q</dt><dd>Detail: high, medium, low</dd>
+      <dt>F &nbsp; S &nbsp; P</dt><dd>Full screen, sound, pause</dd>
+      <dt>H</dt><dd>Hide this card</dd>
+    </dl>
+  </aside>
+  <div id="keyTip" class="chip" hidden><b>H</b>Controls</div>
+  <div id="launch" hidden><span>Launch power</span><i id="launchBar"></i></div>
+  <div id="touch" hidden>
+    <div id="tL"></div><div id="tR"></div>
+    <button id="tN" type="button">Launch / Nudge</button>
+    <div id="tools">
+      <button type="button" data-k="cam">View</button>
+      <button type="button" data-k="level">Level</button>
+      <button type="button" data-k="ball">Ball</button>
+      <button type="button" data-k="add">+ Ball</button>
+      <button type="button" data-k="pause">Pause</button>
+    </div>
+  </div>
+  <div id="menu"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+/*__JS__*/
+</script>

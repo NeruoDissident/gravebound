@@ -1,0 +1,1 @@
+[{"eval":"console.error('DBG '+JSON.stringify({keys:Object.keys(T),segs:T.segs.length,coffin:!!T.coffin,banks:Object.keys(T.banks)}))","wait":200}]

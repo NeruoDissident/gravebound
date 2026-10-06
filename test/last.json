@@ -1,0 +1,1 @@
+[{"eval":"(G.balls=[],G.balls.push(newBall(250,TY[0]+700,0,0)),G.focusTier=0,__gb.draw(6,.6),act('full'),act('keys'),1)","shot":"keep"}]
