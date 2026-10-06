@@ -1,0 +1,6 @@
+[{"eval":"(__gb.advance(2,2),document.getElementById('menu').innerText.replace(/\\n+/g,' | ').slice(0,120))","shot":"00-title"},
+ {"eval":"(UI.menu('class'),__gb.draw(1,.1),1)","shot":"01-class"},
+ {"eval":"(UI.menu(null),startRun('knight'),__gb.advance(2.5,3),[G.mode,G.run.cls,G.balls.length])","shot":"02-start"},
+ {"eval":"(G.balls=[newBall(250,TY[2]+640,0,0)],G.save=0,spawnEnemy('skeleton',2),spawnEnemy('wolf',2),spawnEnemy('cultist',2),spawnEnemy('revenant',2),G.enemies.forEach((e,i)=>{e.spawn=0;if(i===0){e.hp*=.5;e.atk=1}if(i===2)e.castT=2;}),spawnPickup(2,'gold'),spawnPickup(2,'heart'),G.run.charge=70,G.balls[0].arm=5,relight(),__gb.draw(6,.5),G.enemies.map(e=>e.type+':'+Math.round(e.x)+','+Math.round(e.y)))","shot":"03-foes"},
+ {"eval":"(G.enemies=[],G.pickups=[],wakeBoss('warden'),G.boss.rise=0,G.boss.phase='shield',T.bumps.forEach(c=>{if(c.tier===1)c.ward=true;}),G.balls=[newBall(300,TY[1]+620,0,0)],G.focusTier=1,relight(),__gb.draw(6,.5),G.dirty=true,UI.sync(true),G.boss.phase)","shot":"04-boss"},
+ {"eval":"(openChoice('perk'),__gb.draw(1,.1),UI.cur)","shot":"05-perk"}]

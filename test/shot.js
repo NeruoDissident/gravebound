@@ -28,21 +28,11 @@ const skeleton = b => '<!doctype html><html><head><meta charset=utf8><meta name=
   const adv = async (sec, frames) => page.evaluate(([s, f]) => { const t0 = performance.now(); __gb.advance(s, f); return Math.round(performance.now() - t0); }, [sec, frames || 2]);
   const info = async () => page.evaluate(() => ({ q: R3.qName, post: R3.postOn, noMsaa: !!R3.noMsaa, noPost: !!R3.noPost, tris: R3.rn.info.render.triangles, calls: R3.rn.info.render.calls, tier: G.focusTier, mode: G.mode, balls: G.balls.length })).catch(e => ({ err: e.message }));
   const q = process.env.Q; if (q) await page.evaluate(q => setQuality(q, true), q);
-  if (script === 'basic') {
-    console.log('frame ms', await adv(.5, 3)); await shot('01-title'); console.log(JSON.stringify(await info()));
-    await page.evaluate(() => act('play')); await adv(3, 6); await shot('02-hollow');
-    await page.evaluate(() => { jumpTo(1); }); await adv(3, 8); await shot('03-wilds');
-    await page.evaluate(() => { jumpTo(0); }); await adv(3, 8); await shot('04-keep');
-    await page.evaluate(() => { jumpTo(3); }); await adv(3.5, 8); await shot('05-grave');
-    await page.evaluate(() => { jumpTo(2); R3.camMode = 1; }); await adv(2.5, 8); await shot('06-chase');
-    await page.evaluate(() => { R3.camMode = 2; }); await adv(2.5, 8); await shot('07-overhead');
-    console.log(JSON.stringify(await info()));
-  } else {
-    await page.evaluate(() => act('play')); await adv(.3, 1);
+  {
     const steps = JSON.parse(fs.readFileSync(script, 'utf8'));
     for (const st of steps) { if (st.eval) console.log('eval:', JSON.stringify(await page.evaluate(st.eval).catch(e => 'ERR ' + e.message))); if (st.adv) await adv(st.adv, st.frames || 6); if (st.shot) await shot(st.shot); }
     console.log(JSON.stringify(await info()));
   }
-  console.log(logs.slice(0, 25).join('\n') || 'no console errors');
+  console.log(logs.filter(l => !/ERR_FAILED|GPU stall/.test(l)).slice(0, 25).join('\n') || 'no console errors');
   await browser.close();
 })();

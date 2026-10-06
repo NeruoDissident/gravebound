@@ -41,8 +41,6 @@ function drawFloor3D(c,ss){
       c.rotate(-PI/2);c.font='700 8.5px '+R.fontL;c.fillStyle='rgba(235,225,200,.75)';if(Math.cos(s.ang)<-.05){c.rotate(PI);c.textAlign='left';c.fillText(s.name.toUpperCase(),15,0);}else{c.textAlign='right';c.fillText(s.name.toUpperCase(),-15,0);}}
     c.restore();}
   for(const id in T.holes){const h=T.holes[id];if(h.tier>2)continue;c.fillStyle='#000';c.beginPath();c.arc(h.x,h.y,h.r+1,0,TAU);c.fill();}
-  // plunger gauge and the grave marker at the drain
-  c.font='700 9px '+R.fontL;c.fillStyle='rgba(235,225,200,.6)';c.textAlign='center';c.fillText('LOST SOULS',303,3150);
 }
 function paintFloorChunks(ss){const out=[];
   for(let k=0;k<4;k++){const y0=FLOOR_Y0+k*FLOOR_CH,cv=mkCanvas(Math.round(W*ss),Math.round(FLOOR_CH*ss)),c=cv.getContext('2d');

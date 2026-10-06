@@ -1,0 +1,18 @@
+
+/* ---------- 3D layout: the table fills the window; the HUD is a centred column; ledger and sheet float at the edges ---------- */
+#app{display:block;position:relative;background:var(--void)}
+#stage{position:absolute;inset:0;height:auto;box-shadow:none;background:var(--void)}
+#gl,#fx{position:absolute;inset:0;width:100%;height:100%;display:block}
+#fx{pointer-events:none}
+.side{position:absolute;top:0;bottom:0;z-index:2;width:290px;max-width:290px;pointer-events:none;scrollbar-width:none;text-shadow:0 1px 3px #000}
+#journal{left:0;background:linear-gradient(90deg,#07070be6,#07070ba6 62%,#07070b00)}
+#sheet{right:0;background:linear-gradient(270deg,#07070be6,#07070ba6 62%,#07070b00)}
+@media (min-width:1080px){#app.playing .side{display:block}}
+@media (max-width:1379px){.side{width:240px;padding-inline:16px}}
+#hud{inset:0 auto auto 50%;transform:translateX(-50%);width:min(100%,640px);padding-inline:14px 46px}
+#pauseBtn{right:auto;left:calc(50% + min(50%,320px) - 38px)}
+#banner{top:31%}
+#gfx{position:absolute;right:12px;bottom:12px;z-index:3;display:flex;gap:6px;pointer-events:none}
+#gfx .chip{font-variant-numeric:tabular-nums;color:var(--ash)}
+#gfx #gDev{color:var(--moss);border-color:var(--moss)}
+@media (pointer:coarse),(max-width:720px){#gfx{right:auto;left:50%;transform:translateX(-50%);bottom:64px}}

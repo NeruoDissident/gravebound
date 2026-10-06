@@ -1,0 +1,1 @@
+[{"eval":"(UI.menu(null),startRun('mage'),UI.touch=true,document.getElementById('touch').hidden=false,__gb.advance(1,1),UI.q=[],document.getElementById('banner').textContent='',G.balls=[newBall(300,TY[2]+660,60,-40)],spawnEnemy('skeleton',2),G.enemies.forEach(e=>{e.spawn=0;}),__gb.draw(4,.3),document.documentElement.scrollWidth)","shot":"20-phone"}]
