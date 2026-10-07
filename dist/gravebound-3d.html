@@ -2514,7 +2514,7 @@ const FOE_BUILD={
     P.head=foePivot(P.body,0,22,0);const hd=foePart(P.head,new THREE.SphereGeometry(6.5,10,8),m.ghost,0,0,0);hd.castShadow=false;foeEyes(P.head,m.eyeC,2.6,0,5.4,1.6);
     P.armL=foePivot(P.body,-7,14,2);P.armR=foePivot(P.body,7,14,2);for(const a of [P.armL,P.armR]){const x=foePart(a,limbG(2,1,12),m.ghost);x.castShadow=false;a.rotation.x=-.9;}P.ghost=true;return {P,h:38,eyes:m.eyeC};}
 };
-function foeRig(type){const m=Object.assign({},foeMats());for(const k in m)if(k.startsWith('eye'))m[k]=m[k].clone();const pool=FOE3.pool||(FOE3.pool={}),free=pool[type]||(pool[type]=[]);if(free.length){const r=free.pop();r.g.visible=true;return r;}
+function foeRig(type){const m=Object.assign({},foeMats());for(const k in m)if(k.startsWith('eye'))m[k]=m[k].clone();const pool=FOE3.pool||(FOE3.pool={}),free=pool[type]||(pool[type]=[]);if(free.length){const r=free.pop();r.g.visible=true;r.g.rotation.set(0,0,0);FOE3.rigs.push(r);return r;}
   const g=new THREE.Group(),b=FOE_BUILD[type](g,m),rig=Object.assign({type,g,walk:0,strikeT:0,prevWind:0,dieT:0,yaw:0,px:0,pz:0,e:null},b);R3.scene.add(g);(FOE3.rigs||(FOE3.rigs=[])).push(rig);return rig;}
 function foeRelease(rig){rig.g.visible=false;rig.e=null;rig.dieT=0;FOE3.pool[rig.type].push(rig);FOE3.rigs.splice(FOE3.rigs.indexOf(rig),1);}
 function poseFoe(rig,e,dt){const P=rig.P,g=rig.g,t=e.t,d=e.def,spawnK=e.spawn>0?clamp(1-e.spawn/.7,0,1):1;
@@ -2569,7 +2569,7 @@ function buildActors(){const sc=R3.scene,X=R3.act={tex:{},foes:[],picks:[],zones
   const sprite=o=>{const s=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign({transparent:true,depthWrite:false},o)));s.visible=false;sc.add(s);return s;};
   const decal=(geo,col,op)=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:hdr(col,1.4),transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));m.renderOrder=2;m.visible=false;sc.add(m);return m;};
   const blob=()=>{const m=new THREE.Mesh(R3.blobGeo,new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.42,depthWrite:false,map:R3.glowTex,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));m.renderOrder=3;m.visible=false;sc.add(m);return m;};
-  for(let i=0;i<16;i++)X.foes.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.4}),rg:decal(X.ringG,'#ff7a80',.3),blob:blob()});
+  for(let i=0;i<24;i++)X.foes.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.4}),rg:decal(X.ringG,'#ff7a80',.3),blob:blob()});
   X.boss={glow:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.5}),sp:sprite({map:X.tex.b_warden}),rg:decal(X.ringG,'#ffffff',.5),blob:blob(),key:'',
     shield:(()=>{const m=new THREE.Mesh(new THREE.TorusGeometry(1,.05,6,48).rotateX(PI/2),new THREE.MeshBasicMaterial({color:hdr('#9fe8ff',2)}));m.visible=false;sc.add(m);return m;})(),
     light:(()=>{const l=new THREE.PointLight(0xffffff,0,420,1.5);sc.add(l);return l;})()};

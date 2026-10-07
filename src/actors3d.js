@@ -14,7 +14,7 @@ function buildActors(){const sc=R3.scene,X=R3.act={tex:{},foes:[],picks:[],zones
   const sprite=o=>{const s=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign({transparent:true,depthWrite:false},o)));s.visible=false;sc.add(s);return s;};
   const decal=(geo,col,op)=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:hdr(col,1.4),transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));m.renderOrder=2;m.visible=false;sc.add(m);return m;};
   const blob=()=>{const m=new THREE.Mesh(R3.blobGeo,new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.42,depthWrite:false,map:R3.glowTex,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));m.renderOrder=3;m.visible=false;sc.add(m);return m;};
-  for(let i=0;i<16;i++)X.foes.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.4}),rg:decal(X.ringG,'#ff7a80',.3),blob:blob()});
+  for(let i=0;i<24;i++)X.foes.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.4}),rg:decal(X.ringG,'#ff7a80',.3),blob:blob()});
   X.boss={glow:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.5}),sp:sprite({map:X.tex.b_warden}),rg:decal(X.ringG,'#ffffff',.5),blob:blob(),key:'',
     shield:(()=>{const m=new THREE.Mesh(new THREE.TorusGeometry(1,.05,6,48).rotateX(PI/2),new THREE.MeshBasicMaterial({color:hdr('#9fe8ff',2)}));m.visible=false;sc.add(m);return m;})(),
     light:(()=>{const l=new THREE.PointLight(0xffffff,0,420,1.5);sc.add(l);return l;})()};

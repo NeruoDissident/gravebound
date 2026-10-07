@@ -60,7 +60,7 @@ const FOE_BUILD={
     P.head=foePivot(P.body,0,22,0);const hd=foePart(P.head,new THREE.SphereGeometry(6.5,10,8),m.ghost,0,0,0);hd.castShadow=false;foeEyes(P.head,m.eyeC,2.6,0,5.4,1.6);
     P.armL=foePivot(P.body,-7,14,2);P.armR=foePivot(P.body,7,14,2);for(const a of [P.armL,P.armR]){const x=foePart(a,limbG(2,1,12),m.ghost);x.castShadow=false;a.rotation.x=-.9;}P.ghost=true;return {P,h:38,eyes:m.eyeC};}
 };
-function foeRig(type){const m=Object.assign({},foeMats());for(const k in m)if(k.startsWith('eye'))m[k]=m[k].clone();const pool=FOE3.pool||(FOE3.pool={}),free=pool[type]||(pool[type]=[]);if(free.length){const r=free.pop();r.g.visible=true;return r;}
+function foeRig(type){const m=Object.assign({},foeMats());for(const k in m)if(k.startsWith('eye'))m[k]=m[k].clone();const pool=FOE3.pool||(FOE3.pool={}),free=pool[type]||(pool[type]=[]);if(free.length){const r=free.pop();r.g.visible=true;r.g.rotation.set(0,0,0);FOE3.rigs.push(r);return r;}
   const g=new THREE.Group(),b=FOE_BUILD[type](g,m),rig=Object.assign({type,g,walk:0,strikeT:0,prevWind:0,dieT:0,yaw:0,px:0,pz:0,e:null},b);R3.scene.add(g);(FOE3.rigs||(FOE3.rigs=[])).push(rig);return rig;}
 function foeRelease(rig){rig.g.visible=false;rig.e=null;rig.dieT=0;FOE3.pool[rig.type].push(rig);FOE3.rigs.splice(FOE3.rigs.indexOf(rig),1);}
 function poseFoe(rig,e,dt){const P=rig.P,g=rig.g,t=e.t,d=e.def,spawnK=e.spawn>0?clamp(1-e.spawn/.7,0,1):1;
