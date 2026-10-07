@@ -414,13 +414,13 @@ const PERKS=[
   {id:'smite',kind:'class',cls:'cleric',name:'Smite',desc:'Holy damage against the undead is doubled, and Sanctify also strikes the boss.',max:1,f:m=>m.smite=true},
   // the table
   {id:'laneKeeper',kind:'table',name:'Lane Keeper',desc:'Lighting all the lanes relights the kickback.',max:1,f:m=>m.laneKick=true},
-  {id:'rampRunner',kind:'table',name:'Ramp Runner',desc:'Every ramp fills 10 power and pays 2,000 more.',max:2,f:m=>m.rampCharge+=10},
+  {id:'rampRunner',kind:'table',name:'Ramp Runner',desc:'Every ramp fills 10 power and pays 2,000 more. Rank 2 doubles both.',max:2,f:m=>{m.rampCharge+=10;m.rampScore+=2000;}},
   {id:'bellRinger',kind:'table',name:'Bell Ringer',desc:'The Keep bell heals 10 and wards you from the next strike.',max:1,f:m=>m.bellHeal=10},
-  {id:'ironFlip',kind:'table',name:'Iron Flippers',desc:'Every flip wounds foes within reach of the flippers.',max:2,f:m=>m.ironFlip+=.5},
+  {id:'ironFlip',kind:'table',name:'Iron Flippers',desc:'Every flipper hit on the ball wounds foes near it.',max:2,f:m=>m.ironFlip+=.5},
   {id:'chance',kind:'table',name:'Second Chance',desc:'Once per ball, an outlane gives the ball back.',max:1,f:m=>m.outSave=true},
   {id:'bargain',kind:'table',name:'Grave Bargain',desc:'Every lost ball pays 25 gold on the way down.',max:1,f:m=>m.bargain=25},
   {id:'tollgate',kind:'table',name:'Tollgate',desc:'Foes that reach the slingshot line take a toll every second they stand there.',max:2,f:m=>m.toll+=.5},
-  {id:'hallowed',kind:'table',name:'Hallowed Lanes',desc:'Rolling a lane wards you from strikes for 4 seconds.',max:1,f:m=>m.laneWard=4},
+  {id:'hallowed',kind:'table',name:'Hallowed Lanes',desc:'Rolling a top lane or an inlane wards you from strikes for 4 seconds.',max:1,f:m=>m.laneWard=4},
   {id:'momentum',kind:'table',name:'Momentum',desc:'Combos last 3 seconds longer and pay double.',max:2,f:m=>{m.combo+=3;m.comboPay+=1;}},
   {id:'tithe',kind:'table',name:'Grave Tithe',desc:'Bumpers and slingshots shake loose gold.',max:1,f:m=>m.bumpGold=1},
   {id:'ward',kind:'table',name:'Kickback Ward',desc:'The left kickback relights itself every 30 seconds.',max:1,f:m=>m.kickRelight=true},
@@ -435,7 +435,7 @@ const PERKS=[
   {id:'zeal',kind:'stat',name:'Zeal',desc:'Your power meter fills 50% faster.',max:2,f:m=>m.charge+=.5},
   {id:'second',kind:'stat',name:'Second Wind',desc:'Gain an extra ball.',max:1,rare:true,f:m=>{},now:()=>{G.run.ballsLeft++;}},
   // keystones: one per run
-  {id:'bloodPact',kind:'key',name:'Blood Pact',desc:'Double damage. Half your health.',max:1,f:m=>{m.dmg*=2;m.hpK=.5;}},
+  {id:'bloodPact',kind:'key',name:'Blood Pact',desc:'Double damage. Half your health.',max:1,f:m=>{m.dmgMul*=2;m.hpK=.5;}},
   {id:'twinSoul',kind:'key',name:'Twin Soul',desc:'Every full-meter power also splits a second ball off the first.',max:1,f:m=>m.twin=true},
   {id:'hourglass',kind:'key',name:'The Hourglass',desc:'Wing clocks run for twice as long. Ball save lasts twice as long.',max:1,f:m=>{m.hour=2;m.saveK=2;}},
   {id:'deathWish',kind:'key',name:'Death Wish',desc:'Every kill fills 10 power. Every wound drains 10.',max:1,f:m=>m.deathWish=10}
@@ -582,10 +582,10 @@ function newRun(cls){const c=CLASSES[cls],meta=store.get('meta',{}),leg=G.demo?0
   G.run=r;recalc();r.hp=G.mods.maxHp;r.main=makeCampaign(r);return r;}
 function recalc(){const r=G.run,c=CLASSES[r.cls];
   const m={dmg:1,gold:1,xp:1,crit:c.crit,save:8+c.save,flip:c.flip,dr:c.dr,hp:0,charge:1,combo:5,comboPay:0,healKill:0,pierce:false,kickRelight:false,bumpGold:0,bumpDmg:0,multMin:1,laneHeal:0,killGold:0,rampHeal:0,jackpot:1,lockKeep:false,
-    aegisT:12,aegisK:.5,nudgeCd:0,phaseT:.7,critCharge:0,zoneT:9,zoneHeal:1.5,rampCharge:0,ironFlip:0,toll:0,hpK:1,saveK:1,hour:1,laneWard:0,bellHeal:0,bargain:0,cutpurse:0,marked:0,poison:0,chain:0,scorch:0,deathWish:0};
+    dmgMul:1,rampScore:0,aegisT:12,aegisK:.5,nudgeCd:0,phaseT:.7,critCharge:0,zoneT:9,zoneHeal:1.5,rampCharge:0,ironFlip:0,toll:0,hpK:1,saveK:1,hour:1,laneWard:0,bellHeal:0,bargain:0,cutpurse:0,marked:0,poison:0,chain:0,scorch:0,deathWish:0};
   for(const id of r.perks){const p=PERKS.find(p=>p.id===id);if(p)p.f(m);}
   for(const id of r.relics){const p=RELICS.find(p=>p.id===id);if(p)p.f(m);}
-  m.maxHp=Math.round((c.hp+m.hp+(r.level-1)*8)*m.hpK);m.pow=(c.pow+2*(r.level-1))*m.dmg;m.dr=Math.min(.75,m.dr);m.save*=m.saveK;
+  m.dmg*=m.dmgMul;m.maxHp=Math.round((c.hp+m.hp+(r.level-1)*8)*m.hpK);m.pow=(c.pow+2*(r.level-1))*m.dmg;m.dr=Math.min(.75,m.dr);m.save*=m.saveK;
   G.mods=m;if(r.hp>m.maxHp)r.hp=m.maxHp;if(r.mult<m.multMin)r.mult=m.multMin;G.dirty=true;}
 function makeCampaign(r){const all=Object.keys(CAMPAIGNS),keys=all.filter(k=>!r.arcs.includes(k)),key=pick(keys.length?keys:all);r.arcs.push(key);r.wing={key:CAMPAIGNS[key].wing?CAMPAIGNS[key].wing.key:null,open:false,done:false,prog:0};
   const c=CAMPAIGNS[key],om=shuffle(c.omens),cp=o=>Object.assign({},o);
@@ -614,7 +614,7 @@ function qEvent(kind,key,tier){for(const q of quests()){const o=qCur(q);if(!o||o
 function qFinish(q){const r=G.run;
   if(q.main){const c=CAMPAIGNS[q.key];r.main=null;score(250000);xp(150);gold(100);popup('Main Quest Complete',c.win,'main');A.s('victory');metaAdd('wins');
     r.threat++;later(7,()=>{if(G.run!==r||r.main)return;r.main=makeCampaign(r);qBegin(r.main);popup('A New Shadow Rises',r.main.name,'boss',r.main.text);saveRun();});}
-  else{r.side=r.side.filter(x=>x!==q);r.doneSide.push(q.id);r.questsDone++;const w=q.rw;score(25000);xp(w.xp||0);gold(w.gold||0);if(w.heal)heal(w.heal);
+  else{r.side=r.side.filter(x=>x!==q);r.doneSide.push(q.id);r.questsDone++;if(r.bb)r.bb.quests++;const w=q.rw;score(25000);xp(w.xp||0);gold(w.gold||0);if(w.heal)heal(w.heal);
     let note=[w.gold?'+'+w.gold+' gold':'',w.xp?'+'+w.xp+' xp':''].filter(Boolean).join('  ');if(w.relic){const x=giveRelic();if(x)note+='  Relic: '+x.name;}
     popup('Quest Complete',q.name,'good',note);A.s('questDone');}
   saveRun();}
@@ -696,7 +696,7 @@ function updatePowers(dt){const r=G.run,c=r.cls,m=G.mods,cl=CLASSES[c];G.hidden=
     if(c==='mage'||c==='cleric'){b.tk-=dt;if(b.tk<=0){b.tk=c==='mage'?.12:.5;
       for(const e of G.enemies){if(e.dead||e.spawn>0)continue;const d=Math.hypot(e.x-b.x,e.y-b.y);
         if(c==='mage'){if(d<b.r+e.r+24&&!(e.wakeT>G.t)){e.wakeT=G.t+1;bolt(b,e);damageEnemy(e,m.pow*.35,false);}}
-        else if(e.def.undead&&d<(m.lantern?140:85))damageEnemy(e,m.pow*.2,false);}}}}
+        else if(e.def.undead&&d<(m.lantern?140:85))damageEnemy(e,m.pow*(m.smite?.4:.2),false);}}}}
   for(const z of G.zones){z.t-=dt;z.tick-=dt;if(z.tick<=0){z.tick=.5;
     if(!z.fire&&!z.pyre)for(const e of G.enemies){if(e.dead||e.spawn>0||Math.hypot(e.x-z.x,e.y-z.y)>z.r+e.r)continue;e.atk+=.3;damageEnemy(e,m.pow*.4*(e.def.undead?2:1),false);}
     const bo=G.boss;if(!z.fire&&!z.pyre&&bo&&bo.alive&&bo.rise<=0&&bo.phase!=='shield'&&Math.hypot(bo.x-z.x,bo.y-z.y)<z.r+bo.r)hitBoss(bo,m.pow*.4,false);
@@ -707,7 +707,7 @@ function updatePowers(dt){const r=G.run,c=r.cls,m=G.mods,cl=CLASSES[c];G.hidden=
 function graveHit(o){const r=G.run,g=r.grave;if(g.open||G.inGrave)return;g.hits=Math.min(g.need,g.hits+(r.cls==='cleric'?2:1));G.dirty=true;
   if(g.hits>=g.need){g.open=true;popup('The Grave Opens','Your next lost ball falls into it. Fight your way back out','good');A.s('summon');G.flash=.4;G.flashC='#7dffb0';}
   else if(g.hits%3===0||g.need-g.hits<=2)float(o.x,o.y-34,'GRAVE '+g.hits+'/'+g.need,'#9dffc8',12);}
-function graveCatch(b){const r=G.run,g=r.grave,ok=!G.fallen&&G.tilt<=0;
+function graveCatch(b){const r=G.run,g=r.grave,ok=!G.fallen&&G.tilt<=0;if(G.tilt>0&&!G.fallen)return false;
   if(!g.open||G.balls.length>1||G.plunge.auto>0||(ok&&(G.save>0||r.shield)))return false;
   g.open=false;g.used++;g.hits=0;g.need=8+4*g.used;G.inGrave=true;G.graveLive=false;G.graveT=22;G.graveBones=0;G.tilt=0;G.mb=null;G.nudges=[];
   if(G.fallen){G.fallen=false;r.hp=Math.round(G.mods.maxHp*.25);}
@@ -775,17 +775,17 @@ function ev(type,o,b,imp){const r=G.run;if(!r)return;if(type==='sling')G.slingRu
     if(o.set){const S=T.sets[o.set];
       if(o.set==='candles'&&G.skill>=0){if(S.lanes[G.skill]===o){score(15000,o.x,o.y,'SKILL SHOT');xp(15);A.s('bank');}G.skill=-1;}
       o.lit=true;shot(o.set,o.x,o.y);if(S.lanes.every(l=>l.lit)){S.lanes.forEach(l=>l.lit=false);done(o.set,o.x,o.y);if(!G.wave.active){G.wave.t+=12;float(o.x,o.y+30,'THE WATCH HOLDS +12s','#9fe8ff',12);}if(G.mods.laneKick&&!r.kickback){r.kickback=true;float(o.x,o.y+46,'KICKBACK LIT','#9fe8ff',12);relight();}}}
-    if(G.mods.laneWard&&type==='lane')G.buffs.hallow=G.mods.laneWard;
+    if(G.mods.laneWard&&type!=='outlane')G.buffs.hallow=G.mods.laneWard;
     if(type==='outlane'&&G.mods.outSave&&!G.chanceUsed&&G.save<=0&&!r.shield&&G.balls.length===1){G.chanceUsed=true;G.save=3;float(o.x,o.y-30,'SECOND CHANCE','#9fe8ff',14);A.s('ward');}
     break;}
   case 'orbit':{const id='orbit'+(o.side<0?'L':'R')+o.tier,m=G.orbitMem;
-    if(b.vy<-150){major(o.x,o.y);score(3000*comboF(),o.x,o.y);A.s('orbit');shot(id,o.x,o.y);r.stat.orbits++;m[o.tier]={side:o.side,t:G.t};jackpot(o.x,o.y);}
-    else if(b.vy>80){const p=m[o.tier];if(p&&p.side===-o.side&&G.t-p.t<4){score(6000,o.x,o.y,'FULL ORBIT');xp(4);m[o.tier]=null;}}
+    if(b.vy<-150){major(o.x,o.y);score(3000*comboF(),o.x,o.y);A.s('orbit');shot(id,o.x,o.y);r.stat.orbits++;m[o.tier]={side:o.side,t:G.t};}
+    else if(b.vy>80){const p=m[o.tier];if(p&&p.side===-o.side&&G.t-p.t<4){score(6000,o.x,o.y,'FULL ORBIT');xp(4);m[o.tier]=null;jackpot(o.x,o.y);}}
     break;}
   case 'spin':score(150);A.s('spin');charge(1,'spin');shot(o.id,o.x,o.y);break;
   case 'kick':if(r.kickback&&!G.fallen&&G.tilt<=0){r.kickback=false;G.kickT=30;b.x=41;b.vx=0;b.vy=-2050;A.s('kick');float(b.x+40,b.y-40,'KICKBACK','#9fe8ff',15);burst(b.x,b.y,14,'#9fe8ff',300,.6);relight();}break;
   case 'rampIn':A.s('rampIn');for(const e of G.enemies)if(e.job==='ritual'&&e.post&&e.post.rail===o.id)ritualBroken(e);break;
-  case 'ramp':r.stat.ramps++;major(b.x,b.y);score(4000*comboF(),b.x,b.y);A.s('ramp');shot(o.id,b.x,b.y);if(G.mods.rampHeal)heal(G.mods.rampHeal);if(G.mods.rampCharge){r.charge=Math.min(100,r.charge+G.mods.rampCharge);score(2000);}xp(2);jackpot(b.x,b.y);break;
+  case 'ramp':r.stat.ramps++;if(r.bb)r.bb.ramps++;major(b.x,b.y);score(4000*comboF(),b.x,b.y);A.s('ramp');shot(o.id,b.x,b.y);if(G.mods.rampHeal)heal(G.mods.rampHeal);if(G.mods.rampCharge){r.charge=Math.min(100,r.charge+G.mods.rampCharge);score(G.mods.rampScore);}xp(2);jackpot(b.x,b.y);break;
   case 'rampFail':A.s('knock',260);break;
   case 'hole':handleHole(o,b);break;
   }}
@@ -919,7 +919,7 @@ function strikeEnemy(e,b,imp,sure){const r=G.run,m=G.mods,pw=b&&b.pow?r.cls:null
   if(pw==='knight'){dmg*=2.5;if(++b.pow.hits>=4)endPower(b);}else if(pw==='rogue'){dmg*=1.5;G.buffs.stealth=Math.max(G.buffs.stealth||0,.1);endPower(b);float(e.x,e.y-44,'BACKSTAB','#c9a6ff',14);if(m.marked)e.marked=m.marked;}if(G.buffs.sharp>0)dmg*=1.25;
   if(e.def.cast&&e.castT<e.def.cast*.6){e.castT=e.def.cast+1;float(e.x,e.y-40,'SPELL INTERRUPTED','#9fe8ff',13);A.s('interrupt');if(r.cls==='mage')dmg*=3;score(2000);}
   if(crit)dmg*=2;if(e.stun>0)dmg*=1.5;A.s('hit');charge(1,'hit');score(300);if(e.atk<3.5)e.atk=3.5;if(crit){if(m.critCharge)r.charge=Math.min(100,r.charge+m.critCharge);if(m.poison)e.poison=m.poison;}return damageEnemy(e,dmg,crit);}
-function killEnemy(e){const r=G.run;e.dead=true;r.kills++;if(G.mods.deathWish)r.charge=Math.min(100,r.charge+G.mods.deathWish);if(e.loot){if(e.loot.gold){r.gold+=e.loot.gold;float(e.x,e.y-48,'+'+e.loot.gold+' GOLD RECOVERED','#ffd24a',13);}else G.pickups.push({x:e.x,y:e.y,tier:e.tier,kind:e.loot.kind,t:0,quest:null});}if(e.post&&e.post.b&&e.post.b.poss===e)e.post.b.poss=null;score(1000*r.level,e.x,e.y);xp(e.def.xp);gold(e.def.gold*(1+G.mods.killGold),e.x,e.y);if(G.mods.healKill)heal(G.mods.healKill);
+function killEnemy(e){const r=G.run;e.dead=true;r.kills++;if(r.bb)r.bb.kills++;if(G.mods.deathWish)r.charge=Math.min(100,r.charge+G.mods.deathWish);if(e.loot){if(e.loot.gold){r.gold+=e.loot.gold;float(e.x,e.y-48,'+'+e.loot.gold+' GOLD RECOVERED','#ffd24a',13);}else G.pickups.push({x:e.x,y:e.y,tier:e.tier,kind:e.loot.kind,t:0,quest:null});}if(e.post&&e.post.b&&e.post.b.poss===e)e.post.b.poss=null;score(1000*r.level,e.x,e.y);xp(e.def.xp);gold(e.def.gold*(1+G.mods.killGold),e.x,e.y);if(G.mods.healKill)heal(G.mods.healKill);
   charge(1,'kill');A.s('kill');burst(e.x,e.y,16,e.def.undead?'#9dffc8':'#ff8a6a',260,.9);if(G.boss&&e.minion)G.boss.minions--;
   if(Math.random()<.12)later(.05,()=>{G.pickups.push({x:e.x,y:e.y,tier:e.tier,kind:'heart',t:0,quest:null});});
   if(e.pack&&r.wing.key==='den'&&!r.wing.done&&T.wings.den.seal[0].on)wingProg(8,e.x,e.y);
@@ -972,9 +972,9 @@ function bossNext(bo){const d=bo.def;bo.pi=(bo.pi+1)%d.seq.length;bo.phase=d.seq
   relight();}
 function updateBoss(dt){const bo=G.boss;if(!bo)return;bo.t+=dt;if(bo.flash>0)bo.flash-=dt*4;if(bo.hitCd>0)bo.hitCd-=dt;
   if(!bo.alive){bo.dying-=dt;if(Math.random()<.5)burst(bo.x+rand(-30,30),bo.y+rand(-30,30),3,bo.def.color,200,1);return;}
-  bo.pt+=dt;if(bo.rise>0)bo.rise-=dt;if(bo.stun>0)bo.stun-=dt;
+  bo.pt+=dt;if(bo.rise>0)bo.rise-=dt;if(bo.stun>0)bo.stun-=dt;if(bo.marked>0)bo.marked-=dt;if(bo.poison>0){bo.poison-=dt;bo.dot=(bo.dot||0)+dt;if(bo.dot>=1){bo.dot=0;if(bo.phase!=='shield')hitBoss(bo,G.mods.pow*.35,false);}}
   if(bo.def.moving){bo.x=bo.ax+Math.sin(bo.t*.8)*118;bo.y=bo.ay+18+Math.sin(bo.t*1.6)*22;}
-  if(!G.balls.length||G.fallen||G.inGrave)return;
+  if(!G.balls.length||G.fallen||G.inGrave||G.focusTier!==bo.tier)return;
   switch(bo.phase){
   case 'shield':if(bo.def.wardBy){if(bo.pt>1&&!G.enemies.some(e=>e.warder&&!e.dead)){bo.stun=3;bossNext(bo);popup('Wards Broken','Strike '+bo.def.short+' now','good');}}else if(bo.pt>45)bossNext(bo);break;
   case 'open':case 'frenzy':if(bo.pdmg>=bo.maxHp*.3||bo.pt>24)bossNext(bo);break;
@@ -988,8 +988,9 @@ function interruptBoss(bo){bo.stun=9;bo.phase='open';bo.pt=0;bo.pdmg=0;bossPhase
 function strikeBoss(bo,b,imp){const m=G.mods,r=G.run;if(bo.rise>0)return;const pw=b.pow?r.cls:null;
   if(pw==='mage'){endPower(b);explode(b.x,b.y);if(!bo.alive)return;}else if(pw==='cleric'){endPower(b);consecrate(bo.x,bo.y+bo.r*.6);}
   if(bo.phase==='shield'){A.s('clank');float(bo.x,bo.y-bo.r-10,'WARDED','#9fe8ff',13);return;}
-  let dmg=m.pow*clamp(imp/800,.55,1.6);const crit=G.buffs.stealth>0||Math.random()<m.crit||(r.cls==='rogue'&&G.combo>1&&G.comboT>0);
-  if(pw==='knight'){dmg*=2.5;endPower(b);}else if(pw==='rogue'){dmg*=3;endPower(b);float(bo.x,bo.y-bo.r-26,'BACKSTAB','#c9a6ff',15);}
+  let dmg=m.pow*clamp(imp/800,.55,1.6);const crit=pw==='rogue'||G.buffs.stealth>0||bo.marked>0||Math.random()<m.crit||(r.cls==='rogue'&&G.combo>1&&G.comboT>0);
+  if(pw==='knight'){dmg*=2.5;endPower(b);}else if(pw==='rogue'){dmg*=3;endPower(b);float(bo.x,bo.y-bo.r-26,'BACKSTAB','#c9a6ff',15);if(m.marked)bo.marked=m.marked;}
+  if(crit){if(m.critCharge)r.charge=Math.min(100,r.charge+m.critCharge);if(m.poison)bo.poison=m.poison;}
   if(crit)dmg*=2;if(G.buffs.sharp>0)dmg*=1.25;if(bo.key==='necro'&&r.cls==='cleric')dmg*=1.5;if(bo.phase==='summon')dmg*=.5;if(bo.stun>0)dmg*=2;
   score(1500);charge(1,'hit');A.s('bossHit');hitBoss(bo,dmg,crit);}
 function hitBoss(bo,dmg,crit){if(!bo.alive)return;bo.hp-=dmg;bo.pdmg+=dmg;bo.flash=1;float(bo.x+rand(-20,20),bo.y-bo.r-8,(crit?'CRIT ':'')+Math.round(dmg),crit?'#ffb040':'#ffffff',crit?17:13);
@@ -1008,8 +1009,8 @@ function collideActors(b){
   for(const s of G.statues){if(!s.on||Math.abs(s.y-b.y)>50)continue;const imp=hitCircle(b,s,s.r,.5);if(imp>60&&s.cool<=0){s.cool=.2;s.flash=1;score(600);A.s('target');charge(1,'hit');shot(s.id,s.x,s.y);}}}
 
 /* ---------- ball lifecycle ---------- */
-function serve(){G.chanceUsed=false;G.martyrUsed=false;G.balls.push(newBall(T.shooter.x,T.shooter.y,0,0));G.skill=irand(0,2);G.dirty=true;}
-function startBall(){const r=G.run;Object.assign(G,{balls:[],tilt:0,fallen:false,hoardDone:false,slingRun:0,booms:[],zones:[],phase:0,nudgeCd:0,hidden:false,inGrave:false,graveLive:false,nudges:[],curse:{},buffs:{},combo:0,comboT:0,mb:null,save:0,sub:null});
+function serve(){G.balls.push(newBall(T.shooter.x,T.shooter.y,0,0));G.skill=irand(0,2);G.dirty=true;}
+function startBall(){const r=G.run;r.bb={kills:0,quests:0,ramps:0};G.chanceUsed=false;G.martyrUsed=false;Object.assign(G,{balls:[],tilt:0,fallen:false,hoardDone:false,slingRun:0,booms:[],zones:[],phase:0,nudgeCd:0,hidden:false,inGrave:false,graveLive:false,nudges:[],curse:{},buffs:{},combo:0,comboT:0,mb:null,save:0,sub:null});
   if(r.hp<G.mods.maxHp*.6)r.hp=Math.round(G.mods.maxHp*.6);r.mult=G.mods.multMin;r.kickback=true;r.shop=true;
   T.sets.candles.lanes.forEach(l=>l.lit=false);saveRun();serve();popup('Ball '+r.ballNum,r.ballsLeft>1?(r.ballsLeft-1)+' in reserve':'Last ball','info',r.ballNum===1&&r.time<1?(UI.touch?'Tap the left and right sides to flip. Hold Nudge and release to launch.':'Z and / flip. Hold Space and release to launch. Space also nudges.'):r.ballNum===1?'':'');relight();}
 function updatePlunger(dt){const p=G.plunge;
@@ -1045,16 +1046,17 @@ function updateBalls(dt){let gone=false;
       else if(b.rs>=tn.len){const h=T.holes[tn.to];b.st='held';b.held={id:tn.to,t:0,plan:'eject',delay:.45};b.x=h.x;b.y=h.y;b.tun=null;h.glow=1;}}
     const tr=b.trail;tr.push(b.x,b.y);if(tr.length>16)tr.splice(0,2);}
   if(gone){const g=G.balls.filter(b=>b.gone);G.balls=G.balls.filter(b=>!b.gone);for(const b of g)onDrain(b);}}
-function onDrain(b){const r=G.run;A.s('drain');if(G.mods.bargain&&!G.inGrave&&G.balls.length<=1){gold(G.mods.bargain,b.x,b.y-40);}
+function onDrain(b){const r=G.run;A.s('drain');
   if(G.inGrave){G.inGrave=false;G.graveLive=false;popup('Gravebound','The earth keeps what it is given','bad');endBall();return;}
   if(!G.fallen&&G.tilt<=0){if(G.save>0){saveBall('Ball Saved','The ball returns');return;}if(r.shield){r.shield=false;saveBall('Aegis','The ward returns your ball');if(G.mods.bulwark){G.booms.push({x:b.x,y:b.y,r:400,t:0,c:'#8fb0d8'});for(const e of G.enemies)if(e.tier===G.focusTier&&!e.dead){e.wind=0;e.stun=Math.max(e.stun,2);}float(b.x,b.y-60,'BULWARK','#8fb0d8',15);}return;}}
   if(G.balls.length+(G.plunge.auto>0?1:0)>=1){if(G.balls.length<=1&&G.mb){G.mb=null;relight();}return;}
-  endBall();}
+  if(G.mods.bargain&&G.tilt<=0)gold(G.mods.bargain,b.x,b.y-40);endBall();}
 function saveBall(t,s){popup(t,s,'good');A.s('save');G.plunge.auto=Math.max(G.plunge.auto,.9);G.dirty=true;}
 function endBall(){const r=G.run;G.sub='bonus';G.mb=null;
   for(const q of r.side.slice()){const o=qCur(q);if(o&&o.time)qFail(q);}
-  const base=r.kills*400+r.questsDone*8000+r.level*2500+r.stat.ramps*300,total=base*r.mult;r.score+=total;
-  G.bonus={kills:r.kills,quests:r.questsDone,level:r.level,ramps:r.stat.ramps,mult:r.mult,total};A.s('ballEnd');r.ballsLeft--;G.dirty=true;
+  const bb=r.bb||{kills:0,quests:0,ramps:0},tilt=G.tilt>0,lines=[['Foes slain',bb.kills,bb.kills*400],['Side quests done',bb.quests,bb.quests*8000],['Ramps',bb.ramps,bb.ramps*300],['Level',r.level,r.level*2500]];
+  const base=lines.reduce((a,l)=>a+l[2],0),total=tilt?0:base*r.mult;r.score+=total;
+  G.bonus={lines,mult:r.mult,total,tilt,fallen:G.fallen};A.s('ballEnd');r.ballsLeft--;G.dirty=true;
   if(G.demo){later(1.5,startDemo);return;}
   UI.bonus(G.bonus,r.ballsLeft>0);
   later(3.4,()=>{if(G.run!==r)return;G.sub=null;UI.bonus(null);if(r.ballsLeft>0){r.ballNum++;startBall();}else gameOver();});}
@@ -1103,7 +1105,7 @@ function updateRules(dt){const r=G.run;r.time+=dt;
   for(const q of r.side.slice())if(q.tl>0&&!G.inGrave&&G.focusTier<4){q.tl-=dt;G.dirty=true;if(q.tl<=0)qFail(q);}
   G.spawnT-=dt;if(G.spawnT<=0){G.spawnT=.6;manageSpawns();}
   const f=focusBall();if(f){const ft=tierOf(f.y);if(ft!==G.focusTier){G.focusTier=ft;relight();}}
-  if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over')openChoice(G.pending.shift());}
+  if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over'&&(G.plunge.ready||G.balls.some(b=>b.st==='held'||b.st==='tunnel')||!G.balls.some(b=>b.st==='live')))openChoice(G.pending.shift());}
 function updateFx(dt){
   for(const p of G.parts){p.life+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.vx*=1-dt*2;}
   if(G.parts.length)G.parts=G.parts.filter(p=>p.life<p.max);
@@ -1418,7 +1420,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.7';
+const $=id=>document.getElementById(id),VERSION='3D build 0.8';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1435,7 +1437,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     let b='';for(let i=1;i<r.ballsLeft;i++)b+='<i></i>';$('hBalls').innerHTML=b;$('hBallN').textContent='Ball '+r.ballNum;
     $('hObj').textContent=G.inGrave?(T.banks.nails.segs.some(x=>x.on)?'Drive both coffin nails at the head of the coffin':'The lid is split. Shoot the light'):G.focusTier>=4?wingText():r.main?UI.objText(r.main):'The Hollow is quiet. For now.';
     const chips=[];const ch=(t,k)=>chips.push('<span class="chip '+(k||'')+'">'+esc(t)+'</span>');
-    if(r.mult>1)ch(r.mult+'x','gold');if(G.plunge.ready)ch(UI.touch?'Hold Nudge, release to launch':'Hold Space, release to launch','frost');if(G.save>0&&!G.plunge.ready)ch('Ball save '+Math.ceil(G.save)+'s','frost');if(r.shield)ch('Ward','gold');
+    if(G.pending.length)ch(G.pending[0]==='perk'?'Level up waiting: shoot a scoop':'The Lantern waits','gold');if(r.mult>1)ch(r.mult+'x','gold');if(G.plunge.ready)ch(UI.touch?'Hold Nudge, release to launch':'Hold Space, release to launch','frost');if(G.save>0&&!G.plunge.ready)ch('Ball save '+Math.ceil(G.save)+'s','frost');if(r.shield)ch('Ward','gold');
     if(G.inGrave)ch('The lid closes in '+Math.ceil(G.graveT)+'s',G.graveT<8?'bad':'moss');else if(G.focusTier>=4)ch(WINGS[WING_KEYS[G.focusTier-4]].clock+Math.ceil(G.wingT||0)+'s',G.wingT<12?'bad':'moss');else if(G.wave.active)ch('Wave '+G.wave.active.n+' · '+G.wave.active.left+' left','bad');else if(g.open)ch('Grave open','moss');else if(g.hits>0)ch('Grave '+g.hits+'/'+g.need,'');
     if(armed)ch((G.balls.some(b=>b.pow)?c.shot:c.shot+' armed. Flip to release'),'violet');else if(r.charge>=33&&!G.plunge.ready)ch('Cradle the ball: '+(r.charge>=100?c.abil:c.shot),'frost');
     if(G.mb)ch(G.mb.name+' multiball','gold');if(r.lockLit)ch('Lock lit'+(r.locks?' '+r.locks+'/2':''),'moss');if(G.combo>1&&G.comboT>0)ch('Combo '+G.combo+'x','violet');
@@ -1456,7 +1458,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
       '<h3>Relics</h3><ul class="tags">'+(Object.keys(rc).map(id=>{const p=RELICS.find(x=>x.id===id);return '<li title="'+esc(p.desc)+'">'+esc(p.name)+(rc[id]>1?' '+rc[id]:'')+'</li>';}).join('')||'<li class="none">None yet</li>')+'</ul>';
     $('sheetBody').innerHTML=h;},
   bonus(b,more){const el=$('bonus');if(!b){el.hidden=true;return;}el.hidden=false;
-    el.innerHTML='<h2>Ball lost</h2><dl><dt>Foes slain</dt><dd>'+b.kills+'</dd><dt>Quests done</dt><dd>'+b.quests+'</dd><dt>Level</dt><dd>'+b.level+'</dd><dt>Multiplier</dt><dd>'+b.mult+'x</dd></dl><p class="big">+'+fmt(b.total)+'</p><p>'+(more?'The next ball is on its way.':'That was your last ball.')+'</p>';},
+    el.innerHTML='<h2>'+(b.fallen?'Fallen':b.tilt?'Tilt':'Ball lost')+'</h2><dl>'+b.lines.map(l=>'<dt>'+l[0]+'</dt><dd>'+l[1]+' <small>'+fmt(l[2])+'</small></dd>').join('')+'<dt>Multiplier</dt><dd>'+b.mult+'x</dd></dl><p class="big">'+(b.tilt?'No bonus':'+'+fmt(b.total))+'</p><p>'+(more?'The next ball is on its way.':'That was your last ball.')+'</p>';},
   choice(c){if(!c){UI.menu(null);return;}let h='<div class="pane wide"><h2>'+esc(c.title)+'</h2><p class="lead">'+esc(c.sub)+'</p><div class="cards">';
     c.opts.forEach((o,i)=>{const no=o.cost&&G.run.gold<o.cost;h+='<button class="card'+(o.key?' key':'')+'" data-act="choose" data-i="'+i+'"'+(no?' disabled':'')+'><small>'+esc(o.tag||'')+'</small><b>'+esc(o.name)+'</b><span>'+esc(o.desc)+'</span></button>';});
     h+='</div><p class="hint">'+(UI.touch?'Tap one to take it.':'Flippers move, Space or Enter picks.')+'</p></div>';UI.show(h,'choice');},

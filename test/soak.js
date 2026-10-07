@@ -11,7 +11,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8><meta name=view
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
   await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);});
-  for(const cls of ['knight','rogue','mage','cleric']){
+  let bad=false;for(const cls of ['knight','rogue','mage','cleric']){
     const res=await pg.evaluate(([cls,mins])=>{const seen={},err=[];UI.menu(null);startRun(cls);G.stuck=[];G.auto=true;DEV.on=true;G.bot={hl:0,hr:0,tl:30,tr:30,pl:0,plT:.7};
       const note=k=>{seen[k]=(seen[k]||0)+1;};let runs=1;
       try{for(let s=0;s<mins*60;s+=1.5){
@@ -23,5 +23,5 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8><meta name=view
           if(G.enemies.length)note('foes');if(G.pickups.length)note('pickups');if(G.balls.some(b=>b.pow))note('power');if(G.balls.some(b=>b.arm>0))note('armed');if(G.fallen)note('fallen');for(const c in G.curse)if(G.curse[c]>0)note('curse:'+c);
           for(const b of G.balls)if(!isFinite(b.x)||!isFinite(b.y))err.push('nan ball');}}catch(e){err.push(e.message+' @ '+(e.stack||'').split('\n').slice(1,4).join(' | '));}
       const r=G.run;return {cls,runs,score:r.score,level:r.level,kills:r.kills,bosses:r.bossKills,quests:r.questsDone,stuck:G.stuck.length,stuckAt:G.stuck.slice(0,6).map(q=>{const t=tierOf(q[1]);return TIER_NAME[t]+' '+q[0]+','+(q[1]-TY[t])+' '+q[2];}),perks:r.perks.join(' '),seen:Object.keys(seen).sort().map(k=>k+'×'+seen[k]).join(' '),err};},[cls,mins]);
-    console.log(JSON.stringify(res));}
-  console.log(logs.slice(0,10).join('\n')||'no page errors');await br.close();})();
+    console.log(JSON.stringify(res));if(res.err.length)bad=true;}
+  console.log(logs.slice(0,10).join('\n')||'no page errors');await br.close();if(logs.length||bad)process.exitCode=1;})();

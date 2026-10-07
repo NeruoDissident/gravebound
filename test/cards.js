@@ -41,7 +41,8 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     // the table: Ramp Runner, Second Chance, Grave Bargain, Tollgate, Iron Flippers, Hallowed Lanes, Lane Keeper
     {const b=fresh('knight',0);give('rampRunner');G.run.charge=0;ev('ramp',T.rails.rampTower,b);ok('Ramp Runner fills 10 power per ramp',G.run.charge>=10);}
     {const b=fresh('knight',0);give('chance');G.save=0;const o=T.sens.find(s=>s.kind==='outlane'&&s.tier===0);ev('outlane',o,b);ok('Second Chance saves an outlane once',G.save>0);G.save=0;ev('outlane',o,b);ok('only once per ball',G.save<=0);}
-    {const b=fresh('knight',0);give('bargain');G.save=0;G.run.shield=false;const g=G.run.gold;pin=null;onDrain(b);ok('Grave Bargain pays on a drain',G.run.gold>g);}
+    {const b=fresh('knight',0);give('bargain');G.save=0;G.run.shield=false;const g=G.run.gold;pin=null;G.balls=[];onDrain(b);ok('Grave Bargain pays on a real loss',G.run.gold>g);G.sub=null;}
+    {const b=fresh('knight',0);give('bargain');G.save=5;const g=G.run.gold;pin=null;G.balls=[];onDrain(b);ok('but not on a saved ball',G.run.gold===g);}
     {fresh('knight',0);give('tollgate');const e=only('skeleton');e.y=foePosts(0).line;e.state='hold';adv(2.2);ok('Tollgate wounds foes holding the slingshot line',e.hp<e.maxHp);}
     {const b=fresh('knight',0);give('ironFlip');const e=only('troll');e.x=b.x;e.y=b.y;ev('flipHit',null,b);ok('Iron Flippers wound foes near the ball on a flip',e.hp<e.maxHp);}
     {const b=fresh('knight',0);give('hallowed');const l=T.sens.find(s=>s.kind==='lane'&&s.tier===2);ev('lane',l,b);ok('Hallowed Lanes ward you after a lane',G.buffs.hallow>0);}
@@ -52,4 +53,4 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     {fresh('knight',0);give('hourglass');ok('Hourglass doubles ball save ('+G.mods.save+')',G.mods.save===26);G.run.wing={key:'crypt',open:true,done:false,prog:0};enterWing({id:'catacombs'});ok('and the wing clock ('+G.wingT+')',G.wingT===160);}
     {fresh('knight',0);give('deathWish');const e=only('skeleton');G.run.charge=0;killEnemy(e);ok('Death Wish: kills fill 10 ('+G.run.charge.toFixed(1)+')',G.run.charge>=10);const c1=G.run.charge;hurt(5);ok('wounds drain 10',G.run.charge<=c1-10+.01);}
     return log;});
-  console.log(out.join('\n'));console.log(out.filter(l=>l.startsWith('FAIL')).length+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();})();
+  console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();

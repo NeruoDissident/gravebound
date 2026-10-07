@@ -30,4 +30,4 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       while(bo.phase!=='cast')bossNext(bo);const z=G.zones.find(z=>z.fire);ok('Gravefire scorches the floor',!!z);const hp=G.run.hp;pin=[z.x,z.y];G.balls=[newBall(z.x,z.y,0,0)];adv(1.2);ok('the ball burns inside it ('+(hp-G.run.hp)+')',G.run.hp<hp);
       killBoss(bo);ok('the fire goes out with the dragon',!G.zones.some(z=>z.fire));}
     return log;});
-  console.log(out.join('\n'));console.log(out.filter(l=>l.startsWith('FAIL')).length+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();})();
+  console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();

@@ -20,7 +20,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       devKey('d2');__gb.advance(.2,1);ok(P('gate "'+d.gate+'" lit for the main quest'),G.lit[d.gate]&&G.lit[d.gate].includes('main'));
       if(key==='hoard')ok(P('the Sealed Door stands open'),T.banks.door.segs.every(s=>!s.on));
       const h=T.holes[d.gate];G.balls=[newBall(h.x,h.y-3,0,40)];G.mb=null;G.save=0;__gb.advance(.1,1);ok(P('scoop took the ball'),G.balls[0].st==='held'&&G.balls[0].held.plan==='tunnel');
-      __gb.advance(2.6,3);ok(P('ball is in the wing'),G.focusTier===tier&&G.balls[0].tier===tier);ok(P('clock running: '+G.wingT.toFixed(1)),G.wingT>70&&G.wingT<90);ok(P('goal sealed'),tw.seal[0].on);
+      __gb.advance(2.6,3);ok(P('ball is in the wing'),G.focusTier===tier&&G.balls[0].tier===tier);ok(P('clock running: '+G.wingT.toFixed(1)+' (x'+G.mods.hour+')'),G.wingT>70*G.mods.hour&&G.wingT<90*G.mods.hour);ok(P('goal sealed'),tw.seal[0].on);
       ok(P('HUD: '+document.getElementById('hObj').textContent),document.getElementById('hObj').textContent===d.sealed(r.wing.prog||0));
       const t0=G.wingT;
       if(key==='crypt')for(const s of T.banks.sigils.segs){park((s.x1+s.x2)/2+(s.x1<320?30:-30),(s.y1+s.y2)/2,s.x1<320?-700:700,0);__gb.advance(.15,1);}
@@ -39,5 +39,5 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       // the clock running out
       devKey(dk);__gb.advance(2.5,2);G.enemies.forEach(e=>{e.dead=true;});__gb.advance(.05,1);G.wingT=.3;park(320,y+450,0,-50);__gb.advance(.6,1);ok(P('clock kills the flippers'),G.tilt>0);park(320,y+WLEN+10,0,300);__gb.advance(1.9,2);ok(P('tilt cleared on the way out'),G.tilt<=0&&G.balls.length===1&&G.balls[0].tier<=2);}
     return log;});
-  console.log(out.join('\n'));console.log(out.filter(l=>l.startsWith('FAIL')).length+' failed of '+out.length);
+  console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);if(nf||logs.length)process.exitCode=1;
   console.log(logs.join('\n')||'no page errors');await br.close();})();

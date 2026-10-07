@@ -46,4 +46,4 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       strikeEnemy(e,b,900);ok('a hard hit staggers it',e.stun>0);e.stun=0;const h=T.holes[e.post.id],sc=G.run.score;pin=null;G.balls=[newBall(h.x,h.y-2,0,30)];let caught=0,was='';for(let k=0;k<80;k++){G.enemies=G.enemies.filter(x=>keep.includes(x));__gb.advance(.1,0);const bb=G.balls[0],st=bb?bb.st:'';if(st==='held'&&was!=='held'&&bb.held&&bb.held.id===e.post.id)caught++;was=st;}ok('a ball leaving the scoop slips past the troll, no capture loop ('+caught+')',caught<=1);}
     // nothing lingers from a wing after it is done: foes die with the wing
     return log;});
-  console.log(out.join('\n'));console.log(out.filter(l=>l.startsWith('FAIL')).length+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();})();
+  console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();
