@@ -55,5 +55,8 @@ npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```
 
+To host it, serve `dist/`: the build writes `dist/index.html` (the one-file copy), and `vercel.json` points
+Vercel at that folder.
+
 The tests serve the CDN scripts from `node_modules`, so they run offline. They use software rendering, so
 they check that everything runs and renders, not frame rate.

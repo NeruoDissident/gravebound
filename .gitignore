@@ -1,3 +1,4 @@
 node_modules
 test/out/
 *.gen.js
+dist/index.html
