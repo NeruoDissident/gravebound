@@ -755,7 +755,7 @@ function updatePowers(dt){const r=G.run,c=r.cls,m=G.mods,cl=CLASSES[c];G.hidden=
 function graveHit(o){const r=G.run,g=r.grave;if(g.open||G.inGrave)return;g.hits=Math.min(g.need,g.hits+(r.cls==='cleric'?2:1));G.dirty=true;
   if(g.hits>=g.need){g.open=true;popup('The Grave Opens','Your next lost ball falls into it. Fight your way back out','good');A.s('summon');G.flash=.4;G.flashC='#7dffb0';}
   else if(g.hits%3===0||g.need-g.hits<=2)float(o.x,o.y-34,'GRAVE '+g.hits+'/'+g.need,'#9dffc8',12);}
-function graveCatch(b){const r=G.run,g=r.grave,ok=!G.fallen&&G.tilt<=0;if(G.tilt>0&&!G.fallen)return false;
+function graveCatch(b){const r=G.run,g=r.grave,ok=!G.fallen&&G.tilt<=0; // an open Grave always takes the ball, tilted or fallen or not
   if(!g.open||G.balls.length>1||G.plunge.auto>0||(ok&&(G.save>0||r.shield)))return false;
   g.open=false;g.used++;g.hits=0;g.need=8+4*g.used;G.inGrave=true;G.graveLive=false;G.graveT=22;G.graveBones=0;G.tilt=0;G.mb=null;G.nudges=[];
   if(G.fallen){G.fallen=false;r.hp=Math.round(G.mods.maxHp*.25);}
