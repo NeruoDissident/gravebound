@@ -43,6 +43,9 @@ through a scoop and a short tunnel. Each campaign has one, and it opens once the
 | The Den | Beast lord | Witch's Hut | Slay three of the pack |
 | The Hoard | Grave dragon | Secret Passage, behind the Sealed Door | Roll over six dragon coins |
 
+A run is one campaign: its omens, its wing, its two bosses. Winning ends the expedition with a summary; losing the
+last ball ends it the old way. Endless mode (Options) raises a new campaign after each win, with threat rising.
+
 Every wing runs on a clock. The wing's own task and its bumpers buy time; when it runs out the flippers go dead
 and the ball is carried back out. Draining from a wing costs nothing, and the way in stays open.
 

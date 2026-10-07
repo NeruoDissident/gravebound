@@ -38,6 +38,11 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       ok(P('drain starts the trip back'),G.balls[0].st==='tunnel');__gb.advance(1.9,2);ok(P('back out, ball not lost: '+G.balls.map(b=>b.st+'/'+b.tier).join(',')+' left '+r.ballsLeft),G.balls.length===1&&G.balls[0].tier<=2&&r.ballsLeft===3);
       // the clock running out
       devKey(dk);__gb.advance(2.5,2);G.enemies.forEach(e=>{e.dead=true;});__gb.advance(.05,1);G.wingT=.3;park(320,y+450,0,-50);__gb.advance(.6,1);ok(P('clock kills the flippers'),G.tilt>0);park(320,y+WLEN+10,0,300);__gb.advance(1.9,2);ok(P('tilt cleared on the way out'),G.tilt<=0&&G.balls.length===1&&G.balls[0].tier<=2);}
+    // the run ends with its campaign unless Endless is on
+    {UI.menu(null);startRun('knight');G.auto=false;DEV.on=true;G.opt.endless=false;__gb.advance(.5,1);const r=G.run;let g=0;while(r.main&&g++<30){devKey('dn');__gb.advance(3,1);}
+      for(let k=0;k<12;k++){if(G.choice)choose(0);__gb.advance(1,1);}ok('[end] the run ends when its campaign is won',G.mode==='over'&&r.ended==='won'&&r.won===1);}
+    {UI.menu(null);startRun('knight');G.auto=false;DEV.on=true;G.opt.endless=true;__gb.advance(.5,1);const r=G.run;let g=0;while(r.main&&g++<30){devKey('dn');__gb.advance(3,1);}
+      for(let k=0;k<22;k++){if(G.choice)choose(0);__gb.advance(1,1);}ok('[end] Endless raises a new shadow instead ('+(r.main&&r.main.name)+')',G.mode==='play'&&r.main&&r.arcs.length===2);G.opt.endless=false;}
     return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);if(nf||logs.length)process.exitCode=1;
   console.log(logs.join('\n')||'no page errors');await br.close();})();

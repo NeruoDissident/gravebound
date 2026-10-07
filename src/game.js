@@ -613,7 +613,9 @@ function qEvent(kind,key,tier){for(const q of quests()){const o=qCur(q);if(!o||o
   else if((o.id||o.boss)===key)qAdd(q);}}
 function qFinish(q){const r=G.run;
   if(q.main){const c=CAMPAIGNS[q.key];r.main=null;score(250000);xp(150);gold(100);popup('Main Quest Complete',c.win,'main');A.s('victory');metaAdd('wins');
-    r.threat++;later(7,()=>{if(G.run!==r||r.main)return;r.main=makeCampaign(r);qBegin(r.main);popup('A New Shadow Rises',r.main.name,'boss',r.main.text);saveRun();});}
+    r.threat++;r.won=(r.won||0)+1;
+    if(G.opt.endless)later(7,()=>{if(G.run!==r||r.main)return;r.main=makeCampaign(r);qBegin(r.main);popup('A New Shadow Rises',r.main.name,'boss',r.main.text);saveRun();});
+    else later(5,()=>{if(G.run===r&&G.mode!=='over')gameOver(true);});}
   else{r.side=r.side.filter(x=>x!==q);r.doneSide.push(q.id);r.questsDone++;if(r.bb)r.bb.quests++;const w=q.rw;score(25000);xp(w.xp||0);gold(w.gold||0);if(w.heal)heal(w.heal);
     let note=[w.gold?'+'+w.gold+' gold':'',w.xp?'+'+w.xp+' xp':''].filter(Boolean).join('  ');if(w.relic){const x=giveRelic();if(x)note+='  Relic: '+x.name;}
     popup('Quest Complete',q.name,'good',note);A.s('questDone');}
@@ -1060,7 +1062,7 @@ function endBall(){const r=G.run;G.sub='bonus';G.mb=null;
   if(G.demo){later(1.5,startDemo);return;}
   UI.bonus(G.bonus,r.ballsLeft>0);
   later(3.4,()=>{if(G.run!==r)return;G.sub=null;UI.bonus(null);if(r.ballsLeft>0){r.ballNum++;startBall();}else gameOver();});}
-function gameOver(){const r=G.run;G.mode='over';store.del('run');A.s('over');metaAdd('runs');const m=store.get('meta',{});if(r.level>(m.bestLevel||0)){m.bestLevel=r.level;store.set('meta',m);}UI.gameOver(r);}
+function gameOver(won){const r=G.run;r.ended=won?'won':'fell';G.mode='over';G.sub=null;store.del('run');A.s(won?'victory':'over');metaAdd('runs');const m=store.get('meta',{});if(r.level>(m.bestLevel||0)){m.bestLevel=r.level;store.set('meta',m);}UI.gameOver(r);}
 function startRun(cls){G.demo=false;G.bot=null;resetWorld();G.mode='play';newRun(cls);G.cam.y=TY[2]-20;qBegin(G.run.main);startBall();
   popup(G.run.main.name,G.run.main.text,'main');newSideQuiet();UI.sync(true);}
 function newSideQuiet(){const r=G.run,pool=SIDE.filter(s=>s.steps[0].tier===2||(s.steps[0].id&&T.shots[s.steps[0].id]&&T.shots[s.steps[0].id].tier===2));const s=pick(pool);
@@ -1105,7 +1107,7 @@ function updateRules(dt){const r=G.run;r.time+=dt;
   for(const q of r.side.slice())if(q.tl>0&&!G.inGrave&&G.focusTier<4){q.tl-=dt;G.dirty=true;if(q.tl<=0)qFail(q);}
   G.spawnT-=dt;if(G.spawnT<=0){G.spawnT=.6;manageSpawns();}
   const f=focusBall();if(f){const ft=tierOf(f.y);if(ft!==G.focusTier){G.focusTier=ft;relight();}}
-  if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over'&&(G.plunge.ready||G.balls.some(b=>b.st==='held'||b.st==='tunnel')||!G.balls.some(b=>b.st==='live')))openChoice(G.pending.shift());}
+  if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over'&&!(G.run.main===null&&!G.opt.endless)&&(G.plunge.ready||G.balls.some(b=>b.st==='held'||b.st==='tunnel')||!G.balls.some(b=>b.st==='live')))openChoice(G.pending.shift());}
 function updateFx(dt){
   for(const p of G.parts){p.life+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.vx*=1-dt*2;}
   if(G.parts.length)G.parts=G.parts.filter(p=>p.life<p.max);
@@ -1420,7 +1422,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.8';
+const $=id=>document.getElementById(id),VERSION='3D build 0.9';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1468,17 +1470,17 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     const btn=(act,label,extra)=>'<button data-act="'+act+'"'+(extra||'')+'>'+label+'</button>';
     if(name==='title'){const sv=store.get('run',null),meta=store.get('meta',{});
       h='<div class="pane title"><p class="eyebrow">A cursed kingdom on one table</p><h1>Gravebound<span>Pinball</span></h1><nav>'+btn('new','New run')+(sv&&sv.run?btn('continue','Continue <small>'+esc(CLASSES[sv.run.cls].name)+', level '+sv.run.level+', ball '+sv.run.ballNum+'</small>'):'')+btn('scores','High scores')+btn('options','Options')+btn('controls','Controls')+'</nav>'+
-        (meta.bosses?'<p class="hint">Legacy: '+meta.bosses+' bosses slain. New heroes start with '+Math.min(100,meta.bosses*10)+' gold.</p>':'<p class="hint">Three levels and a grave. Flippers and a nudge are all you get.</p>')+'<p class="ver">'+VERSION+'</p></div>';}
+        (meta.bosses?'<p class="hint">Legacy: '+meta.bosses+' bosses slain. New heroes start with '+Math.min(100,meta.bosses*10)+' gold.</p>':'<p class="hint">Three levels, a grave and one campaign. Flippers and a nudge are all you get.</p>')+(G.opt.endless?'<p class="hint">Endless mode is on.</p>':'')+'<p class="ver">'+VERSION+'</p></div>';}
     else if(name==='class'){h='<div class="pane wide"><h2>Choose your hero</h2><p class="lead">The ball is the hero. Hits fill your power meter. Hold the ball still on a raised flipper to spend a third of it on your class shot, or all of it at full.</p><div class="cards four">';
       for(const k in CLASSES){const c=CLASSES[k];h+='<button class="card cls" data-act="class" data-k="'+k+'"><i class="orb" style="--c:'+c.color+';--g:'+c.glow+'"></i><b>'+c.name+'</b><small>'+esc(c.tag)+'</small><span class="stat">Health '+c.hp+' &middot; Power '+c.pow+'</span><span>'+esc(c.pass)+'</span><span><em>Nudge: '+esc(c.nudge)+'.</em> '+esc(c.nudgeText)+'</span><span><em>Cradle: '+esc(c.shot)+'.</em> '+esc(c.shotText)+'</span><span><em>Full meter: '+esc(c.abil)+'.</em> '+esc(c.abilText)+'</span></button>';}
       h+='</div><nav class="row">'+btn('title','Back')+'</nav></div>';}
     else if(name==='scores'){const sc=store.get('scores',[]);h='<div class="pane"><h2>High scores</h2>'+(sc.length?'<table><thead><tr><th></th><th>Name</th><th>Score</th><th>Hero</th></tr></thead><tbody>'+sc.map((s,i)=>'<tr'+(s.id===UI.lastId?' class="me"':'')+'><td>'+(i+1)+'</td><td>'+esc(s.name)+'</td><td>'+fmt(s.score)+'</td><td>'+esc(s.cls)+' '+s.level+'</td></tr>').join('')+'</tbody></table>':'<p class="lead">No scores yet. The first name on the stone is yours to carve.</p>')+'<nav class="row">'+btn('title','Back')+'</nav></div>';}
     else if(name==='options'){h='<div class="pane"><h2>Options</h2><label for="optMusic">Music<input id="optMusic" type="range" min="0" max="100" value="'+Math.round(A.vol.m*100)+'"></label><label for="optSfx">Sound effects<input id="optSfx" type="range" min="0" max="100" value="'+Math.round(A.vol.s*100)+'"></label>'+
-      '<label for="optShake" class="check"><input id="optShake" type="checkbox"'+(G.opt.shake?' checked':'')+'>Screen shake</label><nav>'+btn('gfxCam','View: '+CAMS[R3.camMode].name)+btn('gfxQual','Detail: '+(R3.q?R3.q.label:''))+btn('erase','Erase saved run and scores')+btn(UI.back||'title','Back')+'</nav></div>';}
+      '<label for="optShake" class="check"><input id="optShake" type="checkbox"'+(G.opt.shake?' checked':'')+'>Screen shake</label><label for="optEndless" class="check"><input id="optEndless" type="checkbox"'+(G.opt.endless?' checked':'')+'>Endless: a new shadow rises after every campaign, instead of the run ending</label><nav>'+btn('gfxCam','View: '+CAMS[R3.camMode].name)+btn('gfxQual','Detail: '+(R3.q?R3.q.label:''))+btn('erase','Erase saved run and scores')+btn(UI.back||'title','Back')+'</nav></div>';}
     else if(name==='controls'){h='<div class="pane"><h2>Controls</h2><dl class="keys"><dt>Left flippers</dt><dd>Z, Left Arrow or Left Shift</dd><dt>Right flippers</dt><dd>/, Right Arrow or Right Shift</dd><dt>Nudge</dt><dd>Space</dd><dt>Launch</dt><dd>Hold Space or the right flipper, then release</dd><dt>Class power</dt><dd>Hold the ball still on a raised flipper until the ring fills, then let it roll and flip</dd><dt>Pause</dt><dd>P or Esc</dd><dt>View, detail, full screen</dt><dd>C, Q and F</dd><dt>Touch</dt><dd>Left and right halves of the screen flip. The centre button nudges and launches.</dd></dl>'+
       '<p class="lead">Every left flipper on the table moves together, and so does every right one. Flashing gold arrows are your main quest. Blue ones are side quests. Ramps climb to the level above; the gap between the upper flippers drops you to the level below.</p><nav class="row">'+btn(UI.back||'title','Back')+'</nav></div>';}
     else if(name==='pause'){const r=G.run;h='<div class="pane"><h2>Paused</h2><p class="lead">'+(r.main?esc(UI.objText(r.main)):'')+'</p>'+r.side.map(q=>'<p class="sqline"><b>'+esc(q.name)+'.</b> '+esc(UI.objText(q))+'</p>').join('')+'<nav>'+btn('resume','Resume')+btn('options','Options')+btn('controls','Controls')+btn('abandon','Abandon run')+'</nav></div>';}
-    else if(name==='over'){const r=UI.overRun,t=Math.round(r.time);h='<div class="pane"><p class="eyebrow">The hero falls</p><h2 class="score">'+fmt(r.score)+'</h2><dl><dt>Hero</dt><dd>'+CLASSES[r.cls].name+', level '+r.level+'</dd><dt>Foes slain</dt><dd>'+r.kills+'</dd><dt>Quests done</dt><dd>'+r.questsDone+'</dd><dt>Bosses slain</dt><dd>'+r.bossKills+'</dd><dt>Best combo</dt><dd>'+r.stat.bestCombo+'x</dd><dt>Time</dt><dd>'+(t/60|0)+':'+('0'+t%60).slice(-2)+'</dd></dl>'+
+    else if(name==='over'){const r=UI.overRun,t=Math.round(r.time),won=r.ended==='won',camp=r.arcs.map(k=>CAMPAIGNS[k].name).join(', ');h='<div class="pane"><p class="eyebrow">'+(won?'The expedition is over':'The hero falls')+'</p><h2 class="score">'+fmt(r.score)+'</h2><p class="lead">'+esc(won?(G.opt.endless?'':'')+CAMPAIGNS[r.arcs[r.arcs.length-1]].win:'The Hollow keeps its dead.')+'</p><dl><dt>Hero</dt><dd>'+CLASSES[r.cls].name+', level '+r.level+'</dd><dt>Campaign'+(r.arcs.length>1?'s':'')+'</dt><dd>'+esc(camp)+(won?' <small>complete</small>':'')+'</dd><dt>Bosses slain</dt><dd>'+r.bossKills+'</dd><dt>Foes slain</dt><dd>'+r.kills+'</dd><dt>Side quests done</dt><dd>'+r.questsDone+'</dd><dt>Wing</dt><dd>'+(r.wing&&r.wing.done?esc(WINGS[r.wing.key].name)+' cleared':r.wing&&r.wing.key?esc(WINGS[r.wing.key].name)+' left standing':'none')+'</dd><dt>Relics</dt><dd>'+(r.relics.length?r.relics.map(id=>{const x=RELICS.find(q=>q.id===id);return x?esc(x.name):'';}).filter(Boolean).join(', '):'none')+'</dd><dt>Best combo</dt><dd>'+r.stat.bestCombo+'x</dd><dt>Balls lost</dt><dd>'+(won?r.ballNum-1:r.ballNum)+'</dd><dt>Time</dt><dd>'+(t/60|0)+':'+('0'+t%60).slice(-2)+'</dd></dl>'+
       '<label for="hsName">Carve your name<input id="hsName" type="text" maxlength="12" autocomplete="off" value="'+esc(store.get('name',''))+'" placeholder="Name"></label><nav>'+btn('saveScore','Save score')+btn('new','New run')+btn('title','Title')+'</nav></div>';}
     UI.show(h,name);},
   act(el){const a=el.dataset.act;A.init();A.s('ui');
@@ -1497,7 +1499,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     case 'choose':choose(+el.dataset.i);break;
     case 'gfxCam':case 'gfxQual':{gfxKey(a==='gfxCam'?'cam':'qual');UI.menu('options');const b=$('menu').querySelector('[data-act='+a+']');if(b)b.focus({preventScroll:true});break;}
     case 'saveScore':{const r=UI.overRun,name=($('hsName').value||'Nameless').trim().slice(0,12)||'Nameless';store.set('name',name);const sc=store.get('scores',[]);UI.lastId=Date.now();
-      sc.push({id:UI.lastId,name:name+(r.dev?' *':''),score:r.score,cls:CLASSES[r.cls].name,level:r.level});sc.sort((a,b)=>b.score-a.score);store.set('scores',sc.slice(0,10));startDemo();UI.menu('scores');break;}
+      sc.push({id:UI.lastId,name:name+(r.ended==='won'?' \u2655':'')+(r.dev?' *':''),score:r.score,cls:CLASSES[r.cls].name,level:r.level});sc.sort((a,b)=>b.score-a.score);store.set('scores',sc.slice(0,10));startDemo();UI.menu('scores');break;}
     }}
 };
 function togglePause(){if(G.mode!=='play'||G.choice)return;if(UI.cur&&UI.cur!=='pause'){UI.menu('pause');return;}G.paused=!G.paused;UI.menu(G.paused?'pause':null);if(G.paused){setFlip(-1,false);setFlip(1,false);G.in.n=false;}}
@@ -1514,7 +1516,7 @@ function bindInput(){
     if(k==='l')setFlip(-1,true);else if(k==='r')setFlip(1,true);else if(k==='n'||k==='u'){G.in.n=true;nudge();}else if(k==='p')togglePause();else gfxKey(k);});
   addEventListener('keyup',e=>{const k=KEYS[e.code];if(!k)return;if(k==='l')setFlip(-1,false);else if(k==='r')setFlip(1,false);else if(k==='n'||k==='u')G.in.n=false;});
   $('menu').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b&&!b.disabled)UI.act(b);});
-  $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}});
+  $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}else if(t.id==='optEndless'){G.opt.endless=t.checked;store.set('opt',G.opt);}});
   $('pauseBtn').addEventListener('click',()=>{A.init();togglePause();});
   const zone=(el,side)=>{const ids=new Set();const up=e=>{ids.delete(e.pointerId);if(!ids.size)setFlip(side,false);};
     el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);setFlip(side,true);e.preventDefault();});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('pointerleave',up);};
