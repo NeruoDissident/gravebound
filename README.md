@@ -61,12 +61,21 @@ Every foe has a job on the table, a visible wind-up before it strikes, and a sho
 
 A hit during the wind-up staggers the foe and the strike never lands. Hallowed ground wards the ball from strikes.
 
+Foes come in waves drawn from the campaign's foes on a budget that grows with level and threat, with a lull after
+each. The table drives them: the Keep bell calls the next wave early, every fourth gravestone hit raises a skeleton,
+leaving the Catacombs brings an Armored Dead out after you, and lighting all the lanes holds the next wave off.
+Clearing a wave pays a bounty.
+
+Bosses use the table too: the Warden's Portcullis Slam bars the Wolf Run for the phase, Moonfang's Blood Howl sends
+the wolves into a frenzy, and Ashmaw is warded by three cultists rather than by the bumpers and scorches the floor
+in front of the Sanctum with Gravefire.
+
 ## Build and test
 
 ```
 npm install
 npm run build        # writes dist/
-npm run soak         # a bot plays every class in headless Chromium, then each wing's route and each foe's job are walked end to end
+npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job and the waves and boss moves are walked end to end
 npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```

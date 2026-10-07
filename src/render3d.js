@@ -213,6 +213,7 @@ function railY(r,s){const f=clamp(s/r.ds,0,r.n-1.001),i=f|0;return r.h3[i]+(r.h3
 
 /* ---------- everything that moves or lights up ---------- */
 function buildDynamic(){const sc=R3.scene,D=R3.dyn,S=SM;
+  R3.gates={};for(const m of T.mouths){const g=new THREE.Group();g.position.set(m.x-320,elev(m.y),m.y);g.rotation.y=-Math.atan2(m.dy,m.dx);for(let k=-2;k<=2;k++){const b=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.4,34,6),M.iron);b.position.set(0,17,k*8.5);b.castShadow=true;g.add(b);}const t=new THREE.Mesh(new THREE.BoxGeometry(3,3,40),M.iron);t.position.y=33;g.add(t);g.visible=false;sc.add(g);R3.gates[m.rail]=g;}
   // flippers
   const fshape=(r1,r2,L)=>{const s=new THREE.Shape();s.absarc(0,0,r1,PI/2,PI*1.5,false);s.absarc(L,0,r2,-PI/2,PI/2,false);s.closePath();return s;};
   const fg=new THREE.ExtrudeGeometry(fshape(7.6,4.2,82),{depth:11,bevelEnabled:true,bevelSize:.9,bevelThickness:1.2,bevelSegments:2,curveSegments:12}).rotateX(-PI/2).translate(0,2,0);
@@ -531,7 +532,7 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
   {const open=!T.banks.nails.segs.some(x=>x.on),m=R3.graveGlow.material;m.opacity=open?.8+.15*Math.sin(t*6):.28;const s=open?230:110;R3.graveGlow.scale.set(s,s,1);
     const g=run&&run.grave,f=g?(g.open?1:g.hits/g.need):0;R3.graveMark.material.opacity=g&&g.open&&!G.inGrave?.45+.3*Math.sin(t*4):0;R3.graveStone.emissiveIntensity=f*(g&&g.open?1.6+.5*Math.sin(t*4):.9);
     const sv=run&&(G.save>0||run.shield)&&!G.inGrave,sm=R3.saveGlow.material;sm.opacity=sv?.45+.25*Math.sin(t*6):0;if(sv)sm.color.copy(R3.litC[G.save>0?'side':'main']);}
-  frameActors(dt,ex);frameWing(dt);
+  frameActors(dt,ex);frameWing(dt);for(const id in R3.gates)R3.gates[id].visible=!!T.rails[id].closed;
   // flash lights
   while(R3.flashQ.length){const f=R3.flashQ.shift();let L=R3.flashL[0];for(const l of R3.flashL)if(l.userData.t<L.userData.t)L=l;L.userData.t=1;L.userData.p=f.power;L.color.set(f.color);L.position.set(f.x-320+ZX(f.y),elev(f.y)+34,f.y+ZZ(f.y));}
   for(const l of R3.flashL){l.userData.t=Math.max(0,l.userData.t-dt*5.5);l.intensity=l.userData.t*2.6*(l.userData.p||1);}
