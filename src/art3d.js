@@ -18,7 +18,7 @@ function drawFloor3D(c,ss){
   {const g=c.createLinearGradient(586,0,620,0);g.addColorStop(0,'#0a0a10');g.addColorStop(.5,'#1c1c2a');g.addColorStop(1,'#0a0a10');c.fillStyle=g;c.fillRect(587,TY[2]+336,33,H);
    c.strokeStyle='rgba(255,210,120,.25)';c.lineWidth=2;for(let y=TY[2]+420;y<3080;y+=46){c.beginPath();c.moveTo(594,y+9);c.lineTo(603,y);c.lineTo(612,y+9);c.stroke();}}
   // faint underground tunnels
-  c.setLineDash([3,9]);c.lineWidth=2;c.strokeStyle='rgba(140,220,255,.10)';for(const id in T.tunnels){const t=T.tunnels[id];if(t.to==='crypt'&&id==='rise')continue;c.beginPath();for(let k=0;k<t.n;k+=2)c.lineTo(t.x[k],t.y[k]);c.stroke();}c.setLineDash([]);
+  c.setLineDash([3,9]);c.lineWidth=2;c.strokeStyle='rgba(140,220,255,.10)';for(const id in T.tunnels){const t=T.tunnels[id];if(t.zone||(t.to==='crypt'&&id==='rise'))continue;c.beginPath();for(let k=0;k<t.n;k+=2)c.lineTo(t.x[k],t.y[k]);c.stroke();}c.setLineDash([]);
   // baked contact shadows where geometry meets the floor
   c.save();c.lineCap='round';c.lineJoin='round';c.shadowColor='rgba(0,0,0,.75)';c.shadowBlur=11*ss;c.strokeStyle='rgba(0,0,0,.34)';
   for(const w of T.wallPaths){if(w.style==='gate')continue;path(c,w.pts);c.lineWidth=(w.w||2)*2+5;c.stroke();}

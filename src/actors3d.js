@@ -20,7 +20,8 @@ function buildActors(){const sc=R3.scene,X=R3.act={tex:{},foes:[],picks:[],zones
     light:(()=>{const l=new THREE.PointLight(0xffffff,0,420,1.5);sc.add(l);return l;})()};
   for(let i=0;i<12;i++)X.picks.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.6}),sp:sprite({map:X.tex.gold}),kind:''});
   for(let i=0;i<4;i++)X.zones.push({disc:decal(X.discG,'#ffe0a0',.1),ring:decal(X.thinG,'#ffe0a0',.7)});
-  for(let i=0;i<8;i++)X.booms.push(decal(X.ringG,'#ffffff',1));}
+  for(let i=0;i<8;i++)X.booms.push(decal(X.ringG,'#ffffff',1));
+  X.all=[];for(const o of X.foes)X.all.push(o.sp,o.halo,o.rg,o.blob);for(const o of X.picks)X.all.push(o.sp,o.halo);for(const o of X.zones)X.all.push(o.disc,o.ring);for(const m of X.booms)X.all.push(m);}
 
 function frameActors(dt,ex){const X=R3.act,t=G.t,tc=R3.tmpC;
   // foes
@@ -53,4 +54,5 @@ function frameActors(dt,ex){const X=R3.act,t=G.t,tc=R3.tmpC;
   for(let i=0;i<X.zones.length;i++){const o=X.zones[i],z=G.zones[i];if(!z){o.disc.visible=o.ring.visible=false;continue;}const a=Math.min(1,z.t/1.5),gy=elev(z.y)+.8;
     o.disc.visible=o.ring.visible=true;o.disc.position.set(z.x-320,gy,z.y);o.disc.scale.setScalar(z.r);o.disc.material.opacity=.11*a;o.ring.position.set(z.x-320,gy+.1,z.y);o.ring.scale.setScalar(z.r);o.ring.material.opacity=.75*a;}
   for(let i=0;i<X.booms.length;i++){const m=X.booms[i],b=G.booms[i];if(!b){m.visible=false;continue;}const k=b.t/.5;if(!b.f3){b.f3=1;flash3D(b.x,b.y,b.c,1.7);}
-    m.visible=true;m.position.set(b.x-320,elev(b.y)+1,b.y);m.scale.setScalar(b.r*(.25+.75*k));m.material.color.copy(tc.set(b.c).convertSRGBToLinear().multiplyScalar(1.8));m.material.opacity=Math.max(0,1-k);}}
+    m.visible=true;m.position.set(b.x-320,elev(b.y)+1,b.y);m.scale.setScalar(b.r*(.25+.75*k));m.material.color.copy(tc.set(b.c).convertSRGBToLinear().multiplyScalar(1.8));m.material.opacity=Math.max(0,1-k);}
+  for(const o of X.all)if(o.visible)zshift(o);}

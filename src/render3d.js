@@ -1,10 +1,13 @@
 /* ================= 3D RENDERER =================
    World units are table pixels. X = table x - 320, Z = table y (towards the player), Y is up.
    Physics stays on the table plane, as on a real machine; height comes from the terraces and the ramps. */
-const E=[150,75,0,-260],WALL_H=26,BLOCK_H=38,RAMP_H=46,UP=new THREE.Vector3(0,1,0);
+const E=[150,75,0,-260,-95],WOX=-800,WOZ=TY[1]+98-WY,WALL_H=26,BLOCK_H=38,RAMP_H=46,UP=new THREE.Vector3(0,1,0);
 const SLOPES=[[FY[0]+18,FY[0]+138],[FY[1]+18,FY[1]+138],[H+36,H+96]];
 const sstep=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);};
+const inWing=y=>y>WY-100,ZX=y=>y>WY-100?WOX:0,ZZ=y=>y>WY-100?WOZ:0;
+function zshift(o){if(o.position.z>WY-100){o.position.x+=WOX;o.position.z+=WOZ;}return o;} // table space to world, for anything standing in a wing
 function elev(y){ // each level is a terrace; the chutes between them are the slopes
+  if(y>WY-100)return E[4];
   if(y<FY[0]+150)return lerp(E[0],E[1],sstep(SLOPES[0][0],SLOPES[0][1],y));
   if(y<FY[1]+150)return lerp(E[1],E[2],sstep(SLOPES[1][0],SLOPES[1][1],y));
   return lerp(E[2],E[3],sstep(SLOPES[2][0],SLOPES[2][1],y));}
@@ -94,11 +97,13 @@ function init3D(canvas){
   // reflections
   const pm=new THREE.PMREMGenerator(rn),sky=new THREE.CanvasTexture(texSky());sky.mapping=THREE.EquirectangularReflectionMapping;sky.encoding=THREE.sRGBEncoding;
   R3.env=pm.fromEquirectangular(sky).texture;scene.environment=R3.env;sky.dispose();pm.dispose();
-  buildMaterials();buildLights();buildFloor3D();buildStatic();buildDynamic();buildScenery();buildFx();buildActors();
+  buildMaterials();buildLights();buildFloor3D();buildStatic();buildDynamic();buildWing();
+  for(const o of R3.scene.children)zshift(o);
+  buildScenery();buildFx();buildActors();
   R3.ready=true;return true;}
 
 function buildMaterials(){const S=SM,st=ctex(texStone(),{repeat:1}),wd=ctex(texWood(),{repeat:1}),gd=ctex(texGround(),{repeat:1});
-  const stoneCol=['#6a4c80','#4c7466','#526a96','#6e6044'];
+  const stoneCol=['#6a4c80','#4c7466','#526a96','#6e6044','#72785a'];
   M.stone=stoneCol.map(c=>S({map:st,bumpMap:st,bumpScale:1.6,color:c,roughness:.84,metalness:.02,envMapIntensity:.5}));
   M.frame=S({map:st,bumpMap:st,bumpScale:1.6,color:0x474760,roughness:.88,metalness:.02,envMapIntensity:.45});
   M.dark=S({map:st,bumpMap:st,bumpScale:1.4,color:0x3c3c50,roughness:.9,metalness:0,envMapIntensity:.3});
@@ -139,6 +144,7 @@ function repaintFloor(){const fresh=paintFloorChunks(2);fresh.forEach((ch,i)=>{c
 
 /* ---------- everything that never moves ---------- */
 function buildStatic(){const sc=R3.scene,stone=[0,1,2,3].map(()=>new MB()),frame=new MB(),steel=new MB(),bronze=new MB(),iron=new MB(),post=new MB(),ward=new MB(),wood=new MB(),dark=new MB();
+  const WM=R3.wingMB={steel:new MB(),bronze:new MB(),post:new MB()};
   // outer walls and the Keep's back wall
   prism(frame,[[-70,340],[20,340],[20,H+34],[-70,H+34]],34);prism(frame,[[620,340],[710,340],[710,H+34],[620,H+34]],34);
   prism(stone[0],[[-70,-70],[710,-70],[710,340],[620,340]].concat(arcPts(320,TY[0]+300,300,TAU,PI,60).slice(1,-1),[[20,340],[-70,340]]),34);
@@ -150,15 +156,15 @@ function buildStatic(){const sc=R3.scene,stone=[0,1,2,3].map(()=>new MB()),frame
     else if(b.dead)prism(stone[2],b.pts,WALL_H,{depth:40});
     else prism(stone[b.tier],b.pts,BLOCK_H);}
   // guide walls, scoops, posts, flaps and the one-way wards
-  for(const w of T.wallPaths){const k=w.w||2;
+  for(const w of T.wallPaths){const k=w.w||2,wg=inWing(w.pts[0][1]);
     if(w.style==='gate')strip(ward,w.pts,.5,19,{depth:0,caps:false});
     else if(w.style==='flap')strip(steel,w.pts,1.2,15,{caps:false});
-    else if(w.style==='scoop')strip(bronze,w.pts,k,24);
-    else if(w.style==='post')strip(post,w.pts,k,30,{capRise:3});
-    else strip(steel,w.pts,k,21);}
+    else if(w.style==='scoop')strip(wg?WM.bronze:bronze,w.pts,k,24);
+    else if(w.style==='post')strip(wg?WM.post:post,w.pts,k,30,{capRise:3});
+    else strip(wg?WM.steel:steel,w.pts,k,21);}
   // shooter lane back stop, hole rims
   box(iron,603,3118,0,16,30,8);
-  for(const id in T.holes){const h=T.holes[id];bronze.add(new THREE.TorusGeometry(h.r+1.6,1.5,6,24).rotateX(PI/2),at(h.x,h.y,1.2));}
+  for(const id in T.holes){const h=T.holes[id];(inWing(h.y)?WM.bronze:bronze).add(new THREE.TorusGeometry(h.r+1.6,1.5,6,24).rotateX(PI/2),at(h.x,h.y,1.2));}
   // ramps
   for(const id in T.rails)buildRail(T.rails[id],steel,iron);
   // the Grave: coffin walls, the pit around it
@@ -227,6 +233,8 @@ function buildDynamic(){const sc=R3.scene,D=R3.dyn,S=SM;
     const mat=S({color:base,emissive:hdr(lit),emissiveIntensity:.12,roughness:.45,metalness:door||nail?.8:.25,envMapIntensity:1});
     const h=drop?24:19,m=new THREE.Mesh(tgeo,mat);m.scale.set(s.len,h,drop?6.4:5);m.rotation.y=-Math.atan2(s.dy,s.dx);
     const cx=(s.x1+s.x2)/2,cy=(s.y1+s.y2)/2,y0=elev(cy)+h/2;m.position.set(cx-320,y0,cy);m.castShadow=true;sc.add(m);D.segs.push({s,m,mat,drop,y0,h,k:1});}
+  for(const s of T.wing.seal){const mat=S({color:'#b8b49a',emissive:hdr(PAL[4].glow),emissiveIntensity:.14,roughness:.6,metalness:.1}),h=30,m=new THREE.Mesh(tgeo,mat);m.scale.set(s.len+2,h,8);m.rotation.y=-Math.atan2(s.dy,s.dx);
+    const cx=(s.x1+s.x2)/2,cy=(s.y1+s.y2)/2,y0=elev(cy)+h/2;m.position.set(cx-320,y0,cy);m.castShadow=true;sc.add(m);D.segs.push({s,m,mat,drop:true,y0,h,k:1});}
   // slingshots
   for(const s of T.slings){const p=PAL[s.tier],mb=new MB();prism(mb,[s.A,s.B,s.C],17);sc.add(mb.mesh(M.stone[s.tier]));
     const sm=new MB();strip(sm,[s.A,s.B,s.C],2,20,{capGrow:1.4,capRise:4});sc.add(sm.mesh(M.steel));
@@ -279,9 +287,9 @@ function mkBumper(b){const g=new THREE.Group(),p=PAL[b.tier],col=b.bell?'#ffd070
     const bell=new THREE.Group();bell.position.y=52;const bm=lit({color:'#d9a441',metalness:1,roughness:.3,envMapIntensity:1.6},.05);
     const bg=new THREE.Mesh(lathe([[0,0],[4,-1],[6.5,-6],[8,-16],[10.5,-26],[14,-32],[14.5,-34],[12.5,-34]],18),bm);bg.castShadow=true;bm.side=THREE.DoubleSide;bell.add(bg);
     const cl=new THREE.Mesh(new THREE.SphereGeometry(3,8,6),M.iron);cl.position.y=-33;bell.add(cl);g.add(bell);o.bell=bell;}
-  else if(b.group==='braziers'){mesh(lathe([[r*.95,0],[r*.95,4],[r*.5,8],[r*.36,20],[r*.5,26],[r*.96,35],[r*.9,37],[r*.72,33],[0,31]]),M.iron);
-    const em=new THREE.MeshBasicMaterial({color:hdr('#ff7a30',1.6)});o.ember=em;mesh(new THREE.CircleGeometry(r*.74,16).rotateX(-PI/2),em,34.5).castShadow=false;
-    const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.flameTex,color:hdr('#ff8a3c',2.2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));fl.position.y=52;fl.scale.set(30,46,1);g.add(fl);o.flame=fl;}
+  else if(b.group==='braziers'||b.group==='urns'){const fc=b.group==='urns'?p.glow:'#ff8a3c',ec=b.group==='urns'?p.acc:'#ff7a30';mesh(lathe([[r*.95,0],[r*.95,4],[r*.5,8],[r*.36,20],[r*.5,26],[r*.96,35],[r*.9,37],[r*.72,33],[0,31]]),M.iron);
+    const em=new THREE.MeshBasicMaterial({color:hdr(ec,1.6)});mesh(new THREE.CircleGeometry(r*.74,16).rotateX(-PI/2),em,34.5).castShadow=false;
+    const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.flameTex,color:hdr(fc,2.2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));fl.position.y=52;fl.scale.set(30,46,1);g.add(fl);o.flame=fl;}
   else if(b.group==='stones'){mesh(new THREE.CylinderGeometry(r*.93,r*.97,7,20),M.stone[1],3.5);
     const sm=lit({map:M.stone[1].map,bumpMap:M.stone[1].map,bumpScale:1.5,color:'#8fb0a4',flatShading:true,roughness:.85},.1);
     const st=mesh(new THREE.CylinderGeometry(r*.42,r*.78,50,6),sm,31);st.rotation.y=hash(b.x)*3;st.rotation.z=(hash(b.y)-.5)*.14;
@@ -326,7 +334,7 @@ function mkSpinner(s){const g=new THREE.Group(),mat=new THREE.MeshStandardMateri
   const bar=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,40,6).rotateZ(PI/2),M.steel);bar.position.y=15;g.add(bar);
   g.position.set(s.x-320,elev(s.y),s.y);R3.scene.add(g);return {s,pv,mat};}
 // torches never stand in the ball's way: each is moved to the nearest wall top, block or coffin rim
-function torchSpot(tr){const tier=tierOf(tr.y),ly=tr.y-TY[tier];
+function torchSpot(tr){if(tr.fix)return tr.fix;const tier=tierOf(tr.y),ly=tr.y-TY[tier];
   if(tier===3)return ly<100?{x:320,y:GY+8,h:44}:{x:tr.x<320?46:594,y:tr.y,h:44};
   if(tr.x<70||tr.x>(tier===2?560:570))return {x:tr.x<320?4:636,y:tr.y,h:34};
   if(ly<300){const dx=tr.x-320,dy=ly-300,l=Math.hypot(dx,dy),top=Math.abs(dx)<10;
@@ -341,11 +349,14 @@ function mkTorch(tr){const sp=torchSpot(tr),g=new THREE.Group(),col=tr.c,big=tr.
   g.add(halo,fl);R3.scene.add(g);return {tr,fl,halo,fs,hs:big?130:96};}
 
 /* ---------- the world around the table ---------- */
-function groundY(x,y){const d=Math.max(0,Math.abs(x-320)-430);return elev(clamp(y,TY[0],H))-38+sstep(0,700,d)*(60+90*Math.sin(x*.004+y*.0021)+50*Math.sin(y*.0057+x*.003));}
+const PIT={x0:-1180,x1:-70,z0:TY[1],z1:TY[1]+900}; // table-space footprint of the cut in the ground around the wing (x is table x)
+function pitDist(x,y){return Math.max(PIT.x0-x,x-PIT.x1,PIT.z0-y,y-PIT.z1);}
+function groundY(x,y){const d=Math.max(0,Math.abs(x-320)-430);return elev(clamp(y,TY[0],H))-38+sstep(0,700,d)*sstep(0,220,pitDist(x,y))*(60+90*Math.sin(x*.004+y*.0021)+50*Math.sin(y*.0057+x*.003));}
 function buildScenery(){const sc=R3.scene,frame=new MB(),iron=new MB(),roof=new MB(),dark=new MB(),s0=new MB();
   // the land the table stands in
   {const gt=M.ground.map;const mb=new MB();mb.hint=[0,1,0];const xs=[-1500,-1100,-800,-560,-390];
     for(const sd of [-1,1])for(let i=0;i<xs.length-1;i++)for(let y=-900;y<HW+500;y+=90){const xa=320+sd*-xs[i+1]*1,xb=320+sd*-xs[i],x0=Math.min(xa,xb),x1=Math.max(xa,xb),y2=y+90;
+      if(sd<0&&y>=PIT.z0-.5&&y2<=PIT.z1+.5)continue; // the wing's court is cut out of the land here; wing3d.js lays the ground around it
       const P=(x,yy)=>[x-320,groundY(x,yy),yy];mb.quad(P(x0,y),P(x1,y),P(x1,y2),P(x0,y2),[x0/220,y/220],[x1/220,y/220],[x1/220,y2/220],[x0/220,y2/220]);}
     // land behind the Keep and the skirt under the outer walls
     for(let x=-70;x<710;x+=130)for(let y=-900;y<-70;y+=90){const P=(xx,yy)=>[xx-320,groundY(xx,yy),yy];mb.quad(P(x,y),P(x+130,y),P(x+130,y+90),P(x,y+90),[x/220,y/220],[(x+130)/220,y/220],[(x+130)/220,(y+90)/220],[x/220,(y+90)/220]);}
@@ -374,30 +385,30 @@ function buildScenery(){const sc=R3.scene,frame=new MB(),iron=new MB(),roof=new 
     for(const h of [39,50])box(iron,x,(TY[2]+60+H+30)/2,h,h+1.4,1.4,H-30-TY[2]);}
   const add=(mb,mat,o)=>{if(mb.p.length)sc.add(mb.mesh(mat,o));};add(frame,M.frame);add(iron,M.iron);add(roof,M.roof);add(dark,M.dark);add(s0,M.stone[0]);
   // instanced scenery: pines by the Wilds, graves and dead trees by the Hollow
-  const dm=new THREE.Object3D(),inst=(geo,mat,list)=>{const im=new THREE.InstancedMesh(geo,mat,list.length);list.forEach((q,i)=>{dm.position.set(q[0]-320,q[2]===undefined?groundY(q[0],q[1]):q[2],q[1]);dm.rotation.set(q[5]||0,q[4]||0,0);dm.scale.setScalar(q[3]||1);dm.updateMatrix();im.setMatrixAt(i,dm.matrix);});im.castShadow=true;im.receiveShadow=true;sc.add(im);return im;};
+  const dm=new THREE.Object3D(),inst=(geo,mat,list)=>{const im=new THREE.InstancedMesh(geo,mat,list.length);list.forEach((q,i)=>{dm.position.set(q[0]-320,q[2]===undefined?groundY(q[0],q[1]):q[2],q[1]);dm.rotation.set(q[5]||0,q[4]||0,0);dm.scale.setScalar(q[3]||1);dm.updateMatrix();im.setMatrixAt(i,dm.matrix);});im.castShadow=true;im.receiveShadow=true;sc.add(im);return im;},clear=l=>l.filter(q=>q[2]!==undefined||pitDist(q[0],q[1])>30);
   const pineG=(()=>{const mb=new MB(),I=new THREE.Matrix4();for(let k=0;k<4;k++)mb.add(new THREE.ConeGeometry(.42-k*.08,.42,7),I.clone().makeTranslation(0,.3+k*.2,0));return mb.geo();})();
   const trunkG=new THREE.CylinderGeometry(.035,.05,.3,5).translate(0,.1,0);
   const pines=[];for(let k=0;k<150;k++){const sd=hash(k*1.7)>.5?1:-1,far=hash(k*3.3),x=320+sd*(k<26?352+hash(k)*18:500+far*far*780),y=k<26?TY[1]+hash(k*5.1)*900:TY[1]-260+hash(k*5.1)*1300,sz=k<26?44+hash(k*2)*30:90+hash(k*7.7)*110;
     pines.push([x,y,k<26?elev(y)+34:undefined,sz,hash(k)*6]);}
-  inst(pineG,M.pine,pines);inst(trunkG,M.bark,pines);
+  {const keep=clear(pines);inst(pineG,M.pine,keep);inst(trunkG,M.bark,keep);}
   const tombG=(()=>{const sh=new THREE.Shape();sh.moveTo(-.5,0);sh.lineTo(-.5,.7);sh.absarc(0,.7,.5,PI,0,true);sh.lineTo(.5,0);sh.closePath();return new THREE.ExtrudeGeometry(sh,{depth:.26,bevelEnabled:false,curveSegments:6}).translate(0,0,-.13);})();
   const crossG=(()=>{const mb=new MB(),I=new THREE.Matrix4();mb.add(new THREE.BoxGeometry(.24,1.5,.2),I.clone().makeTranslation(0,.75,0));mb.add(new THREE.BoxGeometry(.9,.22,.2),I.clone().makeTranslation(0,1.05,0));return mb.geo();})();
   const tombs=[],crosses=[];for(let k=0;k<120;k++){const sd=hash(k*2.9)>.5?1:-1,x=320+sd*(k<20?344+hash(k)*22:420+Math.pow(hash(k*4.1),1.5)*520),y=TY[2]-80+hash(k*6.3)*1320,q=[x,y,k<20?elev(y)+34:undefined,k<20?13+hash(k)*6:16+hash(k*1.3)*14,(hash(k*8.8)-.5)*.9,(hash(k*3.7)-.5)*.2];
     (hash(k*9.9)>.35?tombs:crosses).push(q);}
-  const tm=SM({map:M.stone[2].map,color:0x5e6a86,roughness:.92,envMapIntensity:.25});inst(tombG,tm,tombs);inst(crossG,tm,crosses);
+  const tm=SM({map:M.stone[2].map,color:0x5e6a86,roughness:.92,envMapIntensity:.25});inst(tombG,tm,clear(tombs));inst(crossG,tm,clear(crosses));
   const deadG=(()=>{const mb=new MB();const br=(m,l,w,d)=>{mb.add(new THREE.CylinderGeometry(w*.6,w,l,5).translate(0,l/2,0),m);if(d>0)for(const s of [-1,1]){const k=hash(l*7+d+s);
         br(m.clone().multiply(new THREE.Matrix4().makeTranslation(0,l*.92,0)).multiply(new THREE.Matrix4().makeRotationY(k*5)).multiply(new THREE.Matrix4().makeRotationZ(s*(.45+k*.4))),l*.66,w*.6,d-1);}};
       br(new THREE.Matrix4(),.34,.05,3);return mb.geo();})();
   const dead=[];for(let k=0;k<22;k++){const sd=k%2?1:-1,x=320+sd*(430+hash(k*3.1)*520),y=TY[2]-200+hash(k*7.7)*1500;dead.push([x,y,undefined,100+hash(k)*80,hash(k)*6]);}
   for(let k=0;k<8;k++){const sd=k%2?1:-1,x=320+sd*(440+hash(k*5.3)*300),y=TY[0]+hash(k*2.1)*900;dead.push([x,y,undefined,90+hash(k)*70,hash(k)*6]);}
-  inst(deadG,M.bark,dead);
+  inst(deadG,M.bark,clear(dead));
   // the chapel by the Hollow
   {const cx=1090,cy=TY[2]+330,g0=groundY(cx,cy)-elev(cy)-6,mb=new MB();box(mb,cx,cy,g0,g0+120,130,220);box(mb,cx,cy-150,g0,g0+250,70,70);
     const rf=new MB();rf.add(new THREE.CylinderGeometry(1,1,1,3).rotateZ(PI/2).rotateY(PI/2),at(cx,cy,g0+152,0,[84,64,222]));cone(rf,cx,cy-150,54,g0+250,g0+370,4);sc.add(mb.mesh(tm));sc.add(rf.mesh(M.roof));
     const wm=new THREE.MeshBasicMaterial({color:hdr('#ffb050',1.15)});for(let k=0;k<4;k++){const w=new THREE.Mesh(new THREE.PlaneGeometry(16,46),wm);w.position.set(cx-320-65.6,elev(cy)+g0+62,cy-78+k*52);w.rotation.y=-PI/2;sc.add(w);}
     const w2=new THREE.Mesh(new THREE.CircleGeometry(15,16),wm);w2.position.set(cx-320-35.6,elev(cy)+g0+190,cy-150);w2.rotation.y=-PI/2;sc.add(w2);}
   // far lanterns
-  for(let k=0;k<16;k++){const sd=k%2?1:-1,x=320+sd*(420+hash(k*4.7)*420),y=TY[0]+hash(k*9.3)*3000,t=tierOf(clamp(y,TY[0],H-10)),col=['#ff6a3c','#7fe0c0','#ffb050'][t];
+  for(let k=0;k<16;k++){const sd=k%2?1:-1,x=320+sd*(420+hash(k*4.7)*420),y=TY[0]+hash(k*9.3)*3000,t=tierOf(clamp(y,TY[0],H-10)),col=['#ff6a3c','#7fe0c0','#ffb050'][t];if(pitDist(x,y)<30)continue;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.glowTex,color:hdr(col,1.2),transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false}));sp.position.set(x-320,groundY(x,y)+34,y);sp.scale.set(40,40,1);sc.add(sp);
     const p=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.8,32,5),M.iron);p.position.set(x-320,groundY(x,y)+16,y);sc.add(p);}
 }
@@ -474,18 +485,20 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
   let fb=focusBall(),tg=0;const cloak=G.phase>0;
   for(let i=0;i<Math.max(G.balls.length,R3.balls.length);i++){const b=G.balls[i];if(!b){const o=R3.balls[i];o.m.visible=o.blob.visible=o.halo.visible=o.loc.visible=false;continue;}
     const o=ballObj(i),hid=b.st==='tunnel',bp=ballPos(b,ex),bx=bp.x,bz=bp.y,y=bp.h;o.m.visible=!hid;o.blob.visible=!hid&&b.st!=='rail';o.halo.visible=o.loc.visible=!hid;o.sx=bx;o.sy=bz;o.sh=y;
-    if(hid){const sp=R3.tunnelGlow[tg++];if(sp){sp.visible=true;sp.position.set(b.x-320,elev(b.y)+6,b.y);const k=.8+.2*Math.sin(t*30);sp.scale.set(70*k,70*k,1);}continue;}
+    if(hid){const sp=R3.tunnelGlow[tg++];if(sp){sp.visible=true;const tn=b.tun;
+        if(tn&&tn.zone){const n=tn.n-1,u=clamp(b.rs/tn.len,0,1),ax=tn.x[0]-320+ZX(tn.y[0]),az=tn.y[0]+ZZ(tn.y[0]),ay=elev(tn.y[0]),bx2=tn.x[n]-320+ZX(tn.y[n]),bz2=tn.y[n]+ZZ(tn.y[n]),by2=elev(tn.y[n]);sp.position.set(lerp(ax,bx2,u),lerp(ay,by2,u)+6-30*Math.sin(u*PI),lerp(az,bz2,u));}
+        else sp.position.set(b.x-320,elev(b.y)+6,b.y);const k=.8+.2*Math.sin(t*30);sp.scale.set(70*k,70*k,1);}continue;}
     const dx=bx-o.lx,dz=bz-o.ly,d=Math.hypot(dx,dz);if(d>.001&&d<80){_ax.set(dz/d,0,-dx/d);_q.setFromAxisAngle(_ax,d/b.r);o.q.premultiply(_q);}o.lx=bx;o.ly=bz;
     const hot=!!b.pow||b.arm>0,gc=b.pow&&cls==='mage'?'#ff8a3a':cl.glow,ghost=cloak||(cls==='rogue'&&hot);
-    o.m.position.set(bx-320,y,bz);o.m.scale.setScalar(b.r);o.m.quaternion.copy(o.q);o.mat.color.set(cl.color).convertSRGBToLinear();o.mat.emissive.set(gc).convertSRGBToLinear();
+    zshift(o.m.position.set(bx-320,y,bz)&&o.m);o.m.scale.setScalar(b.r);o.m.quaternion.copy(o.q);o.mat.color.set(cl.color).convertSRGBToLinear();o.mat.emissive.set(gc).convertSRGBToLinear();
     o.mat.emissiveIntensity=b.pow?.9:b.arm>0?.5+.25*Math.sin(t*14):.2;if(o.mat.transparent!==ghost){o.mat.transparent=ghost;o.mat.needsUpdate=true;}o.mat.opacity=ghost?.45:1;
-    o.blob.position.set(bx-320,elev(bz)+.5,bz);o.blob.scale.setScalar(b.r*1.7);
-    o.halo.position.set(bx-320,y,bz);o.halo.material.color.set(gc);o.halo.material.opacity=hot?.55+.25*Math.sin(t*14):.3;o.halo.scale.setScalar(b.r*(hot?8.5:5.2));
-    o.loc.position.set(bx-320,y,bz);o.loc.material.color.set(gc);o.loc.scale.setScalar(b.r*3.4);
+    zshift(o.blob.position.set(bx-320,elev(bz)+.5,bz)&&o.blob);o.blob.scale.setScalar(b.r*1.7);
+    zshift(o.halo.position.set(bx-320,y,bz)&&o.halo);o.halo.material.color.set(gc);o.halo.material.opacity=hot?.55+.25*Math.sin(t*14):.3;o.halo.scale.setScalar(b.r*(hot?8.5:5.2));
+    zshift(o.loc.position.set(bx-320,y,bz)&&o.loc);o.loc.material.color.set(gc);o.loc.scale.setScalar(b.r*3.4);
     if(b.pow&&b.st==='live'&&Math.random()<dt*40)G.parts.push({x:b.x+rand(-4,4),y:b.y+rand(-4,4),vx:-b.vx*.1,vy:-b.vy*.1,life:0,max:.35,color:gc,size:3});}
   for(;tg<R3.tunnelGlow.length;tg++)R3.tunnelGlow[tg].visible=false;
-  if(fb&&fb.st!=='tunnel'){const fp=ballPos(fb,ex);R3.ballL.position.set(fp.x-320,fp.h+26,fp.y+6);R3.ballL.color.set(fb.pow&&cls==='mage'?'#ff8a3a':cl.glow);R3.ballL.intensity=fb.pow?2:1.15;
-    const au=R3.aura;au.visible=cls==='cleric'&&fb.st==='live';if(au.visible){au.position.set(fp.x-320,elev(fp.y)+.8,fp.y);au.scale.setScalar(85);}}
+  if(fb&&fb.st!=='tunnel'){const fp=ballPos(fb,ex);R3.ballL.position.set(fp.x-320+ZX(fp.y),fp.h+26,fp.y+6+ZZ(fp.y));R3.ballL.color.set(fb.pow&&cls==='mage'?'#ff8a3a':cl.glow);R3.ballL.intensity=fb.pow?2:1.15;
+    const au=R3.aura;au.visible=cls==='cleric'&&fb.st==='live';if(au.visible){au.position.set(fp.x-320+ZX(fp.y),elev(fp.y)+.8,fp.y+ZZ(fp.y));au.scale.setScalar(85);}}
   else{R3.ballL.intensity=0;R3.aura.visible=false;}
   // bumpers, their boss wards, statues
   for(const o of D.bumps){const b=o.b,f=Math.max(0,b.flash),s=1+f*.09;o.g.scale.set(s,1+f*.05,s);for(const q of o.mats)q.m.emissiveIntensity=q.k+f*1.6;
@@ -518,13 +531,13 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
   {const open=!T.banks.nails.segs.some(x=>x.on),m=R3.graveGlow.material;m.opacity=open?.8+.15*Math.sin(t*6):.28;const s=open?230:110;R3.graveGlow.scale.set(s,s,1);
     const g=run&&run.grave,f=g?(g.open?1:g.hits/g.need):0;R3.graveMark.material.opacity=g&&g.open&&!G.inGrave?.45+.3*Math.sin(t*4):0;R3.graveStone.emissiveIntensity=f*(g&&g.open?1.6+.5*Math.sin(t*4):.9);
     const sv=run&&(G.save>0||run.shield)&&!G.inGrave,sm=R3.saveGlow.material;sm.opacity=sv?.45+.25*Math.sin(t*6):0;if(sv)sm.color.copy(R3.litC[G.save>0?'side':'main']);}
-  frameActors(dt,ex);
+  frameActors(dt,ex);frameWing(dt);
   // flash lights
-  while(R3.flashQ.length){const f=R3.flashQ.shift();let L=R3.flashL[0];for(const l of R3.flashL)if(l.userData.t<L.userData.t)L=l;L.userData.t=1;L.userData.p=f.power;L.color.set(f.color);L.position.set(f.x-320,elev(f.y)+34,f.y);}
+  while(R3.flashQ.length){const f=R3.flashQ.shift();let L=R3.flashL[0];for(const l of R3.flashL)if(l.userData.t<L.userData.t)L=l;L.userData.t=1;L.userData.p=f.power;L.color.set(f.color);L.position.set(f.x-320+ZX(f.y),elev(f.y)+34,f.y+ZZ(f.y));}
   for(const l of R3.flashL){l.userData.t=Math.max(0,l.userData.t-dt*5.5);l.intensity=l.userData.t*2.6*(l.userData.p||1);}
   // particles: the 2D game moves them on the table; here each also arcs up off it
   {const P=R3.parts.geometry.attributes.position,C=R3.parts.geometry.attributes.color,n=P.count,c=R3.tmpC,L=G.parts,m=L.length,o0=Math.max(0,m-n);
-    for(let i=0;i<n;i++){const p=L[o0+i];if(!p){P.setXYZ(i,0,-9999,0);continue;}const u=p.life/p.max,k=Math.max(0,1-u);P.setXYZ(i,p.x-320,elev(p.y)+6+(p.size||3)*26*u*(1-u),p.y);c.set(p.color).convertSRGBToLinear().multiplyScalar(k*1.8);C.setXYZ(i,c.r,c.g,c.b);}
+    for(let i=0;i<n;i++){const p=L[o0+i];if(!p){P.setXYZ(i,0,-9999,0);continue;}const u=p.life/p.max,k=Math.max(0,1-u);P.setXYZ(i,p.x-320+ZX(p.y),elev(p.y)+6+(p.size||3)*26*u*(1-u),p.y+ZZ(p.y));c.set(p.color).convertSRGBToLinear().multiplyScalar(k*1.8);C.setXYZ(i,c.r,c.g,c.b);}
     P.needsUpdate=true;C.needsUpdate=true;}
   // drifting motes
   {const P=R3.motes.geometry.attributes.position,C=R3.motes.geometry.attributes.color,n=P.count;
@@ -535,15 +548,15 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
     P.needsUpdate=true;C.needsUpdate=true;}
   updateCam3D(dt);
   {const m=R3.moon,c=R3.cam.t;m.target.position.set(0,c.y,c.z-120);m.position.set(-460,c.y+1200,c.z+520);}
-  {const ft=G.focusTier,fc=['#0b0610','#050b0a','#06080f','#030604'][ft];R3.tmpC.set(fc);sc.fog.color.lerp(R3.tmpC,Math.min(1,dt*2));sc.background.copy(sc.fog.color);}
+  {const ft=G.focusTier,fc=['#0b0610','#050b0a','#06080f','#030604','#070803'][ft];R3.tmpC.set(fc);sc.fog.color.lerp(R3.tmpC,Math.min(1,dt*2));sc.background.copy(sc.fog.color);}
   if(R3.grade)R3.grade.uniforms.time.value=(t*61)%17;
   if(R3.composer)R3.composer.render();else R3.rn.render(sc,R3.camera);
   if(R3.probe>0&&--R3.probe===0)probeFrame();}
 
 // Player view: place the camera so the flippers sit near the bottom of the screen and the top of the level near the top
-function frameLevel(tier,pitch,fov,asp){const p=pitch*PI/180,tv=Math.tan(fov*PI/360),sn=Math.sin(p),cs=Math.cos(p),zA=FY[tier]+(tier===3?62:74),zB=tier===3?GY+6:TY[tier]-18,L=zA-zB;
+function frameLevel(tier,pitch,fov,asp){const p=pitch*PI/180,tv=Math.tan(fov*PI/360),sn=Math.sin(p),cs=Math.cos(p),zA=FY[tier]+(tier===3?62:74),zB=tier===3?GY+6:tier===4?WY+10:TY[tier]-18,L=zA-zB,half=tier===4?285:345;
   const bo=G.boss;let nA=-.92,nB=bo&&bo.tier===tier?.55:.68,h=0,kA=0; /* a boss fight needs headroom under its health bar */ const g=n=>(n*tv*sn+cs)/(n*tv*cs-sn);
-  for(let it=0;it<4;it++){h=L/(g(nA)-g(nB));kA=h*g(nA);const depth=h*sn-kA*cs,m=345/(depth*tv*asp*.97);if(m<=1.001)break;nA/=m;nB/=m;}
+  for(let it=0;it<4;it++){h=L/(g(nA)-g(nB));kA=h*g(nA);const depth=h*sn-kA*cs,m=half/(depth*tv*asp*.97);if(m<=1.001)break;nA/=m;nB/=m;}
   return {h,zc:zA-kA,sn,cs};}
 function updateCam3D(dt){const cam=R3.cam,C=R3.camera,b=focusBall(),asp=C.aspect;let px,py,pz,tx,ty,tz,fov,rate=4;
   const tier=G.focusTier,f=FY[tier],e=E[tier],bx=b?b.x-320:0,by=b?b.y:f-300;
@@ -554,10 +567,11 @@ function updateCam3D(dt){const cam=R3.cam,C=R3.camera,b=focusBall(),asp=C.aspect
     if(R3.camMode===1){tx=bx*.62;ty=b?elev(by)+8:e;tz=by-150;const D=Math.max(560,300/(tv*asp));px=tx*.92;py=ty+D*Math.sin(p);pz=tz+D*Math.cos(p);rate=6;}
     else if(R3.camMode===2){const D=Math.max(352/(tv*asp),430/tv);tx=0;ty=e;tz=clamp(by-40,f-900+D*tv*.9,f+150-D*tv*.9);if(tier===3)tz=GY+340;px=0;py=ty+D*Math.sin(p);pz=tz+D*Math.cos(p);rate=5;}
     else{const F=frameLevel(tier,m.pitch,m.fov,asp),c=f-420,dz=clamp((by-c)*.07,-34,24),dx=bx*.05;px=dx;py=e+F.h;pz=F.zc+dz;tx=dx*1.6;ty=e;tz=pz-F.h*F.cs/F.sn;}}
+  if(!R3.dbg&&!(G.demo&&G.mode==='title')){const ox=ZX(by),oz=ZZ(by);px+=ox;tx+=ox;pz+=oz;tz+=oz;}
   const k=1-Math.exp(-dt*rate);cam.t.x+=(tx-cam.t.x)*k;cam.t.y+=(ty-cam.t.y)*k;cam.t.z+=(tz-cam.t.z)*k;cam.p.x+=(px-cam.p.x)*k;cam.p.y+=(py-cam.p.y)*k;cam.p.z+=(pz-cam.p.z)*k;cam.fov+=(fov-cam.fov)*k;
   const sh=G.opt&&G.opt.shake?Math.min(18,G.cam.shake)*.3:0;C.position.set(cam.p.x+(sh?rand(-sh,sh):0),cam.p.y+(sh?rand(-sh,sh):0),cam.p.z);C.lookAt(cam.t.x,cam.t.y,cam.t.z);
   if(Math.abs(C.fov-cam.fov)>.01){C.fov=cam.fov;C.updateProjectionMatrix();}}
 function snapCam(){updateCam3D(100);}
-function project3D(x,y,h,out){_v.set(x-320,elev(y)+(h||0),y).project(R3.camera);out.x=(_v.x*.5+.5)*R3.w;out.y=(-_v.y*.5+.5)*R3.h;out.ok=_v.z<1&&_v.z>-1;return out;}
+function project3D(x,y,h,out){_v.set(x-320+ZX(y),elev(y)+(h||0),y+ZZ(y)).project(R3.camera);out.x=(_v.x*.5+.5)*R3.w;out.y=(-_v.y*.5+.5)*R3.h;out.ok=_v.z<1&&_v.z>-1;return out;}
 // screen pixels per table unit at a point on the table, for sizing overlay rings
-function pxPerUnit(x,y,h){_v.set(x-320,elev(y)+(h||0),y).project(R3.camera);const ax=_v.x;_v.set(x-320+10,elev(y)+(h||0),y).project(R3.camera);return Math.abs(_v.x-ax)*.5*R3.w/10;}
+function pxPerUnit(x,y,h){const ox=ZX(y),oz=ZZ(y);_v.set(x-320+ox,elev(y)+(h||0),y+oz).project(R3.camera);const ax=_v.x;_v.set(x-320+10+ox,elev(y)+(h||0),y+oz).project(R3.camera);return Math.abs(_v.x-ax)*.5*R3.w/10;}

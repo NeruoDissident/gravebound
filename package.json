@@ -5,7 +5,7 @@
   "main": "build.js",
   "scripts": {
     "build": "node build.js",
-    "soak": "node build.js && node test/soak.js 3",
+    "soak": "node build.js && node test/soak.js 3 && node test/wing-quest.js",
     "shots": "node build.js && node test/shot.js 1600 900 test/scenes/menus-foes-boss.json",
     "standalone": "node build.js && node test/standalone.js"
   },

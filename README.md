@@ -12,35 +12,36 @@ the right flippers and a nudge.
 Z and / (or the arrow keys) flip. Hold Space and release to launch; Space nudges in play. C changes the
 view, Q the detail level, F is full screen, P pauses.
 
-Dev keys: press the backquote key to turn them on. 1 to 4 drop the ball on a level, G opens the Grave, B adds
-a ball, N finishes the current main-quest step or kills the boss. A run that used them saves its score with
+Dev keys: press the backquote key to turn them on. 1 to 4 drop the ball on a level, 5 sends it into the
+Crypt, G opens the Grave, B adds a ball, N finishes the current main-quest step or kills the boss. A run that used them saves its score with
 a star.
 
 ## How it is put together
 
-The 2D game (`src/gravebound-dev-2d.html`) is still the source of the table layout, physics, rules, quests,
-audio and menus. `build.js` takes that script whole, cuts out its canvas renderer and puts the 3D renderer in
-its place. Every change it makes to the 2D script is a checked find-and-replace, so the build stops if the 2D
-source changes shape.
-
 | File | What it holds |
 | --- | --- |
-| `src/gravebound-dev-2d.html` | The 2D game: table, physics, classes, foes, bosses, quests, audio, UI |
+| `src/game.js` | The game: table layout, physics, classes, foes, bosses, quests, wings, audio, menus |
 | `src/art3d.js` | Playfield art painted to textures; procedural stone, wood, sky |
 | `src/render3d.js` | Scene: terraces, walls, ramps, bumpers, targets, scenery, camera, lighting, post |
+| `src/wing3d.js` | The campaign wings as places in the world (the Crypt so far) |
 | `src/actors3d.js` | Foes, bosses, pickups and spell effects in 3D |
 | `src/game3d.js` | Overlay gauges and text, settings, dev keys, resize, loop, boot |
-| `src/page3d.css` | Layout changes on top of the 2D page's own styles |
+| `src/page.css`, `src/page-body.html` | Styles and markup |
+| `reference/` | The 2D dev build 1.1 this grew out of, kept for reference only |
 
-Physics runs on the table plane at 120 steps a second, as in the 2D game. Height is visual: each level is a
-terrace, the chutes between levels are slopes, and ramps lift the ball along the rail it is riding.
+Physics runs on the table plane at 120 steps a second. Height is visual: each level is a terrace, the chutes
+between levels are slopes, and ramps lift the ball along the rail it is riding.
+
+A wing is a small room with its own flippers. In table space it sits past the Grave, so the physics treats it
+as one more level; in the world it is drawn beside the Wilds. The ball travels between the two through a scoop
+and a short tunnel. The Crypt belongs to the necromancer campaign and opens once the Warden is beaten.
 
 ## Build and test
 
 ```
 npm install
 npm run build        # writes dist/
-npm run soak         # a bot plays every class in headless Chromium; fails on any error or stuck ball
+npm run soak         # a bot plays every class in headless Chromium, then the Crypt route is walked end to end
 npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```

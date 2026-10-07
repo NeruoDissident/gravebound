@@ -1,0 +1,33 @@
+<div id="app">
+  <aside class="side" id="journal" aria-label="Quest journal">
+    <h3>Main quest</h3><div id="jMain"></div>
+    <h3>Side quests</h3><div id="jSide"></div>
+  </aside>
+  <main id="stage">
+    <canvas id="gl"></canvas><canvas id="fx"></canvas>
+    <div id="hud" hidden>
+      <div class="hrow">
+        <div class="who"><b id="hCls">Knight</b> <span id="hLv">Lv 1</span><br><span id="hGold">0</span> gold</div>
+        <div id="hScore">0</div>
+        <div class="who r"><span id="hBallN">Ball 1</span><br><span id="hBalls"></span></div>
+      </div>
+      <div class="bars">
+        <div class="bar hp"><i id="bHp"></i><span id="tHp"></span></div>
+        <div class="bar ch"><i id="bCh"></i><span id="tCh"></span></div>
+        <div class="bar xp"><i id="bXp"></i></div>
+      </div>
+      <div id="hObj"></div>
+      <div id="hFx"></div>
+      <div id="bossbar" hidden><b id="bossName"></b><div class="bar"><i id="bossHp"></i></div><span id="bossPhase"></span></div>
+    </div>
+    <div id="banner" aria-live="polite"></div>
+    <div id="bonus" hidden></div>
+    <div id="touch" hidden><div id="tL"></div><div id="tR"></div><button id="tN" type="button">Nudge</button></div>
+    <button id="pauseBtn" type="button" hidden aria-label="Pause">II</button>
+    <div id="gfx" hidden><span class="chip" id="gDev" hidden>Dev keys on</span><span class="chip" id="gInfo"></span></div>
+    <div id="menu"></div>
+  </main>
+  <aside class="side" id="sheet" aria-label="Hero sheet">
+    <h3>Hero</h3><div id="sheetBody"></div>
+  </aside>
+</div>

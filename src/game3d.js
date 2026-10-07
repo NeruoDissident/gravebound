@@ -10,10 +10,11 @@ function gfxKey(k){
   else if(k==='dev'){DEV.on=!DEV.on;$('gDev').hidden=!DEV.on;}
   else if(DEV.on&&G.mode==='play'&&G.run&&!G.demo&&!G.sub&&!G.choice&&!G.paused)devKey(k);
   gfxInfo();}
-// Dev keys (toggle with `): 1-4 drop the ball on a level, G opens the Grave, B adds a ball, N finishes the current main-quest step.
+// Dev keys (toggle with `): 1-4 drop the ball on a level, 5 sends it down into the Crypt, G opens the Grave, B adds a ball, N finishes the current main-quest step.
 // A run that used them is marked, and its score is saved with a star.
 function devKey(k){const r=G.run;r.dev=true;
-  if(k.length===2&&k[0]==='d'&&k[1]>='1'&&k[1]<='4'){const t=+k[1]-1;
+  if(k==='d5'){if(G.inGrave||G.focusTier===4)return;r.wing.open=true;r.wing.done=false;G.plunge.auto=0;const h=T.holes.catacombs,b=newBall(h.x,h.y,0,0);b.st='held';b.held={id:'catacombs',t:0,plan:'tunnel',delay:.2};G.balls=[b];G.mb=null;enterWing();}
+  else if(k.length===2&&k[0]==='d'&&k[1]>='1'&&k[1]<='4'){const t=+k[1]-1;
     if(t===3){if(G.inGrave)return;G.save=0;r.shield=false;G.plunge.auto=0;G.balls=[];r.grave.open=true;const b=newBall(303,H+10,0,0);G.balls.push(b);if(!graveCatch(b)){G.balls=[];serve();}}
     else{G.inGrave=false;G.graveLive=false;if(!G.fallen)G.tilt=0;G.balls=[newBall((t===2?303:320)+rand(-30,30),TY[t]+560,rand(-60,60),120)];}}
   else if(k==='dg'){const g=r.grave;if(G.inGrave)return;g.open=!g.open;g.hits=g.open?g.need:0;if(g.open)popup('The Grave Opens','Your next lost ball falls into it','good');}
@@ -40,7 +41,7 @@ function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w
   if(G.bolts.length){c.save();c.globalCompositeOperation='lighter';for(const b of G.bolts){c.globalAlpha=Math.max(0,1-b.t/.35);c.beginPath();let ok=true;for(let i=0;i<b.pts.length;i++){project3D(b.pts[i][0],b.pts[i][1],16,_p);if(!_p.ok){ok=false;break;}if(i)c.lineTo(_p.x,_p.y);else c.moveTo(_p.x,_p.y);}
       if(!ok)continue;c.strokeStyle='#8fd0ff';c.lineWidth=5;c.stroke();c.strokeStyle='#fff';c.lineWidth=1.8;c.stroke();}c.restore();c.globalAlpha=1;}
   // the ball: cradle ring filling, armed shot ring
-  for(let i=0;i<G.balls.length;i++){const b=G.balls[i],o=R3.balls[i];if(!o||b.st!=='live'||(!(b.cr>0)&&!(b.arm>0)))continue;_v.set(o.sx-320,o.sh,o.sy).project(R3.camera);const x=(_v.x*.5+.5)*w,y=(-_v.y*.5+.5)*h,u=pxPerUnit(o.sx,o.sy,b.r);
+  for(let i=0;i<G.balls.length;i++){const b=G.balls[i],o=R3.balls[i];if(!o||b.st!=='live'||(!(b.cr>0)&&!(b.arm>0)))continue;_v.set(o.sx-320+ZX(o.sy),o.sh,o.sy+ZZ(o.sy)).project(R3.camera);const x=(_v.x*.5+.5)*w,y=(-_v.y*.5+.5)*h,u=pxPerUnit(o.sx,o.sy,b.r);
     if(b.cr>0){c.strokeStyle='#05050a';c.lineWidth=6;c.beginPath();c.arc(x,y,(b.r+9)*u,0,TAU);c.stroke();c.strokeStyle=cl.glow;c.lineWidth=3.5;c.beginPath();c.arc(x,y,(b.r+9)*u,-PI/2,-PI/2+TAU*Math.min(1,b.cr/.8));c.stroke();}
     if(b.arm>0){c.strokeStyle=cl.glow;c.lineWidth=2.4;c.setLineDash([6,5]);c.lineDashOffset=-t*40;c.beginPath();c.arc(x,y,(b.r+8+Math.sin(t*10)*1.5)*u,0,TAU);c.stroke();c.setLineDash([]);}}
   // the Grave's clock, ball save
@@ -51,12 +52,12 @@ function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w
   c.globalAlpha=1;
   // washes: darkness curse, damage, flashes, a dead table
   const fb=focusBall();
-  if(G.curse.dark>0&&fb){const o=R3.balls[G.balls.indexOf(fb)];if(o){_v.set(o.sx-320,o.sh,o.sy).project(R3.camera);const x=(_v.x*.5+.5)*w,y=(-_v.y*.5+.5)*h,u=pxPerUnit(o.sx,o.sy,0),g=c.createRadialGradient(x,y,60*u,x,y,270*u);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,6,'+Math.min(.93,G.curse.dark)+')');c.fillStyle=g;c.fillRect(0,0,w,h);}}
+  if(G.curse.dark>0&&fb){const o=R3.balls[G.balls.indexOf(fb)];if(o){_v.set(o.sx-320+ZX(o.sy),o.sh,o.sy+ZZ(o.sy)).project(R3.camera);const x=(_v.x*.5+.5)*w,y=(-_v.y*.5+.5)*h,u=pxPerUnit(o.sx,o.sy,0),g=c.createRadialGradient(x,y,60*u,x,y,270*u);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,6,'+Math.min(.93,G.curse.dark)+')');c.fillStyle=g;c.fillRect(0,0,w,h);}}
   if(G.hurtT>0){const g=c.createRadialGradient(w/2,h/2,Math.min(w,h)*.25,w/2,h/2,Math.max(w,h)*.7);g.addColorStop(0,'rgba(200,20,30,0)');g.addColorStop(1,'rgba(200,20,30,'+Math.min(.6,G.hurtT*.9)+')');c.fillStyle=g;c.fillRect(0,0,w,h);}
   if(G.flash>0){c.globalCompositeOperation='lighter';c.globalAlpha=Math.min(.34,G.flash*.34);c.fillStyle=G.flashC;c.fillRect(0,0,w,h);c.globalAlpha=1;c.globalCompositeOperation='source-over';}
   if(G.tilt>0&&G.balls.length){c.fillStyle='rgba(10,0,0,.35)';c.fillRect(0,0,w,h);}
   // other balls that are above the view during multiball
-  if(G.balls.length>1){c.fillStyle=cl.glow;for(let i=0;i<G.balls.length;i++){const b=G.balls[i],o=R3.balls[i];if(b===fb||!o||b.st==='tunnel')continue;_v.set(o.sx-320,o.sh,o.sy).project(R3.camera);const y=(-_v.y*.5+.5)*h,x=clamp((_v.x*.5+.5)*w,20,w-20);if(y<0){c.beginPath();c.moveTo(x,8);c.lineTo(x+9,22);c.lineTo(x-9,22);c.closePath();c.fill();}}}}
+  if(G.balls.length>1){c.fillStyle=cl.glow;for(let i=0;i<G.balls.length;i++){const b=G.balls[i],o=R3.balls[i];if(b===fb||!o||b.st==='tunnel')continue;_v.set(o.sx-320+ZX(o.sy),o.sh,o.sy+ZZ(o.sy)).project(R3.camera);const y=(-_v.y*.5+.5)*h,x=clamp((_v.x*.5+.5)*w,20,w-20);if(y<0){c.beginPath();c.moveTo(x,8);c.lineTo(x+9,22);c.lineTo(x-9,22);c.closePath();c.fill();}}}}
 
 function resize(){const st=$('stage'),w=st.clientWidth||innerWidth,h=st.clientHeight||innerHeight||600,fx=$('fx'),d=Math.min(window.devicePixelRatio||1,1.5);
   resize3D(w,h);fx.width=Math.round(w*d);fx.height=Math.round(h*d);UI.fxS=d;}
@@ -75,5 +76,5 @@ function boot(){initGame();
   R3.camMode=(GFX.cam|0)%CAMS.length;R3.qName=QUALITY[GFX.q]?GFX.q:'high';R3.auto=GFX.auto!==false;
   if(!init3D($('gl'))){const m=$('menu');m.hidden=false;m.innerHTML='<div class="pane"><p class="lead">This needs WebGL, and the browser would not start it. Try a current Chrome, Edge or Firefox with hardware acceleration turned on.</p></div>';return;}
   resize();bindInput();startDemo();snapCam();UI.menu('title');requestAnimationFrame(loop);
-  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{try{repaintFloor();paintNames();}catch(e){}});}
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{try{repaintFloor();paintNames();repaintWing();}catch(e){}});}
 boot();
