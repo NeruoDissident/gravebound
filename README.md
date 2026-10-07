@@ -70,12 +70,24 @@ Bosses use the table too: the Warden's Portcullis Slam bars the Wolf Run for the
 the wolves into a frenzy, and Ashmaw is warded by three cultists rather than by the bumpers and scorches the floor
 in front of the Sanctum with Gravefire.
 
+Level-up cards come three at a time: one for your class, one for the table, and one plain stat. Past level 3 the
+third slot is sometimes a keystone instead, and a run takes only one.
+
+| Kind | What it does | Examples |
+| --- | --- | --- |
+| Class (5 each) | Changes how one of your three powers behaves | Knight: Bulwark, Juggernaut. Rogue: Marked for Death, Cutpurse. Mage: Chain Lightning, Scorched Earth. Cleric: Sanctuary, Martyr's Light |
+| Table (11) | Changes what a part of the table gives you | Ramp Runner, Second Chance, Tollgate, Iron Flippers, Bell Ringer, Hallowed Lanes |
+| Stat (9) | A plain number, in bigger steps and fewer ranks than before | Keen Edge, Iron Will, Zeal |
+| Keystone (4) | Defines the run | Blood Pact, Twin Soul, The Hourglass, Death Wish |
+
+The whole pool is the `PERKS` table in `src/game.js`.
+
 ## Build and test
 
 ```
 npm install
 npm run build        # writes dist/
-npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job and the waves and boss moves are walked end to end
+npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job, the waves and boss moves, and every card are walked end to end
 npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```

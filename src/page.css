@@ -148,3 +148,6 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
 #gfx .chip{font-variant-numeric:tabular-nums;color:var(--ash)}
 #gfx #gDev{color:var(--moss);border-color:var(--moss)}
 @media (pointer:coarse),(max-width:720px){#gfx{right:auto;left:50%;transform:translateX(-50%);bottom:64px}}
+
+.card.key{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 24px rgba(255,210,74,.25)}.card.key b{color:var(--gold)}
+.tags li.key{color:var(--gold);border-color:var(--gold)}

@@ -499,7 +499,7 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
     if(b.pow&&b.st==='live'&&Math.random()<dt*40)G.parts.push({x:b.x+rand(-4,4),y:b.y+rand(-4,4),vx:-b.vx*.1,vy:-b.vy*.1,life:0,max:.35,color:gc,size:3});}
   for(;tg<R3.tunnelGlow.length;tg++)R3.tunnelGlow[tg].visible=false;
   if(fb&&fb.st!=='tunnel'){const fp=ballPos(fb,ex);R3.ballL.position.set(fp.x-320+ZX(fp.y),fp.h+26,fp.y+6+ZZ(fp.y));R3.ballL.color.set(fb.pow&&cls==='mage'?'#ff8a3a':cl.glow);R3.ballL.intensity=fb.pow?2:1.15;
-    const au=R3.aura;au.visible=cls==='cleric'&&fb.st==='live';if(au.visible){au.position.set(fp.x-320+ZX(fp.y),elev(fp.y)+.8,fp.y+ZZ(fp.y));au.scale.setScalar(85);}}
+    const au=R3.aura;au.visible=cls==='cleric'&&fb.st==='live';if(au.visible){au.position.set(fp.x-320+ZX(fp.y),elev(fp.y)+.8,fp.y+ZZ(fp.y));au.scale.setScalar(G.mods.lantern?140:85);}}
   else{R3.ballL.intensity=0;R3.aura.visible=false;}
   // bumpers, their boss wards, statues
   for(const o of D.bumps){const b=o.b,f=Math.max(0,b.flash),s=1+f*.09;o.g.scale.set(s,1+f*.05,s);for(const q of o.mats)q.m.emissiveIntensity=q.k+f*1.6;

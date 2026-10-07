@@ -27,7 +27,9 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     // thief: snatches loose loot
     {fresh();ball(320,y0+800,0,0);const e=only('goblin');G.pickups.push({x:e.x+60,y:e.y,tier:0,kind:'heart',t:1,quest:null});let guard=0;while(!e.loot&&guard++<40)adv(.5,1);ok('snatches a loose pickup',e.loot&&e.loot.kind==='heart'&&!G.pickups.length);}
     // wolf: lunges at a passing ball and bats it
-    {fresh();const e=only('wolf');e.lungeCd=0;const b=ball(e.x,e.y+40,0,1);adv(.1,1);ok('wolf lunges at the ball',e.lunge>0||e.state==='lunge');const hp=G.run.hp;adv(.6,2);ok('bite lands and bats the ball ('+Math.round(b.vx)+','+Math.round(b.vy)+')',G.run.hp<hp&&b.vy>0);}
+    {fresh();const e=only('wolf');e.lungeCd=0;const px=e.x,py=e.y+60,b=ball(px,py,0,0);pin=null;const hp=G.run.hp;let lunged=false;
+      for(let k=0;k<12&&G.run.hp===hp;k++){G.enemies=G.enemies.filter(x=>keep.includes(x));b.x=px;b.y=py;b.vx=0;b.vy=0;__gb.advance(.1,0);if(e.state==='lunge'||e.lunge>0)lunged=true;}
+      ok('wolf lunges at the ball',lunged);ok('bite lands and bats the ball toward the drain ('+Math.round(b.vx)+','+Math.round(b.vy)+')',G.run.hp<hp&&b.vy>0&&Math.abs(b.vx)>100);}
     // spirit: possesses a bumper; hitting the bumper strikes the spirit
     {fresh();ball(320,y0+800,0,0);const e=only('spirit');let guard=0;while(e.state!=='sit'&&guard++<40)adv(.5,1);const bp=e.post.b;ok('spirit sits on a bumper',e.state==='sit'&&bp.poss===e);
       e.hp=e.maxHp=999;const sc=G.run.score,b=ball(bp.x,bp.y+bp.r+12,0,-500);adv(.1,2);ok('possessed bumper pays nothing ('+(G.run.score-sc)+')',G.run.score-sc<=300*G.run.mult);ok('but the ball strikes the spirit through it',e.hp<e.maxHp||e.dead);
@@ -36,12 +38,12 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     {fresh();ball(320,y0+800,0,0);const e=only('cultist');ok('cultist takes a ramp mouth',e.post&&e.post.kind==='mouth');e.castT=2;const mouth=T.mouths.find(m=>m.rail===e.post.rail);
       const b=ball(mouth.x,mouth.y,mouth.dx*700,mouth.dy*700);adv(.2,2);ok('ball up the ramp breaks the ritual',e.castT>e.def.cast&&e.stun>0);}
     // armored dead: holds an orbit entrance; soft hits clang
-    {fresh();const e=only('revenant');ok('armored dead holds an orbit entrance',e.post&&e.post.kind==='orbit');const hp=e.hp;strikeEnemy(e,null,300);ok('a soft hit just clangs',e.hp===hp&&e.armor===2);strikeEnemy(e,null,600);ok('a hard hit cracks the armor',e.armor===1);}
+    {fresh();const e=only('revenant');ok('armored dead holds an orbit entrance',e.post&&e.post.kind==='orbit');{const b=ball(e.x<320?43:597,y0+300,0,200);pin=null;adv(2.5);ok('a ball coming down the orbit behind it gets past ('+Math.round(b.y-y0)+')',b.y>e.y+20||b.st!=='live');}const hp=e.hp;strikeEnemy(e,null,300);ok('a soft hit just clangs',e.hp===hp&&e.armor===2);strikeEnemy(e,null,600);ok('a hard hit cracks the armor',e.armor===1);}
     // knight: guards the statue, parries soft hits and ripostes
     {fresh();const e=only('knight');ok('knight guards the throne',e.post&&e.post.kind==='guard');const b=ball(e.x,e.y+40,0,-200),hp=G.run.hp,eh=e.hp;strikeEnemy(e,b,300);ok('parries a soft hit and ripostes',e.hp===eh&&G.run.hp<hp);strikeEnemy(e,b,900);ok('a hard hit gets through',e.hp<eh||e.armor<1);}
     // troll: holds a scoop, punts the ball, staggers on a hard hit
     {fresh();const e=only('troll');ok('troll holds a scoop',e.post&&e.post.kind==='hole');const b=ball(e.x,e.y+e.r+12,0,-300);adv(.1,2);ok('punts the ball ('+Math.round(b.vy)+')',b.vy>200);
-      strikeEnemy(e,b,900);ok('a hard hit staggers it',e.stun>0);}
+      strikeEnemy(e,b,900);ok('a hard hit staggers it',e.stun>0);e.stun=0;const h=T.holes[e.post.id],sc=G.run.score;pin=null;G.balls=[newBall(h.x,h.y-2,0,30)];let caught=0,was='';for(let k=0;k<80;k++){G.enemies=G.enemies.filter(x=>keep.includes(x));__gb.advance(.1,0);const bb=G.balls[0],st=bb?bb.st:'';if(st==='held'&&was!=='held'&&bb.held&&bb.held.id===e.post.id)caught++;was=st;}ok('a ball leaving the scoop slips past the troll, no capture loop ('+caught+')',caught<=1);}
     // nothing lingers from a wing after it is done: foes die with the wing
     return log;});
   console.log(out.join('\n'));console.log(out.filter(l=>l.startsWith('FAIL')).length+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();})();
