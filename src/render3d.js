@@ -1,13 +1,13 @@
 /* ================= 3D RENDERER =================
    World units are table pixels. X = table x - 320, Z = table y (towards the player), Y is up.
    Physics stays on the table plane, as on a real machine; height comes from the terraces and the ramps. */
-const E=[150,75,0,-260,-95],WOX=-800,WOZ=TY[1]+98-WY,WALL_H=26,BLOCK_H=38,RAMP_H=46,UP=new THREE.Vector3(0,1,0);
+const E=[150,75,0,-260,-95,-95,-20],WOXS=[-800,800,800],WOZS=[TY[1]+98-WB[0],TY[1]+98-WB[1],90-WB[2]],WTOP=WY-90,WALL_H=26,BLOCK_H=38,RAMP_H=46,UP=new THREE.Vector3(0,1,0);
 const SLOPES=[[FY[0]+18,FY[0]+138],[FY[1]+18,FY[1]+138],[H+36,H+96]];
 const sstep=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);};
-const inWing=y=>y>WY-100,ZX=y=>y>WY-100?WOX:0,ZZ=y=>y>WY-100?WOZ:0;
-function zshift(o){if(o.position.z>WY-100){o.position.x+=WOX;o.position.z+=WOZ;}return o;} // table space to world, for anything standing in a wing
+const wingIdx=y=>y>WTOP?Math.min(2,Math.floor((y-WTOP)/WSTEP)):-1,inWing=y=>y>WTOP,ZX=y=>y>WTOP?WOXS[wingIdx(y)]:0,ZZ=y=>y>WTOP?WOZS[wingIdx(y)]:0;
+function zshift(o){const i=wingIdx(o.position.z);if(i>=0){o.position.x+=WOXS[i];o.position.z+=WOZS[i];}return o;} // table space to world, for anything standing in a wing
 function elev(y){ // each level is a terrace; the chutes between them are the slopes
-  if(y>WY-100)return E[4];
+  if(y>WTOP)return E[4+wingIdx(y)];
   if(y<FY[0]+150)return lerp(E[0],E[1],sstep(SLOPES[0][0],SLOPES[0][1],y));
   if(y<FY[1]+150)return lerp(E[1],E[2],sstep(SLOPES[1][0],SLOPES[1][1],y));
   return lerp(E[2],E[3],sstep(SLOPES[2][0],SLOPES[2][1],y));}
@@ -97,13 +97,13 @@ function init3D(canvas){
   // reflections
   const pm=new THREE.PMREMGenerator(rn),sky=new THREE.CanvasTexture(texSky());sky.mapping=THREE.EquirectangularReflectionMapping;sky.encoding=THREE.sRGBEncoding;
   R3.env=pm.fromEquirectangular(sky).texture;scene.environment=R3.env;sky.dispose();pm.dispose();
-  buildMaterials();buildLights();buildFloor3D();buildStatic();buildDynamic();buildWing();
+  buildMaterials();buildLights();buildFloor3D();buildStatic();buildDynamic();buildWings();
   for(const o of R3.scene.children)zshift(o);
   buildScenery();buildFx();buildActors();
   R3.ready=true;return true;}
 
 function buildMaterials(){const S=SM,st=ctex(texStone(),{repeat:1}),wd=ctex(texWood(),{repeat:1}),gd=ctex(texGround(),{repeat:1});
-  const stoneCol=['#6a4c80','#4c7466','#526a96','#6e6044','#72785a'];
+  const stoneCol=['#6a4c80','#4c7466','#526a96','#6e6044','#72785a','#5e6a80','#8a5a3a'];
   M.stone=stoneCol.map(c=>S({map:st,bumpMap:st,bumpScale:1.6,color:c,roughness:.84,metalness:.02,envMapIntensity:.5}));
   M.frame=S({map:st,bumpMap:st,bumpScale:1.6,color:0x474760,roughness:.88,metalness:.02,envMapIntensity:.45});
   M.dark=S({map:st,bumpMap:st,bumpScale:1.4,color:0x3c3c50,roughness:.9,metalness:0,envMapIntensity:.3});
@@ -144,7 +144,7 @@ function repaintFloor(){const fresh=paintFloorChunks(2);fresh.forEach((ch,i)=>{c
 
 /* ---------- everything that never moves ---------- */
 function buildStatic(){const sc=R3.scene,stone=[0,1,2,3].map(()=>new MB()),frame=new MB(),steel=new MB(),bronze=new MB(),iron=new MB(),post=new MB(),ward=new MB(),wood=new MB(),dark=new MB();
-  const WM=R3.wingMB={steel:new MB(),bronze:new MB(),post:new MB()};
+  const WMS=R3.wingMB=WING_KEYS.map(()=>({steel:new MB(),bronze:new MB(),post:new MB()}));
   // outer walls and the Keep's back wall
   prism(frame,[[-70,340],[20,340],[20,H+34],[-70,H+34]],34);prism(frame,[[620,340],[710,340],[710,H+34],[620,H+34]],34);
   prism(stone[0],[[-70,-70],[710,-70],[710,340],[620,340]].concat(arcPts(320,TY[0]+300,300,TAU,PI,60).slice(1,-1),[[20,340],[-70,340]]),34);
@@ -156,7 +156,7 @@ function buildStatic(){const sc=R3.scene,stone=[0,1,2,3].map(()=>new MB()),frame
     else if(b.dead)prism(stone[2],b.pts,WALL_H,{depth:40});
     else prism(stone[b.tier],b.pts,BLOCK_H);}
   // guide walls, scoops, posts, flaps and the one-way wards
-  for(const w of T.wallPaths){const k=w.w||2,wg=inWing(w.pts[0][1]);
+  for(const w of T.wallPaths){const k=w.w||2,wi=wingIdx(w.pts[0][1]),wg=wi>=0,WM=WMS[wi];
     if(w.style==='gate')strip(ward,w.pts,.5,19,{depth:0,caps:false});
     else if(w.style==='flap')strip(steel,w.pts,1.2,15,{caps:false});
     else if(w.style==='scoop')strip(wg?WM.bronze:bronze,w.pts,k,24);
@@ -164,7 +164,7 @@ function buildStatic(){const sc=R3.scene,stone=[0,1,2,3].map(()=>new MB()),frame
     else strip(wg?WM.steel:steel,w.pts,k,21);}
   // shooter lane back stop, hole rims
   box(iron,603,3118,0,16,30,8);
-  for(const id in T.holes){const h=T.holes[id];(inWing(h.y)?WM.bronze:bronze).add(new THREE.TorusGeometry(h.r+1.6,1.5,6,24).rotateX(PI/2),at(h.x,h.y,1.2));}
+  for(const id in T.holes){const h=T.holes[id];(inWing(h.y)?WMS[wingIdx(h.y)].bronze:bronze).add(new THREE.TorusGeometry(h.r+1.6,1.5,6,24).rotateX(PI/2),at(h.x,h.y,1.2));}
   // ramps
   for(const id in T.rails)buildRail(T.rails[id],steel,iron);
   // the Grave: coffin walls, the pit around it
@@ -233,7 +233,7 @@ function buildDynamic(){const sc=R3.scene,D=R3.dyn,S=SM;
     const mat=S({color:base,emissive:hdr(lit),emissiveIntensity:.12,roughness:.45,metalness:door||nail?.8:.25,envMapIntensity:1});
     const h=drop?24:19,m=new THREE.Mesh(tgeo,mat);m.scale.set(s.len,h,drop?6.4:5);m.rotation.y=-Math.atan2(s.dy,s.dx);
     const cx=(s.x1+s.x2)/2,cy=(s.y1+s.y2)/2,y0=elev(cy)+h/2;m.position.set(cx-320,y0,cy);m.castShadow=true;sc.add(m);D.segs.push({s,m,mat,drop,y0,h,k:1});}
-  for(const s of T.wing.seal){const mat=S({color:'#b8b49a',emissive:hdr(PAL[4].glow),emissiveIntensity:.14,roughness:.6,metalness:.1}),h=30,m=new THREE.Mesh(tgeo,mat);m.scale.set(s.len+2,h,8);m.rotation.y=-Math.atan2(s.dy,s.dx);
+  for(const wk in T.wings)for(const s of T.wings[wk].seal){const mat=S({color:{crypt:'#b8b49a',den:'#9aa6b8',hoard:'#c9983f'}[wk],emissive:hdr(PAL[T.wings[wk].tier].glow),emissiveIntensity:.14,roughness:.6,metalness:.1}),h=30,m=new THREE.Mesh(tgeo,mat);m.scale.set(s.len+2,h,8);m.rotation.y=-Math.atan2(s.dy,s.dx);
     const cx=(s.x1+s.x2)/2,cy=(s.y1+s.y2)/2,y0=elev(cy)+h/2;m.position.set(cx-320,y0,cy);m.castShadow=true;sc.add(m);D.segs.push({s,m,mat,drop:true,y0,h,k:1});}
   // slingshots
   for(const s of T.slings){const p=PAL[s.tier],mb=new MB();prism(mb,[s.A,s.B,s.C],17);sc.add(mb.mesh(M.stone[s.tier]));
@@ -287,7 +287,7 @@ function mkBumper(b){const g=new THREE.Group(),p=PAL[b.tier],col=b.bell?'#ffd070
     const bell=new THREE.Group();bell.position.y=52;const bm=lit({color:'#d9a441',metalness:1,roughness:.3,envMapIntensity:1.6},.05);
     const bg=new THREE.Mesh(lathe([[0,0],[4,-1],[6.5,-6],[8,-16],[10.5,-26],[14,-32],[14.5,-34],[12.5,-34]],18),bm);bg.castShadow=true;bm.side=THREE.DoubleSide;bell.add(bg);
     const cl=new THREE.Mesh(new THREE.SphereGeometry(3,8,6),M.iron);cl.position.y=-33;bell.add(cl);g.add(bell);o.bell=bell;}
-  else if(b.group==='braziers'||b.group==='urns'){const fc=b.group==='urns'?p.glow:'#ff8a3c',ec=b.group==='urns'?p.acc:'#ff7a30';mesh(lathe([[r*.95,0],[r*.95,4],[r*.5,8],[r*.36,20],[r*.5,26],[r*.96,35],[r*.9,37],[r*.72,33],[0,31]]),M.iron);
+  else if(b.group==='braziers'||b.group==='urns'||b.group==='pyre'){const fc=b.group==='urns'?p.glow:'#ff8a3c',ec=b.group==='urns'?p.acc:'#ff7a30';mesh(lathe([[r*.95,0],[r*.95,4],[r*.5,8],[r*.36,20],[r*.5,26],[r*.96,35],[r*.9,37],[r*.72,33],[0,31]]),M.iron);
     const em=new THREE.MeshBasicMaterial({color:hdr(ec,1.6)});mesh(new THREE.CircleGeometry(r*.74,16).rotateX(-PI/2),em,34.5).castShadow=false;
     const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.flameTex,color:hdr(fc,2.2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));fl.position.y=52;fl.scale.set(30,46,1);g.add(fl);o.flame=fl;}
   else if(b.group==='stones'){mesh(new THREE.CylinderGeometry(r*.93,r*.97,7,20),M.stone[1],3.5);
@@ -302,9 +302,9 @@ function mkBumper(b){const g=new THREE.Group(),p=PAL[b.tier],col=b.bell?'#ffd070
     const rune=new THREE.Mesh(new THREE.PlaneGeometry(16,22),new THREE.MeshBasicMaterial({map:runeTex(2),color:hdr(col,1.5),transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));
     rune.position.set(0,28,6.2);rune.rotation.x=-.08;g.add(rune);o.rune=rune.material;}
   else{ // bones
-    mesh(new THREE.CylinderGeometry(r*.93,r*.97,5,20),M.wood,2.5);const bm=lit({color:'#8f8a78',roughness:.6},.05);
+    mesh(new THREE.CylinderGeometry(r*.93,r*.97,5,20),b.tier>=4?M.stone[b.tier]:M.wood,2.5);const bm=lit({color:'#8f8a78',roughness:.6},.05);
     const sk=mesh(new THREE.SphereGeometry(r*.72,16,12),bm,19);sk.scale.set(1,.92,1.08);mesh(new THREE.BoxGeometry(r*.8,7,r*.6),bm,8).position.z=r*.3;
-    const em=new THREE.MeshBasicMaterial({color:hdr('#7dffb0',.25)});o.ember=em;o.emberCol=hdr('#7dffb0',1);
+    const ec=b.tier>=4?p.glow:'#7dffb0',em=new THREE.MeshBasicMaterial({color:hdr(ec,.25)});o.ember=em;o.emberCol=hdr(ec,1);
     for(const sx of [-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(3.4,8,6),em);e.position.set(sx*5.6,20,r*.62);g.add(e);}}
   {const w=new THREE.Group(),tm=new THREE.MeshBasicMaterial({color:hdr('#9fe8ff',1.8)}),tr=new THREE.Mesh(new THREE.TorusGeometry(r+5,1.6,6,32).rotateX(PI/2),tm);tr.position.y=10;
     const ws=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.glowTex,color:hdr('#62d8ff',1.5),transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false}));ws.position.y=26;ws.scale.set(r*5,r*5,1);w.add(tr,ws);w.visible=false;g.add(w);o.ward=w;o.wardS=ws;o.wardT=tr;}
@@ -349,14 +349,14 @@ function mkTorch(tr){const sp=torchSpot(tr),g=new THREE.Group(),col=tr.c,big=tr.
   g.add(halo,fl);R3.scene.add(g);return {tr,fl,halo,fs,hs:big?130:96};}
 
 /* ---------- the world around the table ---------- */
-const PIT={x0:-1180,x1:-70,z0:TY[1],z1:TY[1]+900}; // table-space footprint of the cut in the ground around the wing (x is table x)
-function pitDist(x,y){return Math.max(PIT.x0-x,x-PIT.x1,PIT.z0-y,y-PIT.z1);}
+const PITS=[{x0:-1180,x1:-70,z0:TY[1],z1:TY[1]+900,sd:-1},{x0:710,x1:1820,z0:TY[1],z1:TY[1]+900,sd:1},{x0:710,x1:1820,z0:0,z1:900,sd:1}]; // table-space footprints of the cuts in the ground around each wing (x is table x)
+function pitDist(x,y){let d=1e9;for(const p of PITS)d=Math.min(d,Math.max(p.x0-x,x-p.x1,p.z0-y,y-p.z1));return d;}
 function groundY(x,y){const d=Math.max(0,Math.abs(x-320)-430);return elev(clamp(y,TY[0],H))-38+sstep(0,700,d)*sstep(0,220,pitDist(x,y))*(60+90*Math.sin(x*.004+y*.0021)+50*Math.sin(y*.0057+x*.003));}
 function buildScenery(){const sc=R3.scene,frame=new MB(),iron=new MB(),roof=new MB(),dark=new MB(),s0=new MB();
   // the land the table stands in
   {const gt=M.ground.map;const mb=new MB();mb.hint=[0,1,0];const xs=[-1500,-1100,-800,-560,-390];
     for(const sd of [-1,1])for(let i=0;i<xs.length-1;i++)for(let y=-900;y<HW+500;y+=90){const xa=320+sd*-xs[i+1]*1,xb=320+sd*-xs[i],x0=Math.min(xa,xb),x1=Math.max(xa,xb),y2=y+90;
-      if(sd<0&&y>=PIT.z0-.5&&y2<=PIT.z1+.5)continue; // the wing's court is cut out of the land here; wing3d.js lays the ground around it
+      if(PITS.some(p=>p.sd===sd&&y>=p.z0-.5&&y2<=p.z1+.5))continue; // a wing's court is cut out of the land here; wing3d.js lays the ground around it
       const P=(x,yy)=>[x-320,groundY(x,yy),yy];mb.quad(P(x0,y),P(x1,y),P(x1,y2),P(x0,y2),[x0/220,y/220],[x1/220,y/220],[x1/220,y2/220],[x0/220,y2/220]);}
     // land behind the Keep and the skirt under the outer walls
     for(let x=-70;x<710;x+=130)for(let y=-900;y<-70;y+=90){const P=(xx,yy)=>[xx-320,groundY(xx,yy),yy];mb.quad(P(x,y),P(x+130,y),P(x+130,y+90),P(x,y+90),[x/220,y/220],[(x+130)/220,y/220],[(x+130)/220,(y+90)/220],[x/220,(y+90)/220]);}
@@ -548,13 +548,13 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
     P.needsUpdate=true;C.needsUpdate=true;}
   updateCam3D(dt);
   {const m=R3.moon,c=R3.cam.t;m.target.position.set(0,c.y,c.z-120);m.position.set(-460,c.y+1200,c.z+520);}
-  {const ft=G.focusTier,fc=['#0b0610','#050b0a','#06080f','#030604','#070803'][ft];R3.tmpC.set(fc);sc.fog.color.lerp(R3.tmpC,Math.min(1,dt*2));sc.background.copy(sc.fog.color);}
+  {const ft=G.focusTier,fc=['#0b0610','#050b0a','#06080f','#030604','#070803','#05070c','#0b0603'][ft];R3.tmpC.set(fc);sc.fog.color.lerp(R3.tmpC,Math.min(1,dt*2));sc.background.copy(sc.fog.color);}
   if(R3.grade)R3.grade.uniforms.time.value=(t*61)%17;
   if(R3.composer)R3.composer.render();else R3.rn.render(sc,R3.camera);
   if(R3.probe>0&&--R3.probe===0)probeFrame();}
 
 // Player view: place the camera so the flippers sit near the bottom of the screen and the top of the level near the top
-function frameLevel(tier,pitch,fov,asp){const p=pitch*PI/180,tv=Math.tan(fov*PI/360),sn=Math.sin(p),cs=Math.cos(p),zA=FY[tier]+(tier===3?62:74),zB=tier===3?GY+6:tier===4?WY+10:TY[tier]-18,L=zA-zB,half=tier===4?285:345;
+function frameLevel(tier,pitch,fov,asp){const p=pitch*PI/180,tv=Math.tan(fov*PI/360),sn=Math.sin(p),cs=Math.cos(p),zA=FY[tier]+(tier===3?62:74),zB=tier===3?GY+6:tier>=4?TY[tier]+10:TY[tier]-18,L=zA-zB,half=tier>=4?285:345;
   const bo=G.boss;let nA=-.92,nB=bo&&bo.tier===tier?.55:.68,h=0,kA=0; /* a boss fight needs headroom under its health bar */ const g=n=>(n*tv*sn+cs)/(n*tv*cs-sn);
   for(let it=0;it<4;it++){h=L/(g(nA)-g(nB));kA=h*g(nA);const depth=h*sn-kA*cs,m=half/(depth*tv*asp*.97);if(m<=1.001)break;nA/=m;nB/=m;}
   return {h,zc:zA-kA,sn,cs};}

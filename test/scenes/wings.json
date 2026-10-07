@@ -1,0 +1,34 @@
+[
+ {
+  "eval": "(UI.menu(null),startRun('cleric'),DEV.on=true,__gb.advance(1,1),UI.q=[],document.getElementById('banner').textContent='',devKey('d5'),__gb.advance(2.2,4),UI.q=[],document.getElementById('banner').textContent='',G.flash=0,G.balls.forEach(b=>{b.vx=0;b.vy=0;b.x=300;b.y=WB[0]+420;b.st='live';}),__gb.draw(6,.5),[G.focusTier,G.balls.map(b=>b.st+':'+Math.round(b.x)+','+Math.round(b.y)),R3.cam.t.x|0,R3.cam.t.z|0])",
+  "shot": "40-crypt"
+ },
+ {
+  "eval": "(devKey('d2'),__gb.advance(.3,1),devKey('d6'),__gb.advance(2.2,4),UI.q=[],document.getElementById('banner').textContent='',G.flash=0,[0,1].forEach(()=>{const e=spawnEnemy('wolf',5);if(e)e.pack=true;}),G.enemies.forEach(e=>e.spawn=0),G.balls.forEach(b=>{b.vx=0;b.vy=0;b.x=300;b.y=WB[1]+470;b.st='live';}),__gb.draw(6,.5),[G.focusTier,G.enemies.filter(e=>e.tier>=4).map(e=>e.type+':'+e.tier+':'+(e.x|0)+','+(e.y|0)),G.wingT|0])",
+  "shot": "41-den"
+ },
+ {
+  "eval": "(G.enemies.filter(e=>e.pack).forEach(e=>killEnemy(e)),G.run.wing.prog<3&&wingProg(8,300,WB[1]+300),UI.q=[],document.getElementById('banner').textContent='',__gb.draw(8,.4),[T.wings.den.seal[0].on,G.run.wing.prog])",
+  "shot": "42-den-open"
+ },
+ {
+  "eval": "(R3.dbg={p:[WOXS[1]+300,E[5]+360,WB[1]+560+WOZS[1]],t:[WOXS[1],E[5]+20,WB[1]+170+WOZS[1]],fov:46},__gb.draw(2,.4),1)",
+  "shot": "43-den-close"
+ },
+ {
+  "eval": "(R3.dbg=null,devKey('d2'),__gb.advance(.3,1),devKey('d7'),__gb.advance(2.2,4),UI.q=[],document.getElementById('banner').textContent='',G.flash=0,G.balls.forEach(b=>{b.vx=0;b.vy=0;b.x=300;b.y=WB[2]+470;b.st='live';}),__gb.draw(8,.5),[G.focusTier,G.pickups.filter(p=>p.hoard).length,G.wingT|0])",
+  "shot": "44-hoard"
+ },
+ {
+  "eval": "(G.pickups.filter(p=>p.hoard).forEach(p=>{wingProg(5,p.x,p.y);}),G.pickups=G.pickups.filter(p=>!p.hoard),UI.q=[],document.getElementById('banner').textContent='',__gb.draw(8,.4),[T.wings.hoard.seal[0].on,G.run.wing.prog])",
+  "shot": "45-hoard-open"
+ },
+ {
+  "eval": "(R3.dbg={p:[WOXS[2]+300,E[6]+360,WB[2]+560+WOZS[2]],t:[WOXS[2],E[6]+20,WB[2]+170+WOZS[2]],fov:46},__gb.draw(2,.4),1)",
+  "shot": "46-hoard-close"
+ },
+ {
+  "eval": "(R3.dbg={p:[0,1500,2700],t:[0,60,900],fov:60},__gb.draw(2,.4),1)",
+  "shot": "47-world"
+ }
+]

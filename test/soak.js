@@ -16,10 +16,10 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8><meta name=view
       const note=k=>{seen[k]=(seen[k]||0)+1;};let runs=1;
       try{for(let s=0;s<mins*60;s+=1.5){
           if(G.mode==='over'){UI.menu(null);startRun(cls);G.auto=true;G.bot={hl:0,hr:0,tl:30,tr:30,pl:0,plT:.7};runs++;}
-          const k=Math.round(s/1.5);if(k%20===10)devKey('dn');if(k%47===30)devKey('dg');if(k%61===40)devKey('db');if(k%83===70)devKey('d'+(1+k%3));if(k%71===50)devKey('d5');
+          const k=Math.round(s/1.5);if(k%20===10)devKey('dn');if(k%47===30)devKey('dg');if(k%61===40)devKey('db');if(k%83===70)devKey('d'+(1+k%3));if(k%71===50)devKey('d'+(5+(k/71|0)%3));
           if(k%9===4){G.run.charge=100;}
           __gb.advance(1.5,1);
-          if(G.boss)note('boss:'+G.boss.key+':'+G.boss.phase);if(G.inGrave)note('grave');if(G.focusTier===4)note('crypt');if(G.run.wing.done)note('cryptDone');if(G.balls.length>1)note('multiball');if(G.zones.length)note('zone');if(G.booms.length)note('boom');if(G.bolts.length)note('bolt');
+          if(G.boss)note('boss:'+G.boss.key+':'+G.boss.phase);if(G.inGrave)note('grave');if(G.focusTier>=4)note(WING_KEYS[G.focusTier-4]);if(G.run.wing.done)note(G.run.wing.key+'Done');if(G.balls.length>1)note('multiball');if(G.zones.length)note('zone');if(G.booms.length)note('boom');if(G.bolts.length)note('bolt');
           if(G.enemies.length)note('foes');if(G.pickups.length)note('pickups');if(G.balls.some(b=>b.pow))note('power');if(G.balls.some(b=>b.arm>0))note('armed');if(G.fallen)note('fallen');for(const c in G.curse)if(G.curse[c]>0)note('curse:'+c);
           for(const b of G.balls)if(!isFinite(b.x)||!isFinite(b.y))err.push('nan ball');}}catch(e){err.push(e.message+' @ '+(e.stack||'').split('\n').slice(1,4).join(' | '));}
       const r=G.run;return {cls,runs,score:r.score,level:r.level,kills:r.kills,bosses:r.bossKills,quests:r.questsDone,stuck:G.stuck.length,seen:Object.keys(seen).sort().map(k=>k+'×'+seen[k]).join(' '),err};},[cls,mins]);

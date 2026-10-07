@@ -10,10 +10,11 @@ function gfxKey(k){
   else if(k==='dev'){DEV.on=!DEV.on;$('gDev').hidden=!DEV.on;}
   else if(DEV.on&&G.mode==='play'&&G.run&&!G.demo&&!G.sub&&!G.choice&&!G.paused)devKey(k);
   gfxInfo();}
-// Dev keys (toggle with `): 1-4 drop the ball on a level, 5 sends it down into the Crypt, G opens the Grave, B adds a ball, N finishes the current main-quest step.
+// Dev keys (toggle with `): 1-4 drop the ball on a level, 5, 6 and 7 send it into the Crypt, the Den and the Hoard, G opens the Grave, B adds a ball, N finishes the current main-quest step.
 // A run that used them is marked, and its score is saved with a star.
 function devKey(k){const r=G.run;r.dev=true;
-  if(k==='d5'){if(G.inGrave||G.focusTier===4)return;r.wing.open=true;r.wing.done=false;G.plunge.auto=0;const h=T.holes.catacombs,b=newBall(h.x,h.y,0,0);b.st='held';b.held={id:'catacombs',t:0,plan:'tunnel',delay:.2};G.balls=[b];G.mb=null;enterWing();}
+  if(k==='d5'||k==='d6'||k==='d7'){if(G.inGrave)return;const key=WING_KEYS[+k[1]-5],gate=WINGS[key].gate;G.enemies.forEach(e=>{if(e.tier>=4)e.dead=true;});G.pickups=G.pickups.filter(p=>!p.hoard);openDoor(false);r.wing={key,open:true,done:false,prog:0};if(key==='hoard')openDoor(true);G.plunge.auto=0;
+    const h=T.holes[gate],b=newBall(h.x,h.y,0,0);b.st='held';b.held={id:gate,t:0};G.balls=[b];G.mb=null;enterWing(b.held);b.held.delay=.2;}
   else if(k.length===2&&k[0]==='d'&&k[1]>='1'&&k[1]<='4'){const t=+k[1]-1;
     if(t===3){if(G.inGrave)return;G.save=0;r.shield=false;G.plunge.auto=0;G.balls=[];r.grave.open=true;const b=newBall(303,H+10,0,0);G.balls.push(b);if(!graveCatch(b)){G.balls=[];serve();}}
     else{G.inGrave=false;G.graveLive=false;if(!G.fallen)G.tilt=0;G.balls=[newBall((t===2?303:320)+rand(-30,30),TY[t]+560,rand(-60,60),120)];}}
@@ -76,5 +77,5 @@ function boot(){initGame();
   R3.camMode=(GFX.cam|0)%CAMS.length;R3.qName=QUALITY[GFX.q]?GFX.q:'high';R3.auto=GFX.auto!==false;
   if(!init3D($('gl'))){const m=$('menu');m.hidden=false;m.innerHTML='<div class="pane"><p class="lead">This needs WebGL, and the browser would not start it. Try a current Chrome, Edge or Firefox with hardware acceleration turned on.</p></div>';return;}
   resize();bindInput();startDemo();snapCam();UI.menu('title');requestAnimationFrame(loop);
-  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{try{repaintFloor();paintNames();repaintWing();}catch(e){}});}
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{try{repaintFloor();paintNames();repaintWings();}catch(e){}});}
 boot();
