@@ -25,7 +25,7 @@ function buildActors(){const sc=R3.scene,X=R3.act={tex:{},foes:[],picks:[],zones
 
 function frameActors(dt,ex){const X=R3.act,t=G.t,tc=R3.tmpC;
   // foes
-  frameFoes(dt);
+  frameFoes(dt);frameAllies(dt);
   for(let i=0;i<X.foes.length;i++){const o=X.foes[i],e=G.enemies[i];if(!e||e.dead){o.halo.visible=o.rg.visible=o.blob.visible=false;continue;}
     const k=e.spawn>0?Math.max(.05,1-e.spawn/.7):1,gy=elev(e.y),y=gy+e.r+13;
     const warn=e.wind>0&&e.tier===G.focusTier,qc=e.quest?(e.quest.main?'main':'side'):null;

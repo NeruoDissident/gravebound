@@ -28,6 +28,10 @@ function devKey(k){const r=G.run;r.dev=true;
 const _p={x:0,y:0,ok:false},_p2={x:0,y:0,ok:false};
 function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w,h=R3.h,t=G.t,run=G.run;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);if(!run)return;c.setTransform(s,0,0,s,0,0);
   c.lineCap='round';c.lineJoin='round';c.textAlign='center';c.textBaseline='middle';const cls=run.cls,cl=CLASSES[cls];
+  // the party: a ring on each post and a health bar over each guard
+  if(run.party&&run.party.length&&G.focusTier<3)for(const q of run.party){const post=guardPosts(G.focusTier).find(p=>p.slot===q.slot);if(!post)continue;const d=COMPANIONS[q.id],RL=ROLES[d.role],hh=44;project3D(post.x,post.y,hh,_p);if(!_p.ok)continue;const u=pxPerUnit(post.x,post.y,hh),x=_p.x,y=_p.y;
+    const bw=40*u,by=y-10*u;c.fillStyle='#05050a';c.fillRect(x-bw/2-1,by-1,bw+2,4*u+2);c.fillStyle=q.hp>0?RL.col:'#553';c.fillRect(x-bw/2,by,bw*Math.max(0,q.hp/q.maxHp),4*u);
+    c.font='700 '+Math.max(8,8*u)+'px '+R.fontL;c.fillStyle=q.hp>0?'#ffe9b0':'#8a8070';c.fillText((q.hp>0?'':'WOUNDED  ')+d.name.toUpperCase(),x,by-7*u);}
   // foes: health, armor, the wind-up before a strike, the build-up of a spell
   for(const e of G.enemies){if(e.dead||e.spawn>0)continue;const hh=e.r+13;project3D(e.x,e.y,hh,_p);if(!_p.ok||_p.y<-40||_p.y>h+40)continue;const u=pxPerUnit(e.x,e.y,hh),x=_p.x,y=_p.y,rr=(e.r+10)*u;
     if(e.hp<e.maxHp){const bw=34*u,by=y-(e.r+20)*u;c.fillStyle='#05050a';c.fillRect(x-bw/2-1,by-1,bw+2,4*u+2);c.fillStyle='#ff5a5a';c.fillRect(x-bw/2,by,bw*Math.max(0,e.hp/e.maxHp),4*u);}

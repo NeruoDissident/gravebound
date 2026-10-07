@@ -325,6 +325,8 @@ function stepBall(b,h){
   const row=T.grid[(b.y/CELL)|0];if(row)for(let i=0;i<row.length;i++){const s=row[i];if(s.on)hitSeg(b,s);}
   for(const c of T.bumps){if(Math.abs(b.y-c.y)<60){const imp=hitCircle(b,c,c.r,.3);
     if(imp>0&&c.cool<=0){c.cool=.06;c.flash=1;const k=c.kick*(imp>40?b.kx:.6);b.vx+=(b.x-c.x)/(b.r+c.r)*k;b.vy+=(b.y-c.y)/(b.r+c.r)*k;ev('bump',c,b,imp);}}}
+  if(b.tier<3&&G.run&&G.run.party&&G.run.party.length)for(const g of liveGuards(b.tier)){const p=g.p,c=g.c;if(Math.abs(b.y-p.y)>60)continue;const imp=hitCircle(b,p,p.r,.3);
+    if(imp>0&&c.cool<=0){const k=p.slot==='center'?440:360;b.vx+=(b.x-p.x)/(b.r+p.r)*k*.6;b.vy=-Math.abs(b.vy)*.5-k*.8;guardHit(c,p,b,imp);}}
   collideActors(b);
   if(b.x<20+b.r){b.x=20+b.r;if(b.vx<0)b.vx*=-.4;}if(b.x>620-b.r){b.x=620-b.r;if(b.vx>0)b.vx*=-.4;}
   if(b.y<TY[0]+b.r){b.y=TY[0]+b.r;if(b.vy<0)b.vy*=-.4;}
@@ -453,6 +455,50 @@ const RELICS=[
   {id:'scale',name:'Grave Dragon Scale',desc:'+40 max health.',f:m=>m.hp+=40},
   {id:'whet',name:'Whetstone',desc:'+10% damage.',stack:true,f:m=>m.dmg+=.1}
 ];
+/* ---------- the party: companions stand guard at the drains ----------
+   A recruited companion stands on a post at one of the three drains (the centre gap and the two outlanes). A ball
+   that would go out bounces off them instead, at a cost to their health; swarms go for the guards; a guard at zero
+   is wounded, the drain opens, and they stand again when you complete a bank. Good pinball wins the run; the party
+   makes it more forgiving and more fun. */
+const ROLES={tank:{name:'Tank',col:'#8fb0d8',hp:130},healer:{name:'Healer',col:'#ffe0a0',hp:80},dps:{name:'Striker',col:'#ff8a6a',hp:70},support:{name:'Support',col:'#b08cff',hp:90}};
+const COMPANIONS={
+  oakshield:{name:'Oakshield',role:'tank',cost:70,perk:'intercept',desc:'A wall of a man. Now and then he takes a strike meant for you.'},
+  brannoc:{name:'Brannoc the Breaker',role:'tank',cost:70,perk:'crack',desc:'Holds less, hits back: every ball he catches cracks the armor of the nearest foe and staggers it.'},
+  gravekeeper:{name:'The Gravekeeper',role:'healer',cost:80,perk:'mend',desc:'Mends the other guards while they stand. A ball off his post heals you a little.'},
+  adela:{name:'Sister Adela',role:'healer',cost:80,perk:'heal',desc:'A ball off her post heals you well. Lifts a curse when it does.'},
+  vex:{name:'Vex',role:'dps',cost:90,perk:'mark',desc:'A ball off her post marks the nearest foe: everything crits it for 6 seconds.'},
+  orrin:{name:'Orrin',role:'dps',cost:90,perk:'bolt',desc:'A ball off his post bolts the nearest foe for lightning damage.'},
+  tam:{name:'Tam Drum',role:'support',cost:60,perk:'charge',desc:'A ball off his post fills 12 power.'},
+  mab:{name:'Lantern Mab',role:'support',cost:60,perk:'hold',desc:'A ball off her post holds the next wave off 8 seconds and lights your kickback.'}
+};
+const SLOTS=['center','left','right'];
+function guardPosts(tier){const P=T.gposts||(T.gposts={});if(P[tier])return P[tier];if(tier>=3)return P[tier]=[];const yF=TY[tier]+900,cx=tier===2?303:320,xL=20,xR=tier===2?586:620;
+  return P[tier]=[{slot:'center',x:cx,y:yF+36,r:24},{slot:'left',x:xL+21,y:yF-30,r:17},{slot:'right',x:xR-21,y:yF-30,r:17}];}
+function partyAt(slot){const r=G.run;return r&&r.party?r.party.find(c=>c.slot===slot):null;}
+function guardAt(tier,slot){const c=partyAt(slot);return c&&c.hp>0?c:null;}
+function liveGuards(tier){return tier<3&&G.run?guardPosts(tier).map(p=>({p,c:guardAt(tier,p.slot)})).filter(g=>g.c):[];}
+function recruit(id){const r=G.run,d=COMPANIONS[id],slot=SLOTS.find(sl=>!partyAt(sl));if(!d||!slot)return null;const c={id,slot,hp:ROLES[d.role].hp,maxHp:ROLES[d.role].hp,cool:0,ready:0,saves:0};r.party.push(c);r.tavern=r.tavern.filter(x=>x!==id);G.dirty=true;return c;}
+function drawRecruits(n){const have=new Set((G.run&&G.run.party||[]).map(c=>c.id)),pool=shuffle(Object.keys(COMPANIONS).filter(k=>!have.has(k))),out=[],roles=new Set();
+  for(const k of pool){if(out.length>=n)break;if(roles.has(COMPANIONS[k].role))continue;roles.add(COMPANIONS[k].role);out.push(k);}
+  for(const k of pool){if(out.length>=n)break;if(!out.includes(k))out.push(k);}return out;}
+function guardHit(c,p,b,imp){const r=G.run,d=COMPANIONS[c.id],tier=b.tier;c.cool=.35;c.hp-=12;c.saves++;c.flash=1;A.s('kick');burst(p.x,p.y-10,10,ROLES[d.role].col,220,.6);
+  const near=()=>{let best=null,bd=1e9;for(const e of G.enemies){if(e.dead||e.spawn>0||e.tier!==tier)continue;const dd=Math.hypot(e.x-p.x,e.y-p.y);if(dd<bd){bd=dd;best=e;}}return best;};
+  float(p.x,p.y-44,d.name.toUpperCase()+' HOLDS','#ffe9b0',12);score(500);charge(1,'hit');
+  switch(d.perk){
+  case 'crack':{const e=near();if(e){if(e.armor>0){e.armor--;float(e.x,e.y-26,'ARMOR CRACKED','#cfd8e0',12);}e.wind=0;e.stun=Math.max(e.stun,1.5);}break;}
+  case 'mend':heal(4);break;
+  case 'heal':heal(10);for(const k in G.curse)if(G.curse[k]>0){G.curse[k]=0;break;}break;
+  case 'mark':{const e=near();if(e){e.marked=6;float(e.x,e.y-26,'MARKED','#ff8a6a',12);}break;}
+  case 'bolt':{const e=near();if(e){bolt(p,e);damageEnemy(e,G.mods.pow*.6,false);}break;}
+  case 'charge':r.charge=Math.min(100,r.charge+12);break;
+  case 'hold':if(!G.wave.active)G.wave.t+=8;r.kickback=true;relight();break;}
+  if(c.hp<=0){c.hp=0;popup(d.name+' Falls',d.role==='tank'?'The drain stands open. Complete a bank to raise them':'The drain stands open. Complete a bank to raise them','bad');A.s('hurt');G.cam.shake=Math.max(G.cam.shake,8);}G.dirty=true;}
+function guardStruck(c,dmg,e){const d=COMPANIONS[c.id];c.hp-=dmg;c.flash=1;G.dirty=true;float(e.x,e.y-36,d.name.toUpperCase()+' IS STRUCK','#ff8a8a',12);
+  if(c.hp<=0){c.hp=0;popup(d.name+' Falls','The drain stands open. Complete a bank to raise them','bad');A.s('hurt');}}
+function raiseParty(x,y){const r=G.run;let n=0;for(const c of r.party)if(c.hp<=0){c.hp=Math.round(c.maxHp*.5);n++;float(x,y-50,COMPANIONS[c.id].name.toUpperCase()+' STANDS AGAIN','#ffe9b0',13);}if(n){A.s('ward');G.dirty=true;}}
+function updateParty(dt){const r=G.run;if(!r||!r.party)return;const mend=r.party.some(c=>c.hp>0&&COMPANIONS[c.id].perk==='mend');
+  for(const c of r.party){if(c.cool>0)c.cool-=dt;if(c.flash>0)c.flash-=dt*4;if(c.ready>0)c.ready-=dt;if(mend&&c.hp>0&&c.hp<c.maxHp){c.hp=Math.min(c.maxHp,c.hp+2*dt);G.dirty=true;}}}
+function interceptor(){const r=G.run;return r&&r.party?r.party.find(c=>c.hp>0&&COMPANIONS[c.id].perk==='intercept'&&c.ready<=0):null;}
 const ENEMY={ // job: what it does on the table. wind: seconds of visible wind-up before a strike; a hit in that window staggers it
   skeleton:{name:'Skeleton',job:'swarm',hp:18,r:14,xp:8,gold:3,undead:1,dmg:7,speed:26,wind:1.6,rate:[5,8]},
   goblin:{name:'Goblin',job:'thief',hp:14,r:13,xp:7,gold:6,hop:1,dmg:5,wind:1.2,rate:[6,9]},
@@ -576,10 +622,10 @@ function resetWorld(){G.gen=(G.gen||0)+1;Object.assign(G,{balls:[],enemies:[],pi
   for(const s of T.sens)s.lit=false;for(const c of T.bumps){c.ward=false;c.poss=null;}G.statues.forEach(s=>s.on=true);}
 
 /* ---------- run ---------- */
-function newRun(cls){const c=CLASSES[cls],meta=store.get('meta',{}),leg=G.demo?0:Math.min(100,(meta.bosses||0)*10);
+function newRun(cls,comp){const c=CLASSES[cls],meta=store.get('meta',{}),leg=G.demo?0:Math.min(100,(meta.bosses||0)*10);
   const r={cls,score:0,ballNum:1,ballsLeft:3,level:1,xp:0,hp:c.hp,gold:leg,mult:1,charge:0,perks:[],relics:[],kills:0,questsDone:0,bossKills:0,threat:1,
     main:null,side:[],doneSide:[],arcs:[],locks:0,lockLit:false,hoardLit:false,hutLit:true,kickback:true,shield:false,shop:true,time:0,grave:{hits:0,need:8,used:0,open:false},wing:{key:null,open:false,done:false,prog:0},stat:{ramps:0,orbits:0,jackpots:0,bestCombo:0}};
-  G.run=r;recalc();r.hp=G.mods.maxHp;r.main=makeCampaign(r);return r;}
+  r.party=[];r.tavern=[];G.run=r;recalc();r.hp=G.mods.maxHp;if(comp&&COMPANIONS[comp])recruit(comp);else if(G.demo)recruit(pick(Object.keys(COMPANIONS)));r.main=makeCampaign(r);return r;}
 function recalc(){const r=G.run,c=CLASSES[r.cls];
   const m={dmg:1,gold:1,xp:1,crit:c.crit,save:8+c.save,flip:c.flip,dr:c.dr,hp:0,charge:1,combo:5,comboPay:0,healKill:0,pierce:false,kickRelight:false,bumpGold:0,bumpDmg:0,multMin:1,laneHeal:0,killGold:0,rampHeal:0,jackpot:1,lockKeep:false,
     dmgMul:1,rampScore:0,aegisT:12,aegisK:.5,nudgeCd:0,phaseT:.7,critCharge:0,zoneT:9,zoneHeal:1.5,rampCharge:0,ironFlip:0,toll:0,hpK:1,saveK:1,hour:1,laneWard:0,bellHeal:0,bargain:0,cutpurse:0,marked:0,poison:0,chain:0,scorch:0,deathWish:0};
@@ -587,7 +633,7 @@ function recalc(){const r=G.run,c=CLASSES[r.cls];
   for(const id of r.relics){const p=RELICS.find(p=>p.id===id);if(p)p.f(m);}
   m.dmg*=m.dmgMul;m.maxHp=Math.round((c.hp+m.hp+(r.level-1)*8)*m.hpK);m.pow=(c.pow+2*(r.level-1))*m.dmg;m.dr=Math.min(.75,m.dr);m.save*=m.saveK;
   G.mods=m;if(r.hp>m.maxHp)r.hp=m.maxHp;if(r.mult<m.multMin)r.mult=m.multMin;G.dirty=true;}
-function makeCampaign(r){const all=Object.keys(CAMPAIGNS),keys=all.filter(k=>!r.arcs.includes(k)),key=pick(keys.length?keys:all);r.arcs.push(key);r.wing={key:CAMPAIGNS[key].wing?CAMPAIGNS[key].wing.key:null,open:false,done:false,prog:0};
+function makeCampaign(r){const all=Object.keys(CAMPAIGNS),keys=all.filter(k=>!r.arcs.includes(k)),key=pick(keys.length?keys:all);r.arcs.push(key);r.tavern=drawRecruits(3);r.wing={key:CAMPAIGNS[key].wing?CAMPAIGNS[key].wing.key:null,open:false,done:false,prog:0};
   const c=CAMPAIGNS[key],om=shuffle(c.omens),cp=o=>Object.assign({},o);
   const steps=[cp(om[0]),cp(om[1]),cp(c.trail),cp(pick(c.wilds)),{t:'boss',boss:'warden',n:1,text:'Defeat the Warden of the Ruined Gate'},
     {t:'shot',id:'rampRuin',n:1,text:'Climb the Ruin Stair into the Black Keep'},cp(pick(c.reveal)),{t:'boss',boss:c.boss,n:1,text:'Destroy '+BOSSES[c.boss].name}],stages=STAGES.slice();
@@ -634,7 +680,7 @@ function relight(){const L={},add=(id,c)=>{(L[id]||(L[id]=[])).push(c);},r=G.run
     else if(o.t==='shot'||o.t==='done'){add(o.id,c);const s=T.shots[o.id];if(s)way(s.tier,c);}
     else if(o.t==='boss')way(BOSSES[o.boss].tier,c);else way(o.tier,c);}
   if(r.lockLit)add('catacombs','lock');if(r.hoardLit)add('sanctum','gold');if(r.hutLit)add('hut','soft');
-  if(r.side.length<2||(r.shop&&r.gold>=25))add('tavern','soft');
+  if(r.side.length<2||(r.tavern.length&&r.party.length<3&&r.tavern.some(id=>COMPANIONS[id].cost<=r.gold)))add('tavern','soft');
   if(G.doorT>0)add('secret','gold');else if(T.banks.door.segs.some(x=>!x.on))add('secret','soft');
   const bo=G.boss;if(bo&&bo.alive&&bo.phase==='cast')bo.def.cast.shots.forEach(id=>add(id,'danger'));
   if(G.mb)for(const id in T.rails)add(id,'gold');}
@@ -791,7 +837,7 @@ function ev(type,o,b,imp){const r=G.run;if(!r)return;if(type==='sling')G.slingRu
   case 'rampFail':A.s('knock',260);break;
   case 'hole':handleHole(o,b);break;
   }}
-function done(id,x,y){const r=G.run;major(x,y);score(8000*comboF(),x,y);A.s('bank');qEvent('done',id);xp(5);
+function done(id,x,y){const r=G.run;major(x,y);score(8000*comboF(),x,y);A.s('bank');qEvent('done',id);xp(5);raiseParty(x,y);
   switch(id){
   case 'candles':r.mult=Math.min(6,r.mult+1);heal(r.cls==='cleric'?14:6);popup('Candles Lit','Multiplier '+r.mult+'x','good');break;
   case 'moon':G.buffs.moon=20;r.hutLit=true;popup('Moonlight','Double scoring for 20 seconds','good');break;
@@ -809,7 +855,7 @@ function openDoor(open){T.banks.door.segs.forEach(s=>s.on=!open);if(!open)G.door
 function handleHole(h,b){const r=G.run,hd=b.held;hd.plan='eject';hd.delay=1;A.s('hole');major(h.x,h.y);score(2500*comboF(),h.x,h.y);shot(h.id,h.x,h.y);
   switch(h.id){
   case 'tavern':{let got=false;if(r.side.length<2){newSide();got=true;}
-    if(r.shop&&r.gold>=25&&!G.demo){r.shop=false;hd.plan='wait';G.pending.push('shop');}else if(!got)float(h.x,h.y-36,'The Drowned Lantern','#ffd9a0',12);hd.delay=1.2;break;}
+    if(!G.demo&&r.tavern.length&&r.party.length<3&&!G.pending.includes('tavern')){hd.plan='wait';G.pending.push('tavern');}else if(!got)float(h.x,h.y-36,'The Drowned Lantern','#ffd9a0',12);hd.delay=1.2;break;}
   case 'crypt':hd.plan='tunnel';hd.delay=.6;float(h.x,h.y-32,'CRYPT STAIR','#9dffc8',13);break;
   case 'oubliette':hd.plan='tunnel';hd.delay=.6;float(h.x,h.y-32,'DOWN THE OUBLIETTE','#ff9a7a',13);break;
   case 'rise':hd.plan='tunnel';hd.delay=.5;G.inGrave=false;G.graveLive=false;G.tilt=0;G.save=Math.max(G.save,6);score(50000,h.x,h.y,'RISEN');xp(20);popup('Risen','The grave gives you back','main');A.s('victory');G.flash=.8;G.flashC='#eaffd0';break;
@@ -865,7 +911,9 @@ function spawnEnemy(type,tier,quest,minion){const def=ENEMY[type],r=G.run,P=foeP
   if(def.prowl)e.ax=clamp(p[0],P.cx-110,P.cx+110);
   G.enemies.push(e);burst(e.x,e.y,8,'#7dffb0',120,.8);return e;}
 function foeEscape(e){e.dead=true;float(e.x,e.y-30,'GOT AWAY'+(e.loot&&e.loot.gold?' WITH '+e.loot.gold+' GOLD':''),'#ffd24a',13);A.s('deny');burst(e.x,e.y,8,'#6f9a4a',120,.6);if(G.boss&&e.minion)G.boss.minions--;}
-function foeStrike(e,fb){const d=e.def,r=G.run,th=1+.4*(r.threat-1);if(!fb)return;
+function foeStrike(e,fb){const d=e.def,r=G.run,th=1+.4*(r.threat-1);
+  if(e.tgt&&e.tgt.hp>0){guardStruck(e.tgt,d.dmg*th,e);burst(e.x,e.y+20,8,'#ff5a5a',200,.5);return;}if(!fb)return;
+  {const t=interceptor();if(t&&e.job!=='thief'){t.ready=12;guardStruck(t,d.dmg*th*.7,e);float(fb.x,fb.y-26,'INTERCEPTED','#8fb0d8',13);A.s('clank');return;}}
   if(G.zones.some(z=>!z.fire&&!z.pyre&&Math.hypot(fb.x-z.x,fb.y-z.y)<z.r+fb.r)||G.buffs.hallow>0||(G.mods.phaseWard&&G.phase>0)){float(fb.x,fb.y-26,'WARDED','#ffe0a0',13);A.s('ward');return;}
   bolt(e,fb);burst(fb.x,fb.y,8,'#ff5a5a',200,.5);
   if(e.job==='thief'){const n=Math.min(r.gold,4+r.level*2);if(n>0){r.gold-=n;e.loot={kind:'gold',gold:n};e.hopT=0;float(e.x,e.y-36,'-'+n+' GOLD STOLEN','#ffd24a',13);A.s('deny');G.dirty=true;return;}}
@@ -877,7 +925,9 @@ function updateEnemies(dt){const fb=focusBall(),live=G.balls.filter(b=>b.st==='l
     if(e.marked>0)e.marked-=dt;if(e.poison>0){e.poison-=dt;e.dot=(e.dot||0)+dt;if(e.dot>=1){e.dot=0;damageEnemy(e,G.mods.pow*.35,false);if(e.dead)continue;}}
     if(G.mods.toll&&e.job==='swarm'&&e.state==='hold'&&onT){e.tollT=(e.tollT||0)+dt;if(e.tollT>=1){e.tollT=0;damageEnemy(e,G.mods.pow*G.mods.toll,false);if(e.dead)continue;}}
     if(e.stun<=0)switch(e.job){
-    case 'swarm':{if(e.y<P.line){const sp=d.speed*(1+.15*(r.threat-1));e.y+=sp*dt;e.x+=clamp(e.ax-e.x,-sp*dt,sp*dt);e.moving=true;e.state='walk';}else e.state='hold';break;}
+    case 'swarm':{const gs=liveGuards(e.tier);let g=null,gd=1e9;for(const q of gs){const dd=Math.hypot(q.p.x-e.x,q.p.y-e.y);if(dd<gd){gd=dd;g=q;}}e.tgt=g?g.c:null;
+      const tx=g?g.p.x:e.ax,ty=g?g.p.y-g.p.r-e.r-4:P.line,sp=d.speed*(1+.15*(r.threat-1));
+      if(e.y<ty-2||(g&&Math.abs(e.x-tx)>3)){e.y=Math.min(ty,e.y+sp*dt);e.x+=clamp(tx-e.x,-sp*dt,sp*dt);e.moving=true;e.state='walk';}else e.state='hold';break;}
     case 'hunter':{if(e.lunge>0){e.lunge-=dt;const k=1-Math.max(0,e.lunge)/.4,hb=live.find(b=>b.tier===e.tier&&Math.hypot(b.x-e.tx,b.y-e.ty)<160);if(hb){e.tx=clamp(hb.x,40,600);e.ty=clamp(hb.y,TY[e.tier]+300,P.line+60);}e.x=lerp(e.lx,e.tx,k);e.y=lerp(e.ly,e.ty,k);e.moving=true;e.state='lunge';
         const bite=live.find(b=>b.tier===e.tier&&Math.hypot(b.x-e.x,b.y-e.y)<b.r+e.r+(e.lunge<=0?30:6));
         if(e.lunge<=0||bite){e.lunge=0;e.lungeCd=e.frenzy?rand(1.5,2.5):rand(5,7);e.state='prowl';e.ax=clamp(e.x-Math.sin(e.t*.9)*88,P.cx-110,P.cx+110);e.ay=clamp(e.y-Math.sin(e.t*1.9)*12,TY[e.tier]+330,P.line);
@@ -1063,11 +1113,11 @@ function endBall(){const r=G.run;G.sub='bonus';G.mb=null;
   UI.bonus(G.bonus,r.ballsLeft>0);
   later(3.4,()=>{if(G.run!==r)return;G.sub=null;UI.bonus(null);if(r.ballsLeft>0){r.ballNum++;startBall();}else gameOver();});}
 function gameOver(won){const r=G.run;r.ended=won?'won':'fell';G.mode='over';G.sub=null;store.del('run');A.s(won?'victory':'over');metaAdd('runs');const m=store.get('meta',{});if(r.level>(m.bestLevel||0)){m.bestLevel=r.level;store.set('meta',m);}UI.gameOver(r);}
-function startRun(cls){G.demo=false;G.bot=null;resetWorld();G.mode='play';newRun(cls);G.cam.y=TY[2]-20;qBegin(G.run.main);startBall();
+function startRun(cls,comp){G.demo=false;G.bot=null;resetWorld();G.mode='play';newRun(cls,comp);G.cam.y=TY[2]-20;qBegin(G.run.main);startBall();
   popup(G.run.main.name,G.run.main.text,'main');newSideQuiet();UI.sync(true);}
 function newSideQuiet(){const r=G.run,pool=SIDE.filter(s=>s.steps[0].tier===2||(s.steps[0].id&&T.shots[s.steps[0].id]&&T.shots[s.steps[0].id].tier===2));const s=pick(pool);
   const q={id:s.id,name:s.name,giver:s.giver,text:s.text,steps:s.steps.map(o=>Object.assign({},o)),rw:s.rw,si:0,prog:0,tl:0};r.side.push(q);qBegin(q);}
-function continueRun(){const d=store.get('run',null);if(!d||!d.run)return false;G.demo=false;G.bot=null;resetWorld();G.mode='play';G.run=d.run;if(!G.run.grave)G.run.grave={hits:0,need:8,used:0,open:false};if(!G.run.wing||G.run.wing.key===undefined){const m=G.run.main,cw=m&&CAMPAIGNS[m.key].wing;G.run.wing={key:cw&&m.steps.some(x=>x.id==='wing')?cw.key:null,open:false,done:false,prog:0};}recalc();G.cam.y=TY[2]-20;
+function continueRun(){const d=store.get('run',null);if(!d||!d.run)return false;G.demo=false;G.bot=null;resetWorld();G.mode='play';G.run=d.run;if(!G.run.grave)G.run.grave={hits:0,need:8,used:0,open:false};if(!G.run.party){G.run.party=[];G.run.tavern=[];}if(!G.run.tavern.length&&G.run.party.length<3)G.run.tavern=drawRecruits(3);if(!G.run.wing||G.run.wing.key===undefined){const m=G.run.main,cw=m&&CAMPAIGNS[m.key].wing;G.run.wing={key:cw&&m.steps.some(x=>x.id==='wing')?cw.key:null,open:false,done:false,prog:0};}recalc();G.cam.y=TY[2]-20;
   if(!G.run.main){G.run.main=makeCampaign(G.run);qBegin(G.run.main);}else quests().forEach(qResume);startBall();UI.sync(true);return true;}
 function startDemo(){G.demo=true;resetWorld();G.mode='title';newRun(pick(Object.keys(CLASSES)));qBegin(G.run.main);newSideQuiet();G.bot={hl:0,hr:0,tl:rand(20,60),tr:rand(20,60),pl:0,plT:rand(.3,.9)};startBall();}
 
@@ -1080,10 +1130,8 @@ function openChoice(kind){const r=G.run;let c;
     while(picks.length<3){const l=shuffle(PERKS.filter(p=>p.kind!=='key'&&can(p)&&!picks.includes(p)));if(!l.length)break;picks.push(l[0]);}
     const tag=p=>cnt(p.id)?'Rank '+(cnt(p.id)+1):p.kind==='class'?CLASSES[r.cls].name:p.kind==='table'?'The table':p.kind==='key'?'Keystone':'Boon';
     c={kind,title:'Level '+r.level,sub:'Choose a boon',opts:picks.map(p=>({name:p.name,desc:p.desc,tag:tag(p),key:p.kind==='key',act:()=>{r.perks.push(p.id);recalc();if(p.now)p.now();}}))};}
-  else{const items=[{name:'Healing Draught',desc:'Restore 50 health.',cost:25,act:()=>heal(50)},{name:'Reliquary',desc:'A random relic for the rest of the run.',cost:90,act:()=>{const x=giveRelic();if(x)popup('Relic',x.name,'good',x.desc);}},
-      {name:'Sellsword',desc:'A second ball joins the fight right now.',cost:60,act:()=>later(1,()=>startMultiball('Sellsword',1,'tavern'))},{name:'Whetstone',desc:'+10% damage for the rest of the run.',cost:45,act:()=>{r.relics.push('whet');recalc();}},
-      {name:'Ward of Return',desc:'Relight the kickback and gain 20 seconds of ball save.',cost:35,act:()=>{r.kickback=true;G.save=Math.max(G.save,20);}},{name:'Extra Ball',desc:'One more ball in reserve.',cost:160*Math.pow(2,r.bought||0),act:()=>{r.ballsLeft++;r.bought=(r.bought||0)+1;}}];
-    c={kind,title:'The Drowned Lantern',sub:'You have '+r.gold+' gold',opts:shuffle(items).slice(0,3).map(o=>Object.assign(o,{tag:o.cost+' gold'})).concat([{name:'Leave',desc:'Keep your coin and get back to it.',tag:'',act:()=>{}}])};}
+  else{const opts=r.tavern.map(id=>{const d=COMPANIONS[id],R=ROLES[d.role];return {name:d.name,desc:R.name+'. '+d.desc,cost:d.cost,tag:d.cost+' gold',role:d.role,act:()=>{const c=recruit(id);if(c)popup(d.name+' Joins','They take the '+c.slot+' post','good',d.desc);}};});
+    c={kind,title:'The Drowned Lantern',sub:'Recruits for hire. You have '+r.gold+' gold'+(r.party.length?'; '+(3-r.party.length)+' post'+(3-r.party.length===1?'':'s')+' free':''),opts:opts.concat([{name:'Leave',desc:'Keep your coin and get back to it.',tag:'',act:()=>{}}])};}
   if(G.demo||G.auto){const o=pick(c.opts.filter(o=>!o.cost||o.cost<=r.gold));if(o.cost)r.gold-=o.cost;o.act();resumeHeld();return;}
   c.sel=0;G.choice=c;UI.choice(c);A.s('choice');}
 function choose(i){const c=G.choice;if(!c)return;const o=c.opts[i];if(!o)return;if(o.cost&&G.run.gold<o.cost){A.s('deny');return;}if(o.cost)G.run.gold-=o.cost;o.act();
@@ -1105,7 +1153,7 @@ function updateRules(dt){const r=G.run;r.time+=dt;
   if(G.inGrave&&G.graveLive&&G.tilt<=0){G.graveT-=dt;G.dirty=true;if(G.graveT<=0){G.graveT=0;G.tilt=1e9;popup('The Lid Closes','The flippers go dead','bad');A.s('tilt');}}
   if(G.focusTier>=4&&G.tilt<=0&&G.balls.some(b=>b.st==='live'&&b.tier===G.focusTier)){G.wingT-=dt;G.dirty=true;if(G.wingT<=0){const d=WINGS[WING_KEYS[G.focusTier-4]];G.wingT=0;G.tilt=1e9;popup(d.late[0],d.late[1],'bad');A.s('tilt');}}
   for(const q of r.side.slice())if(q.tl>0&&!G.inGrave&&G.focusTier<4){q.tl-=dt;G.dirty=true;if(q.tl<=0)qFail(q);}
-  G.spawnT-=dt;if(G.spawnT<=0){G.spawnT=.6;manageSpawns();}
+  G.spawnT-=dt;if(G.spawnT<=0){G.spawnT=.6;manageSpawns();}updateParty(dt);
   const f=focusBall();if(f){const ft=tierOf(f.y);if(ft!==G.focusTier){G.focusTier=ft;relight();}}
   if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over'&&!(G.run.main===null&&!G.opt.endless)&&(G.plunge.ready||G.balls.some(b=>b.st==='held'||b.st==='tunnel')||!G.balls.some(b=>b.st==='live')))openChoice(G.pending.shift());}
 function updateFx(dt){
@@ -1422,7 +1470,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.9';
+const $=id=>document.getElementById(id),VERSION='3D build 0.10';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1457,7 +1505,8 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     const cnt={};r.perks.forEach(p=>cnt[p]=(cnt[p]||0)+1);const rc={};r.relics.forEach(p=>rc[p]=(rc[p]||0)+1);
     h='<h4 style="color:'+c.color+'">'+c.name+'</h4><p class="flav">'+esc(c.tag)+'</p><dl><dt>Level</dt><dd>'+r.level+'</dd><dt>Power</dt><dd>'+Math.round(m.pow)+'</dd><dt>Crit</dt><dd>'+Math.round(m.crit*100)+'%</dd><dt>Gold</dt><dd>'+r.gold+'</dd><dt>Slain</dt><dd>'+r.kills+'</dd><dt>Threat</dt><dd>'+r.threat+'</dd></dl>'+
       '<h3>Powers</h3><p class="pw"><b>Nudge: '+esc(c.nudge)+'.</b> '+esc(c.nudgeText)+'</p><p class="pw"><b>Cradle: '+esc(c.shot)+'.</b> '+esc(c.shotText)+'</p><p class="pw"><b>Full meter: '+esc(c.abil)+'.</b> '+esc(c.abilText)+'</p><h3>Boons</h3><ul class="tags">'+(Object.keys(cnt).map(id=>{const p=PERKS.find(x=>x.id===id);if(!p)return '';return '<li class="'+p.kind+'" title="'+esc(p.desc)+'">'+esc(p.name)+(cnt[id]>1?' '+cnt[id]:'')+'</li>';}).join('')||'<li class="none">None yet</li>')+'</ul>'+
-      '<h3>Relics</h3><ul class="tags">'+(Object.keys(rc).map(id=>{const p=RELICS.find(x=>x.id===id);return '<li title="'+esc(p.desc)+'">'+esc(p.name)+(rc[id]>1?' '+rc[id]:'')+'</li>';}).join('')||'<li class="none">None yet</li>')+'</ul>';
+      '<h3>Relics</h3><ul class="tags">'+(Object.keys(rc).map(id=>{const p=RELICS.find(x=>x.id===id);return '<li title="'+esc(p.desc)+'">'+esc(p.name)+(rc[id]>1?' '+rc[id]:'')+'</li>';}).join('')||'<li class="none">None yet</li>')+'</ul>'+
+      '<h3>Party</h3>'+((r.party||[]).map(q=>{const d=COMPANIONS[q.id],R=ROLES[d.role];return '<p class="pw mate" title="'+esc(d.desc)+'"><b style="color:'+R.col+'">'+esc(d.name)+'</b> <small>'+R.name+', '+q.slot+' post</small><i class="bar"><i style="width:'+Math.round(100*q.hp/q.maxHp)+'%;background:'+(q.hp>0?R.col:'#553')+'"></i></i>'+(q.hp<=0?' <small>wounded</small>':'')+'</p>';}).join('')||'<p class="flav">You ride alone. The Tavern has company.</p>');
     $('sheetBody').innerHTML=h;},
   bonus(b,more){const el=$('bonus');if(!b){el.hidden=true;return;}el.hidden=false;
     el.innerHTML='<h2>'+(b.fallen?'Fallen':b.tilt?'Tilt':'Ball lost')+'</h2><dl>'+b.lines.map(l=>'<dt>'+l[0]+'</dt><dd>'+l[1]+' <small>'+fmt(l[2])+'</small></dd>').join('')+'<dt>Multiplier</dt><dd>'+b.mult+'x</dd></dl><p class="big">'+(b.tilt?'No bonus':'+'+fmt(b.total))+'</p><p>'+(more?'The next ball is on its way.':'That was your last ball.')+'</p>';},
@@ -1475,6 +1524,9 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
       for(const k in CLASSES){const c=CLASSES[k];h+='<button class="card cls" data-act="class" data-k="'+k+'"><i class="orb" style="--c:'+c.color+';--g:'+c.glow+'"></i><b>'+c.name+'</b><small>'+esc(c.tag)+'</small><span class="stat">Health '+c.hp+' &middot; Power '+c.pow+'</span><span>'+esc(c.pass)+'</span><span><em>Nudge: '+esc(c.nudge)+'.</em> '+esc(c.nudgeText)+'</span><span><em>Cradle: '+esc(c.shot)+'.</em> '+esc(c.shotText)+'</span><span><em>Full meter: '+esc(c.abil)+'.</em> '+esc(c.abilText)+'</span></button>';}
       h+='</div><nav class="row">'+btn('title','Back')+'</nav></div>';}
     else if(name==='scores'){const sc=store.get('scores',[]);h='<div class="pane"><h2>High scores</h2>'+(sc.length?'<table><thead><tr><th></th><th>Name</th><th>Score</th><th>Hero</th></tr></thead><tbody>'+sc.map((s,i)=>'<tr'+(s.id===UI.lastId?' class="me"':'')+'><td>'+(i+1)+'</td><td>'+esc(s.name)+'</td><td>'+fmt(s.score)+'</td><td>'+esc(s.cls)+' '+s.level+'</td></tr>').join('')+'</tbody></table>':'<p class="lead">No scores yet. The first name on the stone is yours to carve.</p>')+'<nav class="row">'+btn('title','Back')+'</nav></div>';}
+    else if(name==='party'){h='<div class="pane wide"><h2>Who rides with you?</h2><p class="lead">Companions stand guard at the drains: a ball that would go out bounces off them, at a cost to their health. Swarms go for them. The first one is free; the Tavern has more.</p><div class="cards">';
+      for(const k of UI.firstPick||[]){const d=COMPANIONS[k],R=ROLES[d.role];h+='<button class="card" data-act="recruit" data-k="'+k+'"><small style="color:'+R.col+'">'+R.name+'</small><b>'+esc(d.name)+'</b><span>'+esc(d.desc)+'</span></button>';}
+      h+='</div><nav class="row">'+btn('alone','Ride alone')+btn('new','Back')+'</nav></div>';}
     else if(name==='options'){h='<div class="pane"><h2>Options</h2><label for="optMusic">Music<input id="optMusic" type="range" min="0" max="100" value="'+Math.round(A.vol.m*100)+'"></label><label for="optSfx">Sound effects<input id="optSfx" type="range" min="0" max="100" value="'+Math.round(A.vol.s*100)+'"></label>'+
       '<label for="optShake" class="check"><input id="optShake" type="checkbox"'+(G.opt.shake?' checked':'')+'>Screen shake</label><label for="optEndless" class="check"><input id="optEndless" type="checkbox"'+(G.opt.endless?' checked':'')+'>Endless: a new shadow rises after every campaign, instead of the run ending</label><nav>'+btn('gfxCam','View: '+CAMS[R3.camMode].name)+btn('gfxQual','Detail: '+(R3.q?R3.q.label:''))+btn('erase','Erase saved run and scores')+btn(UI.back||'title','Back')+'</nav></div>';}
     else if(name==='controls'){h='<div class="pane"><h2>Controls</h2><dl class="keys"><dt>Left flippers</dt><dd>Z, Left Arrow or Left Shift</dd><dt>Right flippers</dt><dd>/, Right Arrow or Right Shift</dd><dt>Nudge</dt><dd>Space</dd><dt>Launch</dt><dd>Hold Space or the right flipper, then release</dd><dt>Class power</dt><dd>Hold the ball still on a raised flipper until the ring fills, then let it roll and flip</dd><dt>Pause</dt><dd>P or Esc</dd><dt>View, detail, full screen</dt><dd>C, Q and F</dd><dt>Touch</dt><dd>Left and right halves of the screen flip. The centre button nudges and launches.</dd></dl>'+
@@ -1486,7 +1538,9 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
   act(el){const a=el.dataset.act;A.init();A.s('ui');
     switch(a){
     case 'new':UI.menu('class');break;
-    case 'class':UI.menu(null);startRun(el.dataset.k);break;
+    case 'class':UI.cls=el.dataset.k;UI.firstPick=drawRecruits(3);UI.menu('party');break;
+    case 'recruit':UI.menu(null);startRun(UI.cls,el.dataset.k);break;
+    case 'alone':UI.menu(null);startRun(UI.cls,null);break;
     case 'continue':UI.menu(null);if(!continueRun())UI.menu('title');break;
     case 'scores':UI.menu('scores');break;
     case 'options':UI.back=UI.cur==='pause'?'pause':'title';UI.menu('options');break;

@@ -1,11 +1,11 @@
 {
   "name": "gravebound-3d",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Gravebound Pinball in 3D: a dark-fantasy RPG pinball table for the browser",
   "main": "build.js",
   "scripts": {
     "build": "node build.js",
-    "soak": "node build.js && node test/soak.js 3 && node test/wing-quest.js && node test/foes.js && node test/waves.js && node test/cards.js",
+    "soak": "node build.js && node test/soak.js 3 && node test/wing-quest.js && node test/foes.js && node test/waves.js && node test/cards.js && node test/party.js",
     "shots": "node build.js && node test/shot.js 1600 900 test/scenes/menus-foes-boss.json",
     "standalone": "node build.js && node test/standalone.js"
   },

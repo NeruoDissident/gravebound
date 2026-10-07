@@ -73,6 +73,14 @@ Bosses use the table too: the Warden's Portcullis Slam bars the Wolf Run for the
 the wolves into a frenzy, and Ashmaw is warded by three cultists rather than by the bumpers and scorches the floor
 in front of the Sanctum with Gravefire.
 
+Companions are the party. You pick one for free when you choose your hero; the Tavern scoop hires more (three
+fixed-ability recruits per campaign, gold to hire, the shop is gone). Each one stands guard on a post at one of the
+three drains: the centre gap and the two outlanes. A ball that would go out bounces off them instead, at a cost to
+their health, and a ball off a post fires their perk (Oakshield intercepts strikes, Sister Adela heals you, Vex marks
+the nearest foe, Tam Drum fills your power). Skeleton swarms go for the guards instead of you. A guard at zero is
+wounded and the drain stands open until you complete a bank. Riding alone is plain pinball; the party makes it more
+forgiving, never required.
+
 Level-up cards come three at a time: one for your class, one for the table, and one plain stat. Past level 3 the
 third slot is sometimes a keystone instead, and a run takes only one.
 
@@ -90,7 +98,7 @@ The whole pool is the `PERKS` table in `src/game.js`.
 ```
 npm install
 npm run build        # writes dist/
-npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job, the waves and boss moves, and every card are walked end to end
+npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job, the waves and boss moves, every card and the party are walked end to end
 npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```

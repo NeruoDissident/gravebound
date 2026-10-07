@@ -151,3 +151,5 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
 
 .card.key{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 24px rgba(255,210,74,.25)}.card.key b{color:var(--gold)}
 .tags li.key{color:var(--gold);border-color:var(--gold)}
+
+.mate{margin:4px 0}.mate .bar{display:block;height:5px;margin-top:3px;background:#1a1a24;border:1px solid #2a2a3a}.mate .bar i{display:block;height:100%}
