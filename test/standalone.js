@@ -5,4 +5,4 @@ await pg.route('**/*',r=>r.request().url().startsWith('file:')?r.continue():r.ab
 await pg.goto('file://'+path.join(__dirname,'../dist/gravebound-3d-standalone.html'));
 await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:500}).catch(e=>console.log('WAIT FAIL',logs.join(' | ')));
 console.log(await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);UI.menu(null);startRun('rogue');__gb.advance(2,2);return JSON.stringify({three:THREE.REVISION,composer:!!THREE.EffectComposer,bloom:!!THREE.UnrealBloomPass,mode:G.mode,balls:G.balls.length,title:document.title});}));
-await pg.screenshot({path:path.join(__dirname,'out/alone.png'),timeout:120000});console.log(logs.filter(l=>!/ERR_FAILED/.test(l)).join('\n')||'no errors');await br.close();})();
+await pg.screenshot({path:path.join(__dirname,'out/standalone.png'),timeout:120000});console.log(logs.filter(l=>!/ERR_FAILED/.test(l)).join('\n')||'no errors');await br.close();})();

@@ -1,4 +1,0 @@
-[{"eval":"(G.balls=[],G.toast=null,document.getElementById('banner').innerHTML='',act('keys'),R3.dbg={p:[-250,E[1]+330,TY[2]+330],t:[0,E[1]-20,TY[2]-40],fov:50},G.focusTier=2,__gb.draw(2,.6),1)","shot":"c5-chute"},
- {"eval":"(R3.dbg=null,G.balls.push(newBall(300,TY[1]+600,0,0)),G.focusTier=1,T.flips.forEach(f=>{f.a=f.up;}),__gb.draw(8,.6),1)","shot":"wilds2"},
- {"eval":"(G.balls=[],G.balls.push(newBall(320,GY+420,0,0)),G.inGrave=true,G.focusTier=3,T.flips.forEach(f=>{f.a=f.rest;}),__gb.draw(8,.6),1)","shot":"grave2"},
- {"eval":"(G.attract=true,G.inGrave=false,G.focusTier=2,document.getElementById('hud').hidden=true,__gb.draw(8,.9),1)","shot":"attract"}]

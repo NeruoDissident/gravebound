@@ -1,18 +1,20 @@
 {
-  "name": "gb3d",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
+  "name": "gravebound-3d",
+  "version": "0.2.0",
+  "description": "Gravebound Pinball in 3D: a dark-fantasy RPG pinball table for the browser",
+  "main": "build.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node build.js",
+    "soak": "node build.js && node test/soak.js 3",
+    "shots": "node build.js && node test/shot.js 1600 900 test/scenes/menus-foes-boss.json",
+    "standalone": "node build.js && node test/standalone.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "dependencies": {
     "three": "^0.128.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "playwright": "^1.56.0"
   }
 }

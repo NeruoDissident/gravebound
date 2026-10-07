@@ -1,6 +1,0 @@
-[{"eval":"(act('title'),__gb.advance(2,2),document.getElementById('menu').innerText.slice(0,40))","shot":"p0-title"},
- {"eval":"(act('play'),G.bot={hl:0,hr:0,tl:30,tr:30,pl:0,plT:.7},__gb.advance(12,3),[G.run.score,G.balls.map(b=>b.st+':'+Math.round(b.x)+','+Math.round(b.y))])","shot":"p1-play"},
- {"eval":"(__gb.advance(25,2),jumpTo(0),__gb.advance(4,3),[G.run.score,G.focusTier])","shot":"p2-keep"},
- {"eval":"(act('quality'),__gb.advance(3,3),[R3.qName,R3.postOn])","shot":"p3-medium"},
- {"eval":"(act('quality'),act('cam'),jumpTo(1),__gb.advance(3,3),[R3.qName,R3.postOn,G.focusTier])","shot":"p4-low-chase"},
- {"eval":"(act('quality'),act('cam'),jumpTo(3),__gb.advance(3,3),act('add'),act('ball'),act('grave'),act('sound'),[R3.qName,R3.postOn,G.focusTier,G.inGrave])","shot":"p5-overhead-grave"}]
