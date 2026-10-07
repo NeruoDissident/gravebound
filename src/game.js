@@ -414,15 +414,15 @@ const RELICS=[
   {id:'scale',name:'Grave Dragon Scale',desc:'+40 max health.',f:m=>m.hp+=40},
   {id:'whet',name:'Whetstone',desc:'+10% damage.',stack:true,f:m=>m.dmg+=.1}
 ];
-const ENEMY={
-  skeleton:{name:'Skeleton',hp:18,r:15,xp:8,gold:3,undead:1,dmg:6},
-  goblin:{name:'Goblin',hp:14,r:13,xp:7,gold:5,hop:1,dmg:5},
-  wolf:{name:'Dire Wolf',hp:24,r:15,xp:10,gold:3,prowl:1,beast:1,dmg:8},
-  spirit:{name:'Spirit',hp:12,r:15,xp:9,gold:2,ghost:1,undead:1,dmg:5},
-  cultist:{name:'Cultist',hp:20,r:14,xp:12,gold:6,cast:9},
-  revenant:{name:'Armored Dead',hp:32,r:16,xp:16,gold:8,armor:2,undead:1,dmg:9},
-  knight:{name:'Corrupted Knight',hp:58,r:17,xp:24,gold:12,armor:1,dmg:12},
-  troll:{name:'Grave Troll',hp:105,r:26,xp:40,gold:25,kick:1,beast:1,dmg:14}
+const ENEMY={ // job: what it does on the table. wind: seconds of visible wind-up before a strike; a hit in that window staggers it
+  skeleton:{name:'Skeleton',job:'swarm',hp:18,r:14,xp:8,gold:3,undead:1,dmg:7,speed:26,wind:1.6,rate:[5,8]},
+  goblin:{name:'Goblin',job:'thief',hp:14,r:13,xp:7,gold:6,hop:1,dmg:5,wind:1.2,rate:[6,9]},
+  wolf:{name:'Dire Wolf',job:'hunter',hp:24,r:15,xp:10,gold:3,prowl:1,beast:1,dmg:6},
+  spirit:{name:'Spirit',job:'possess',hp:12,r:15,xp:9,gold:2,ghost:1,undead:1,dmg:5,wind:2.2,rate:[8,11]},
+  cultist:{name:'Cultist',job:'ritual',hp:20,r:14,xp:12,gold:6,cast:9},
+  revenant:{name:'Armored Dead',job:'wall',hp:32,r:16,xp:16,gold:8,armor:2,undead:1,dmg:9,wind:2,rate:[8,12]},
+  knight:{name:'Corrupted Knight',job:'duel',hp:58,r:17,xp:24,gold:12,armor:1,dmg:12,wind:1.8,rate:[9,13]},
+  troll:{name:'Grave Troll',job:'gate',hp:105,r:26,xp:40,gold:25,kick:1,beast:1,dmg:14,wind:2.4,rate:[10,14]}
 };
 const BOSSES={
   warden:{name:'The Warden of the Ruined Gate',short:'The Warden',tier:1,hp:270,r:36,color:'#9fc0dc',seq:['shield','open','summon','open','cast','open'],
@@ -534,7 +534,7 @@ function initGame(){buildTable();
 function resetWorld(){G.gen=(G.gen||0)+1;Object.assign(G,{balls:[],enemies:[],pickups:[],queue:[],pending:[],boss:null,choice:null,sub:null,mb:null,tilt:0,fallen:false,curse:{},buffs:{},combo:0,comboT:0,save:0,paused:false,bonus:null,doorT:0,orbitMem:{},booms:[],zones:[],phase:0,nudgeCd:0,hidden:false,inGrave:false,graveLive:false});
   G.plunge={ready:false,charge:0,held:false,auto:0};
   for(const s of T.segs){if(s.bank){s.on=true;s.lit=false;}}for(const id in T.banks)T.banks[id].reset=0;for(const k in T.wings)T.wings[k].seal.forEach(s=>s.on=true);
-  for(const s of T.sens)s.lit=false;for(const c of T.bumps)c.ward=false;G.statues.forEach(s=>s.on=true);}
+  for(const s of T.sens)s.lit=false;for(const c of T.bumps){c.ward=false;c.poss=null;}G.statues.forEach(s=>s.on=true);}
 
 /* ---------- run ---------- */
 function newRun(cls){const c=CLASSES[cls],meta=store.get('meta',{}),leg=G.demo?0:Math.min(100,(meta.bosses||0)*10);
@@ -634,7 +634,7 @@ function consecrate(x,y){G.zones.push({x,y,r:100,t:9,tick:0});heal(8);A.s('ward'
 function classNudge(){const r=G.run,m=G.mods,c=r.cls,live=G.balls.filter(b=>b.st==='live');if(G.nudgeCd>0||!live.length||G.fallen)return;G.nudgeCd=2.5;
   const near=(e,d)=>!e.dead&&e.spawn<=0&&live.some(b=>Math.hypot(b.x-e.x,b.y-e.y)<d);
   if(c==='knight'){for(const b of live)G.booms.push({x:b.x,y:b.y,r:150,t:0,c:'#8fb0d8'});
-    for(const e of G.enemies)if(near(e,150)){e.atk=Math.max(e.atk,6);if(e.def.cast)e.castT=Math.max(e.castT,e.def.cast*.8);damageEnemy(e,m.pow*.4,false);}}
+    for(const e of G.enemies)if(near(e,150)){e.atk=Math.max(e.atk,6);e.wind=0;e.stun=Math.max(e.stun,1);if(e.def.cast)e.castT=Math.max(e.castT,e.def.cast*.8);damageEnemy(e,m.pow*.4,false);}}
   else if(c==='rogue'){G.phase=.7;for(const b of live)burst(b.x,b.y,10,'#b08cff',180,.5);}
   else if(c==='mage'){const b=focusBall();let best=null,bd=280;for(const e of G.enemies){if(e.dead||e.spawn>0||e.tier!==tierOf(b.y))continue;const d=Math.hypot(e.x-b.x,e.y-b.y);if(d<bd){bd=d;best=e;}}
     if(best){bolt(b,best);if(best.def.cast)best.castT=best.def.cast+1;damageEnemy(best,m.pow*.8,false);}
@@ -711,7 +711,7 @@ function ev(type,o,b,imp){const r=G.run;if(!r)return;if(type==='sling')G.slingRu
   case 'wall':A.s('knock',imp);break;
   case 'flipHit':if(b.arm>0){b.arm=0;b.pow={t:r.cls==='knight'?3.5:3,hits:0};A.s('ability');burst(b.x,b.y,18,CLASSES[r.cls].glow,300,.6);float(b.x,b.y-30,CLASSES[r.cls].shot.toUpperCase(),CLASSES[r.cls].glow,15);}break;
   case 'sling':score(110);A.s('sling');charge(1,'hit');if(G.mods.bumpGold&&Math.random()<.3)gold(1,b.x,b.y);burst(b.x,b.y,4,'#ffd9a0',160,.5);break;
-  case 'bump':{score(o.bell?800:250);A.s(o.bell?'bell':'bump',o.tier);charge(1,'hit');shot(o.group,o.x,o.y);burst(o.x,o.y,6,o.bell?'#ffd070':'#bfe6ff',200,.5);
+  case 'bump':{if(o.poss&&!o.poss.dead){A.s('clank');burst(o.x,o.y,5,'#9be8e0',160,.5);powerImpact(b,type);break;}score(o.bell?800:250);A.s(o.bell?'bell':'bump',o.tier);charge(1,'hit');shot(o.group,o.x,o.y);burst(o.x,o.y,6,o.bell?'#ffd070':'#bfe6ff',200,.5);
     if(o.ward){o.ward=false;wardHit(o);}
     if(o.group==='graves')graveHit(o);else if(o.group==='bones'&&G.graveBones<4){G.graveBones++;G.graveT+=1;float(o.x,o.y-30,'+1s','#9dffc8',12);}
     else if(o.tier>=4){gold(1,o.x,o.y);if(G.wingUrns<6){G.wingUrns++;G.wingT+=1;float(o.x,o.y-30,'+1s',PAL[o.tier].glow,12);}}
@@ -734,7 +734,7 @@ function ev(type,o,b,imp){const r=G.run;if(!r)return;if(type==='sling')G.slingRu
     break;}
   case 'spin':score(150);A.s('spin');charge(1,'spin');shot(o.id,o.x,o.y);break;
   case 'kick':if(r.kickback&&!G.fallen&&G.tilt<=0){r.kickback=false;G.kickT=30;b.x=41;b.vx=0;b.vy=-2050;A.s('kick');float(b.x+40,b.y-40,'KICKBACK','#9fe8ff',15);burst(b.x,b.y,14,'#9fe8ff',300,.6);relight();}break;
-  case 'rampIn':A.s('rampIn');break;
+  case 'rampIn':A.s('rampIn');for(const e of G.enemies)if(e.job==='ritual'&&e.post&&e.post.rail===o.id)ritualBroken(e);break;
   case 'ramp':r.stat.ramps++;major(b.x,b.y);score(4000*comboF(),b.x,b.y);A.s('ramp');shot(o.id,b.x,b.y);if(G.mods.rampHeal)heal(G.mods.rampHeal);xp(2);jackpot(b.x,b.y);break;
   case 'rampFail':A.s('knock',260);break;
   case 'hole':handleHole(o,b);break;
@@ -782,27 +782,82 @@ function addBall(from){if(G.balls.length>=5||G.sub||!G.run)return;
   const h=T.holes[from],b=newBall(h.x,h.y+h.r+2,h.ev[0]*rand(.85,1.15),h.ev[1]);b.noHole=.8;G.balls.push(b);h.glow=1;A.s('eject');}
 
 /* ---------- enemies ---------- */
-function spawnEnemy(type,tier,quest,minion){const def=ENEMY[type],r=G.run;let p=null;
-  for(const c of shuffle(T.spawn[tier])){if(G.enemies.some(e=>Math.hypot(e.ax-c[0],e.ay-c[1])<50))continue;if(G.pickups.some(e=>Math.hypot(e.x-c[0],e.y-c[1])<40))continue;
-    if(G.balls.some(b=>b.st==='live'&&Math.hypot(b.x-c[0],b.y-c[1])<70))continue;p=c;break;}
-  if(!p)return null;const th=1+.4*(r.threat-1),cx=tier===2?303:320;
-  const e={type,def,tier,x:p[0],y:p[1],ax:def.prowl?clamp(p[0],cx-110,cx+110):p[0],ay:p[1],r:def.r,hp:def.hp*th,maxHp:def.hp*th,armor:def.armor||0,spawn:.7,hitCd:0,
-    castT:def.cast?def.cast+rand(2):0,atk:rand(9,14),t:rand(9),flash:0,quest:quest||null,minion:!!minion,hopT:rand(2,3.5),hop:1,dead:false};
+/* ---------- foes: every one has a job on the table ----------
+   swarm: rises at the top and shambles down to the slingshot line, then strikes. thief: hops after loose loot or your purse and runs for an outlane with it.
+   hunter: prowls a lane and lunges at the ball, batting it toward the outlanes. possess: sits on a bumper and deadens it until you shoot it through.
+   ritual: chants at a ramp mouth; the ramp breaks the ritual. wall: holds an orbit entrance; weak hits bounce off. duel: guards the statue; weak hits are parried
+   and answered. gate: holds a scoop and punts the ball; a hard hit staggers it. */
+function foePosts(tier){const P=T.posts||(T.posts={});if(P[tier])return P[tier];const y=TY[tier],main=tier<3,cx=tier===2?303:320,near=(l,x,yy)=>l.reduce((a,q)=>!a||Math.hypot(q.x-x,q.y-yy)<Math.hypot(a.x-x,a.y-yy)?q:a,null);
+  const o={cx,line:main?y+690:y+430,
+    rise:main?[[cx-120,y+400],[cx,y+392],[cx+120,y+400],[cx-60,y+372],[cx+60,y+372]]:T.spawn[tier].map(q=>q.slice()),
+    mouths:T.mouths.filter(m=>tierOf(m.y)===tier).map(m=>({x:m.x-m.dx*30,y:m.y-m.dy*30,rail:m.rail})),
+    orbits:T.sens.filter(q=>q.kind==='orbit'&&q.tier===tier).map(q=>({x:q.x,y:q.y})),
+    outs:T.sens.filter(q=>q.kind==='outlane'&&q.tier===tier).map(q=>({x:q.x,y:q.y-34})),
+    holes:Object.values(T.holes).filter(h=>h.tier===tier&&h.id!=='rise').map(h=>({x:h.x,y:h.y+36,id:h.id})),
+    bumps:T.bumps.filter(b=>b.tier===tier&&!b.bell),near};
+  return P[tier]=o;}
+function stepTo(e,x,y,max){const dx=x-e.x,dy=y-e.y,l=Math.hypot(dx,dy);return l<=max?[x,y]:[e.x+dx/l*max,e.y+dy/l*max];}
+function spawnEnemy(type,tier,quest,minion){const def=ENEMY[type],r=G.run,P=foePosts(tier),taken=(x,y,d)=>G.enemies.some(e=>!e.dead&&Math.hypot(e.ax-x,e.ay-y)<(d||50)),free=l=>shuffle(l).find(q=>!taken(q.x,q.y,40));
+  let p=null,post=null;
+  if(def.job==='swarm'){const c=shuffle(P.rise).find(q=>!taken(q[0],q[1],34));if(c)p=c;}
+  else if(def.job==='possess'){const b=shuffle(P.bumps).find(b=>!b.poss||b.poss.dead);if(b)post={kind:'bump',b};}
+  else if(def.job==='ritual'){const m=free(P.mouths);if(m)post={kind:'mouth',x:m.x,y:m.y,rail:m.rail};}
+  else if(def.job==='wall'){const m=free(P.orbits);if(m)post={kind:'orbit',x:m.x,y:m.y};}
+  else if(def.job==='duel'){const st=G.statues.find(q=>q.tier===tier),bo=G.boss&&G.boss.alive&&G.boss.tier===tier?G.boss:null,q=bo?{x:bo.x,y:bo.y+bo.r+34}:st?{x:st.x,y:st.y+st.r+30}:null;if(q&&!taken(q.x,q.y,30))post={kind:'guard',x:q.x,y:q.y};}
+  else if(def.job==='gate'){const h=free(P.holes);if(h)post={kind:'hole',x:h.x,y:h.y,id:h.id};}
+  if(!p&&post&&post.kind!=='bump')p=[post.x,post.y];
+  if(!p)for(const c of shuffle(T.spawn[tier])){if(taken(c[0],c[1],50))continue;if(G.pickups.some(q=>Math.hypot(q.x-c[0],q.y-c[1])<40))continue;if(G.balls.some(b=>b.st==='live'&&Math.hypot(b.x-c[0],b.y-c[1])<70))continue;p=c;break;}
+  if(!p)return null;const th=1+.4*(r.threat-1);
+  const e={type,def,job:def.job,tier,x:p[0],y:p[1],ax:p[0],ay:p[1],r:def.r,hr:def.r,hp:def.hp*th,maxHp:def.hp*th,armor:def.armor||0,spawn:.7,hitCd:0,wind:0,stun:0,ripCd:0,
+    castT:def.cast?def.cast+rand(2):0,atk:rand(def.rate?def.rate[0]:9,def.rate?def.rate[1]:14),t:rand(9),flash:0,quest:quest||null,minion:!!minion,hopT:rand(2,3.5),hop:1,post,state:post&&post.kind==='bump'?'drift':'idle',goal:null,want:null,loot:null,lunge:0,lungeCd:rand(2,4),dead:false};
+  if(def.prowl)e.ax=clamp(p[0],P.cx-110,P.cx+110);
   G.enemies.push(e);burst(e.x,e.y,8,'#7dffb0',120,.8);return e;}
-function updateEnemies(dt){for(const e of G.enemies){e.t+=dt;if(e.spawn>0)e.spawn-=dt;if(e.hitCd>0)e.hitCd-=dt;if(e.flash>0)e.flash-=dt*4;const d=e.def;
-  if(d.prowl){e.x=e.ax+Math.sin(e.t*.9)*88;e.y=e.ay+Math.sin(e.t*1.9)*12;}
-  else if(d.ghost){e.x=e.ax+Math.sin(e.t*.7)*44;e.y=e.ay+Math.cos(e.t*.5)*28;}
-  else if(d.kick){e.x=e.ax+Math.sin(e.t*.5)*30;}
-  else if(d.hop){e.hopT-=dt;if(e.hopT<=0){e.hopT=rand(2.4,3.6);const c=pick(T.spawn[e.tier]);if(!G.enemies.some(o=>o!==e&&Math.hypot(o.ax-c[0],o.ay-c[1])<50)){e.fx=e.x;e.fy=e.y;e.ax=c[0];e.ay=c[1];e.hop=0;}}
-    if(e.hop<1){e.hop=Math.min(1,e.hop+dt*3.5);e.x=lerp(e.fx,e.ax,e.hop);e.y=lerp(e.fy,e.ay,e.hop)-Math.sin(e.hop*PI)*18;}}
-  if(d.dmg&&e.spawn<=0&&G.balls.length&&!G.fallen&&!G.hidden&&e.tier===G.focusTier){e.atk-=dt;if(e.atk<=0){e.atk=rand(10,15);const fb=focusBall();bolt(e,fb);if(fb)burst(fb.x,fb.y,8,'#ff5a5a',200,.5);
-      hurt(d.dmg*(1+.4*(G.run.threat-1)));float(e.x,e.y-36,d.name.toUpperCase()+' STRIKES','#ff8a8a',12);}}
-  if(d.cast&&e.spawn<=0&&G.balls.length&&!G.fallen&&!G.hidden&&!G.inGrave){e.castT-=dt;if(e.castT<=0){e.castT=d.cast;const th=1+.4*(G.run.threat-1);bolt(e,focusBall());hurt(10*th);G.curse[pick(['dark','weak','hex'])]=10;float(e.x,e.y-34,'CURSED','#c08cff',13);A.s('curse');}}}
-  if(G.enemies.some(e=>e.dead))G.enemies=G.enemies.filter(e=>!e.dead);
-  for(const s of G.statues){if(s.flash>0)s.flash-=dt*4;if(s.cool>0)s.cool-=dt;}}
+function foeEscape(e){e.dead=true;float(e.x,e.y-30,'GOT AWAY'+(e.loot&&e.loot.gold?' WITH '+e.loot.gold+' GOLD':''),'#ffd24a',13);A.s('deny');burst(e.x,e.y,8,'#6f9a4a',120,.6);if(G.boss&&e.minion)G.boss.minions--;}
+function foeStrike(e,fb){const d=e.def,r=G.run,th=1+.4*(r.threat-1);if(!fb)return;
+  if(G.zones.some(z=>Math.hypot(fb.x-z.x,fb.y-z.y)<z.r+fb.r)||G.buffs.hallow>0){float(fb.x,fb.y-26,'WARDED','#ffe0a0',13);A.s('ward');return;}
+  bolt(e,fb);burst(fb.x,fb.y,8,'#ff5a5a',200,.5);
+  if(e.job==='thief'){const n=Math.min(r.gold,4+r.level*2);if(n>0){r.gold-=n;e.loot={kind:'gold',gold:n};e.hopT=0;float(e.x,e.y-36,'-'+n+' GOLD STOLEN','#ffd24a',13);A.s('deny');G.dirty=true;return;}}
+  hurt(d.dmg*th);float(e.x,e.y-36,d.name.toUpperCase()+' STRIKES','#ff8a8a',12);}
+function ritualBroken(e){if(e.dead||e.spawn>0)return;e.castT=e.def.cast+1;e.stun=Math.max(e.stun,3);float(e.x,e.y-40,'RITUAL BROKEN','#9fe8ff',14);A.s('interrupt');score(3000,e.x,e.y);charge(2,'hit');damageEnemy(e,G.mods.pow*1.5,false);}
+function updateEnemies(dt){const fb=focusBall(),live=G.balls.filter(b=>b.st==='live'),act=G.balls.length&&!G.fallen&&!G.hidden&&!G.inGrave,r=G.run,th=1+.4*(r.threat-1);
+  for(const e of G.enemies){if(e.dead)continue;e.t+=dt;if(e.spawn>0){e.spawn-=dt;continue;}if(e.hitCd>0)e.hitCd-=dt;if(e.ripCd>0)e.ripCd-=dt;if(e.flash>0)e.flash-=dt*4;if(e.stun>0){e.stun-=dt;e.wind=0;}
+    const d=e.def,P=foePosts(e.tier),onT=act&&e.tier===G.focusTier;e.moving=false;
+    if(e.stun<=0)switch(e.job){
+    case 'swarm':{if(e.y<P.line){const sp=d.speed*(1+.15*(r.threat-1));e.y+=sp*dt;e.x+=clamp(e.ax-e.x,-sp*dt,sp*dt);e.moving=true;e.state='walk';}else e.state='hold';break;}
+    case 'hunter':{if(e.lunge>0){e.lunge-=dt;const k=1-Math.max(0,e.lunge)/.4,hb=live.find(b=>b.tier===e.tier&&Math.hypot(b.x-e.tx,b.y-e.ty)<160);if(hb){e.tx=clamp(hb.x,40,600);e.ty=clamp(hb.y,TY[e.tier]+300,P.line+60);}e.x=lerp(e.lx,e.tx,k);e.y=lerp(e.ly,e.ty,k);e.moving=true;e.state='lunge';
+        const bite=live.find(b=>b.tier===e.tier&&Math.hypot(b.x-e.x,b.y-e.y)<b.r+e.r+(e.lunge<=0?30:6));
+        if(e.lunge<=0||bite){e.lunge=0;e.lungeCd=rand(5,7);e.state='prowl';e.ax=clamp(e.x-Math.sin(e.t*.9)*88,P.cx-110,P.cx+110);e.ay=clamp(e.y-Math.sin(e.t*1.9)*12,TY[e.tier]+330,P.line);
+          for(const b of live){if(b!==bite)continue;const o=P.near(P.outs,b.x,b.y),sx=o?(Math.sign(o.x-b.x)||1):(b.x<P.cx?-1:1);
+            b.vx=sx*rand(230,310);b.vy=Math.max(b.vy,0)+rand(170,250);burst(b.x,b.y,10,'#ff5a5a',220,.5);hurt(d.dmg*th);float(e.x,e.y-36,'BATTED','#ff8a8a',13);break;}}}
+      else{e.lungeCd-=dt;e.x=e.ax+Math.sin(e.t*.9)*88;e.y=e.ay+Math.sin(e.t*1.9)*12;e.state='prowl';e.moving=true;
+        if(onT&&e.lungeCd<=0){const b=live.find(b=>b.tier===e.tier&&Math.hypot(b.x-e.x,b.y-e.y)<150);if(b){e.lunge=.4;e.lx=e.x;e.ly=e.y;e.tx=clamp(b.x+b.vx*.22,40,600);e.ty=clamp(b.y+b.vy*.22,TY[e.tier]+300,P.line+40);float(e.x,e.y-34,'LUNGE','#ff8a8a',12);A.s('kick');}}}break;}
+    case 'thief':{if(e.hop<1){e.hop=Math.min(1,e.hop+dt*3.5);e.x=lerp(e.fx,e.ax,e.hop);e.y=lerp(e.fy,e.ay,e.hop)-Math.sin(e.hop*PI)*18;e.moving=true;e.state='hop';
+        if(e.hop>=1){if(e.goal==='loot'){const q=e.want;if(q&&G.pickups.includes(q)&&Math.hypot(q.x-e.x,q.y-e.y)<30){G.pickups=G.pickups.filter(x=>x!==q);e.loot={kind:q.kind,gold:0};float(e.x,e.y-34,'SNATCHED','#ffd24a',13);A.s('pickup');}e.goal=null;}
+          else if(e.goal==='flee'){const o=e.want;if(o&&Math.hypot(o.x-e.x,o.y-e.y)<30)foeEscape(e);}}}
+      else{e.hopT-=dt;e.state='idle';if(e.hopT<=0){let c=null;
+          if(e.loot){e.goal='flee';e.hopT=rand(.6,1);const o=P.near(P.outs,e.x,e.y);if(o){e.want=o;c=stepTo(e,o.x,o.y,110);}}
+          else{const q=G.pickups.filter(q=>q.tier===e.tier&&!q.quest&&!q.hoard&&q.t>.5).sort((a,b)=>Math.hypot(a.x-e.x,a.y-e.y)-Math.hypot(b.x-e.x,b.y-e.y))[0];
+            if(q){e.goal='loot';e.want=q;e.hopT=rand(.6,1);c=stepTo(e,q.x,q.y,110);}else{e.goal=null;e.hopT=rand(2.4,3.6);const q2=pick(T.spawn[e.tier]);if(!G.enemies.some(o=>o!==e&&!o.dead&&Math.hypot(o.ax-q2[0],o.ay-q2[1])<50))c=q2;}}
+          if(c){e.fx=e.x;e.fy=e.y;e.ax=c[0];e.ay=c[1];e.hop=0;}}}break;}
+    case 'possess':{const b=e.post&&e.post.b;if(b&&(!b.poss||b.poss===e)){if(e.state!=='sit'){const dx=b.x-e.x,dy=b.y-e.y,l=Math.hypot(dx,dy);if(l<3){e.state='sit';b.poss=e;e.ax=b.x;e.ay=b.y;e.hr=b.r+13;float(b.x,b.y-30,'POSSESSED','#9be8e0',12);}else{const sp=Math.min(l,70*dt);e.x+=dx/l*sp;e.y+=dy/l*sp;e.moving=true;e.state='drift';}}
+        else{e.x=b.x+Math.sin(e.t*2)*3;e.y=b.y+Math.cos(e.t*1.6)*3;}}
+      else{e.x=e.ax+Math.sin(e.t*.7)*44;e.y=e.ay+Math.cos(e.t*.5)*28;e.state='float';}break;}
+    case 'gate':e.x=e.ax+Math.sin(e.t*.5)*(e.post?8:30);e.state='hold';break;
+    case 'ritual':e.state=e.castT<d.cast*.85?'chant':'hold';break;
+    default:e.state='hold';}
+    // the wind-up: a strike you can see coming, and stop
+    const busy=e.state==='walk'||e.state==='hop'||e.state==='drift'||e.state==='lunge'||(e.job==='thief'&&e.loot);
+    if(d.wind&&onT&&e.stun<=0&&!busy){if(e.wind>0){e.wind-=dt;if(e.wind<=0)foeStrike(e,fb);}else{e.atk-=dt;if(e.atk<=0){e.atk=rand(d.rate[0],d.rate[1]);e.wind=d.wind;A.s('clank');}}}
+    else if(e.wind>0)e.wind=0;
+    if(d.cast&&onT&&e.stun<=0){e.castT-=dt;if(e.castT<=0){e.castT=d.cast;bolt(e,fb);hurt(10*th);G.curse[pick(['dark','weak','hex'])]=10;float(e.x,e.y-34,'CURSED','#c08cff',13);A.s('curse');}}}
+  if(G.enemies.some(e=>e.dead)){for(const e of G.enemies)if(e.dead&&e.post&&e.post.b&&e.post.b.poss===e)e.post.b.poss=null;G.enemies=G.enemies.filter(e=>!e.dead);}
+  for(const q of G.statues){if(q.flash>0)q.flash-=dt*4;if(q.cool>0)q.cool-=dt;}}
 function damageEnemy(e,dmg,crit){if(e.dead||e.spawn>0)return false;e.hp-=dmg;e.flash=1;float(e.x,e.y-e.r-6,(crit?'CRIT ':'')+Math.round(dmg),crit?'#ffb040':'#ffffff',crit?15:12);
   if(e.hp<=0){killEnemy(e);return true;}return false;}
-function strikeEnemy(e,b,imp,sure){const r=G.run,m=G.mods,pw=b&&b.pow?r.cls:null;
+function strikeEnemy(e,b,imp,sure){const r=G.run,m=G.mods,pw=b&&b.pow?r.cls:null,th=1+.4*(r.threat-1);
+  if(e.job==='duel'&&!pw&&e.stun<=0&&imp<430&&!sure){A.s('clank');float(e.x,e.y-26,'PARRIED','#cfd8e0',12);if(b){b.vx*=1.35;b.vy*=1.35;}if(e.ripCd<=0&&e.tier===G.focusTier){e.ripCd=1.5;hurt(6*th);float(e.x,e.y-42,'RIPOSTE','#ff8a8a',13);}return false;}
+  if(e.wind>0){e.wind=0;e.stun=Math.max(e.stun,1.2);float(e.x,e.y-40,'STAGGERED','#9fe8ff',13);score(500);charge(1,'hit');}
+  else if(e.job==='gate'&&imp>700&&e.stun<=0){e.stun=4;float(e.x,e.y-40,'STAGGERED','#9fe8ff',14);A.s('slam');}
   if(pw){e.armor=0;if(pw==='mage'){endPower(b);explode(e.x,e.y);if(e.dead)return true;}else if(pw==='cleric'){endPower(b);consecrate(e.x,e.y);}}
   if(e.armor>0){if(m.pierce){e.armor=0;float(e.x,e.y-26,'ARMOR SHATTERED','#cfd8e0',12);}
     else if(imp>500){e.armor--;e.flash=1;A.s('clank');float(e.x,e.y-26,e.armor?'ARMOR CRACKED':'ARMOR BROKEN','#cfd8e0',12);burst(e.x,e.y,6,'#cfd8e0',200,.5);charge(1,'hit');return false;}
@@ -811,8 +866,8 @@ function strikeEnemy(e,b,imp,sure){const r=G.run,m=G.mods,pw=b&&b.pow?r.cls:null
   let dmg=m.pow*clamp(imp/800,.55,1.6);if(e.def.undead&&r.cls==='cleric')dmg*=1.5;
   if(pw==='knight'){dmg*=2.5;if(++b.pow.hits>=4)endPower(b);}else if(pw==='rogue'){dmg*=1.5;G.buffs.stealth=Math.max(G.buffs.stealth||0,.1);endPower(b);float(e.x,e.y-44,'BACKSTAB','#c9a6ff',14);}if(G.buffs.sharp>0)dmg*=1.25;
   if(e.def.cast&&e.castT<e.def.cast*.6){e.castT=e.def.cast+1;float(e.x,e.y-40,'SPELL INTERRUPTED','#9fe8ff',13);A.s('interrupt');if(r.cls==='mage')dmg*=3;score(2000);}
-  if(crit)dmg*=2;A.s('hit');charge(1,'hit');score(300);if(e.atk<3.5)e.atk=3.5;return damageEnemy(e,dmg,crit);}
-function killEnemy(e){const r=G.run;e.dead=true;r.kills++;score(1000*r.level,e.x,e.y);xp(e.def.xp);gold(e.def.gold*(1+G.mods.killGold),e.x,e.y);if(G.mods.healKill)heal(G.mods.healKill);
+  if(crit)dmg*=2;if(e.stun>0)dmg*=1.5;A.s('hit');charge(1,'hit');score(300);if(e.atk<3.5)e.atk=3.5;return damageEnemy(e,dmg,crit);}
+function killEnemy(e){const r=G.run;e.dead=true;r.kills++;if(e.loot){if(e.loot.gold){r.gold+=e.loot.gold;float(e.x,e.y-48,'+'+e.loot.gold+' GOLD RECOVERED','#ffd24a',13);}else G.pickups.push({x:e.x,y:e.y,tier:e.tier,kind:e.loot.kind,t:0,quest:null});}if(e.post&&e.post.b&&e.post.b.poss===e)e.post.b.poss=null;score(1000*r.level,e.x,e.y);xp(e.def.xp);gold(e.def.gold*(1+G.mods.killGold),e.x,e.y);if(G.mods.healKill)heal(G.mods.healKill);
   charge(1,'kill');A.s('kill');burst(e.x,e.y,16,e.def.undead?'#9dffc8':'#ff8a6a',260,.9);if(G.boss&&e.minion)G.boss.minions--;
   if(Math.random()<.12)later(.05,()=>{G.pickups.push({x:e.x,y:e.y,tier:e.tier,kind:'heart',t:0,quest:null});});
   if(e.pack&&r.wing.key==='den'&&!r.wing.done&&T.wings.den.seal[0].on)wingProg(8,e.x,e.y);
@@ -822,7 +877,7 @@ function manageSpawns(){const r=G.run;if(!G.balls.length||G.sub||G.fallen||G.inG
   for(const q of quests()){const o=qCur(q);if(!o||o.t!=='kill')continue;const alive=G.enemies.filter(e=>e.type===o.e&&e.tier===o.tier).length,want=Math.min(3,o.n-q.prog);
     if(alive<want){spawnEnemy(o.e,o.tier,q);break;}}
   G.ambT-=.6;if(G.ambT<=0){G.ambT=rand(8,14);const tier=G.focusTier;if(tier>=4&&(r.wing.done||!G.balls.some(b=>b.st==='live'&&b.tier===tier)))return;const amb=G.enemies.filter(e=>!e.minion&&e.tier===tier).length;
-    if(amb<((G.boss&&G.boss.tier===tier)?1:(r.threat>1?3:2))){const foes=CAMPAIGNS[r.arcs[r.arcs.length-1]].foes;let ty=pick(foes);if(ENEMY[ty].hp>50&&Math.random()<.75)ty=foes[0];spawnEnemy(ty,tier);}}}
+    if(amb<((G.boss&&G.boss.tier===tier)?1:(r.threat>1?3:2))){const foes=CAMPAIGNS[r.arcs[r.arcs.length-1]].foes;let ty=pick(foes);if(ENEMY[ty].hp>50&&Math.random()<.75)ty=foes[0];spawnEnemy(ty,tier);if(ENEMY[ty].job==='swarm')for(let k=1;k<3;k++)later(k*.35,()=>{if(G.focusTier===tier)spawnEnemy(ty,tier);});}}}
 function spawnPickup(tier,kind,quest){let p=null;for(const c of shuffle(T.spawn[tier])){if(G.enemies.some(e=>Math.hypot(e.ax-c[0],e.ay-c[1])<40))continue;if(G.pickups.some(e=>Math.hypot(e.x-c[0],e.y-c[1])<30))continue;p=c;break;}
   if(!p)p=pick(T.spawn[tier]);G.pickups.push({x:p[0]+rand(-8,8),y:p[1]+rand(-8,8),tier,kind,quest:quest||null,t:0});}
 function updatePickups(dt){let hit=false;for(const p of G.pickups){p.t+=dt;if(p.t<.3)continue;if(!p.quest&&!p.hoard&&p.t>20){p.gone=true;hit=true;continue;}
@@ -873,9 +928,9 @@ function killBoss(bo){const r=G.run,d=bo.def;bo.alive=false;bo.dying=2.2;bo.hp=0
   metaAdd('bosses');qEvent('boss',bo.key);relight();}
 function collideActors(b){
   for(const e of G.enemies){if(e.spawn>0||e.dead||Math.abs(e.y-b.y)>60)continue;
-    if(e.def.ghost||G.phase>0){const dx=b.x-e.x,dy=b.y-e.y;if(dx*dx+dy*dy<(b.r+e.r)*(b.r+e.r)&&e.hitCd<=0){e.hitCd=.45;strikeEnemy(e,b,Math.hypot(b.vx,b.vy),G.phase>0);}continue;}
+    if(e.def.ghost||G.phase>0){const dx=b.x-e.x,dy=b.y-e.y,rr=b.r+(e.hr||e.r);if(dx*dx+dy*dy<rr*rr&&e.hitCd<=0){e.hitCd=.45;strikeEnemy(e,b,Math.hypot(b.vx,b.vy),G.phase>0);}continue;}
     const pvx=b.vx,pvy=b.vy,imp=hitCircle(b,e,e.r,.35);
-    if(imp>30&&e.hitCd<=0){e.hitCd=.12;const plow=b.pow&&G.run.cls==='knight';if(strikeEnemy(e,b,imp)||plow){b.vx=pvx*(plow?.94:.82);b.vy=pvy*(plow?.94:.82);}else{const k=e.def.kick?420:90;b.vx+=b._nx*k;b.vy+=b._ny*k;}}}
+    if(imp>30&&e.hitCd<=0){e.hitCd=.12;const plow=b.pow&&G.run.cls==='knight';if(strikeEnemy(e,b,imp)||plow){b.vx=pvx*(plow?.94:.82);b.vy=pvy*(plow?.94:.82);}else{const k=e.def.kick&&e.stun<=0?420:e.job==='wall'?220:90;b.vx+=b._nx*k;b.vy+=b._ny*k;if(e.def.kick&&e.stun<=0)A.s('kick');}}}
   const bo=G.boss;if(bo&&bo.alive&&Math.abs(bo.y-b.y)<90){const imp=hitCircle(b,bo,bo.r,.35);if(imp>30&&bo.hitCd<=0){bo.hitCd=.15;b.vx+=b._nx*300;b.vy+=b._ny*300;strikeBoss(bo,b,imp);}}
   for(const s of G.statues){if(!s.on||Math.abs(s.y-b.y)>50)continue;const imp=hitCircle(b,s,s.r,.5);if(imp>60&&s.cool<=0){s.cool=.2;s.flash=1;score(600);A.s('target');charge(1,'hit');shot(s.id,s.x,s.y);}}}
 
@@ -1285,7 +1340,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.4';
+const $=id=>document.getElementById(id),VERSION='3D build 0.5';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,

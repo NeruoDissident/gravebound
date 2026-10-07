@@ -24,7 +24,8 @@ a star.
 | `src/art3d.js` | Playfield art painted to textures; procedural stone, wood, sky |
 | `src/render3d.js` | Scene: terraces, walls, ramps, bumpers, targets, scenery, camera, lighting, post |
 | `src/wing3d.js` | The campaign wings as places in the world (the Crypt, the Den, the Hoard) |
-| `src/actors3d.js` | Foes, bosses, pickups and spell effects in 3D |
+| `src/foes3d.js` | The foes as jointed figures: one builder per type, posed from the game's state every frame |
+| `src/actors3d.js` | Bosses, pickups, hit rings and spell effects in 3D |
 | `src/game3d.js` | Overlay gauges and text, settings, dev keys, resize, loop, boot |
 | `src/page.css`, `src/page-body.html` | Styles and markup |
 | `reference/` | The 2D dev build 1.1 this grew out of, kept for reference only |
@@ -45,12 +46,27 @@ through a scoop and a short tunnel. Each campaign has one, and it opens once the
 Every wing runs on a clock. The wing's own task and its bumpers buy time; when it runs out the flippers go dead
 and the ball is carried back out. Draining from a wing costs nothing, and the way in stays open.
 
+Every foe has a job on the table, a visible wind-up before it strikes, and a shot that answers it:
+
+| Foe | Job | Answer |
+| --- | --- | --- |
+| Skeleton | Rises at the top in threes and shambles down to the slingshot line | Hit it on the way down |
+| Goblin | Hops after loose pickups or your purse and runs for an outlane with the loot | Kill it before it gets there; the loot comes back |
+| Dire Wolf | Prowls a lane and lunges at the ball, batting it toward the outlanes | Kill it, or keep the ball out of its lane |
+| Spirit | Sits on a bumper and deadens it | Shoot the bumper; the ball passes through the spirit |
+| Cultist | Chants at a ramp mouth; the curse lands when the fuse ends | Shoot that ramp |
+| Armored Dead | Holds an orbit entrance; soft hits clang off | A full-speed hit, Charge, or Bone Breaker |
+| Corrupted Knight | Guards the statue; parries soft hits and ripostes | Hit it hard |
+| Grave Troll | Holds a scoop and punts the ball | A hard hit staggers it |
+
+A hit during the wind-up staggers the foe and the strike never lands. Hallowed ground wards the ball from strikes.
+
 ## Build and test
 
 ```
 npm install
 npm run build        # writes dist/
-npm run soak         # a bot plays every class in headless Chromium, then each wing's route is walked end to end
+npm run soak         # a bot plays every class in headless Chromium, then each wing's route and each foe's job are walked end to end
 npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```

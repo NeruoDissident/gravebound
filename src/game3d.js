@@ -32,7 +32,7 @@ function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w
   for(const e of G.enemies){if(e.dead||e.spawn>0)continue;const hh=e.r+13;project3D(e.x,e.y,hh,_p);if(!_p.ok||_p.y<-40||_p.y>h+40)continue;const u=pxPerUnit(e.x,e.y,hh),x=_p.x,y=_p.y,rr=(e.r+10)*u;
     if(e.hp<e.maxHp){const bw=34*u,by=y-(e.r+20)*u;c.fillStyle='#05050a';c.fillRect(x-bw/2-1,by-1,bw+2,4*u+2);c.fillStyle='#ff5a5a';c.fillRect(x-bw/2,by,bw*Math.max(0,e.hp/e.maxHp),4*u);}
     for(let a=0;a<e.armor;a++){c.fillStyle='#cfd8e0';c.strokeStyle='#05050a';c.lineWidth=1;c.beginPath();c.arc(x+(a-(e.armor-1)/2)*11*u,y+(e.r+14)*u,4*u,0,TAU);c.fill();c.stroke();}
-    if(e.def.dmg&&e.atk<1.8&&e.tier===G.focusTier){c.strokeStyle='#ff5a68';c.lineWidth=3;c.beginPath();c.arc(x,y,rr,-PI/2,-PI/2+TAU*(1-e.atk/1.8));c.stroke();}
+    if(e.wind>0&&e.tier===G.focusTier){c.strokeStyle='#ff5a68';c.lineWidth=3;c.beginPath();c.arc(x,y,rr,-PI/2,-PI/2+TAU*(1-e.wind/e.def.wind));c.stroke();}else if(e.stun>0){c.strokeStyle='#9fe8ff';c.lineWidth=2;c.beginPath();c.arc(x,y,rr,0,TAU);c.stroke();}
     if(e.def.cast){const f=1-e.castT/e.def.cast;if(f>.4){c.strokeStyle='#c08cff';c.lineWidth=3;c.beginPath();c.arc(x,y,rr+4,-PI/2,-PI/2+TAU*(f-.4)/.6);c.stroke();}}}
   // boss: the spell clock, stun stars
   {const bo=G.boss;if(bo&&bo.alive&&bo.rise<=0){project3D(bo.x,bo.y,78,_p);if(_p.ok){const u=pxPerUnit(bo.x,bo.y,78);

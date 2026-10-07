@@ -1,6 +1,6 @@
 /* ================= ACTORS IN 3D =================
-   Foes, bosses and pickups are the 2D game's own painted sprites, stood up on the table as billboards over a
-   ring that marks their true hit radius. Spell effects are decals on the floor. */
+   Foes are jointed figures (foes3d.js) over a ring that marks their true hit radius. Bosses and pickups are the
+   2D game's own painted sprites, stood up on the table as billboards. Spell effects are decals on the floor. */
 function spriteTex(draw,units,px){const cv=mkCanvas(px,px),c=cv.getContext('2d');c.translate(px/2,px/2);c.scale(px/units,px/units);c.lineJoin='round';draw(c);return ctex(cv);}
 function buildActors(){const sc=R3.scene,X=R3.act={tex:{},foes:[],picks:[],zones:[],booms:[]};
   for(const k in EDRAW)X.tex[k]=spriteTex(EDRAW[k],64,192);
@@ -14,24 +14,24 @@ function buildActors(){const sc=R3.scene,X=R3.act={tex:{},foes:[],picks:[],zones
   const sprite=o=>{const s=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign({transparent:true,depthWrite:false},o)));s.visible=false;sc.add(s);return s;};
   const decal=(geo,col,op)=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:hdr(col,1.4),transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));m.renderOrder=2;m.visible=false;sc.add(m);return m;};
   const blob=()=>{const m=new THREE.Mesh(R3.blobGeo,new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.42,depthWrite:false,map:R3.glowTex,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));m.renderOrder=3;m.visible=false;sc.add(m);return m;};
-  for(let i=0;i<16;i++)X.foes.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.4}),sp:sprite({map:X.tex.skeleton}),rg:decal(X.ringG,'#ff7a80',.3),blob:blob(),type:''});
+  for(let i=0;i<16;i++)X.foes.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.4}),rg:decal(X.ringG,'#ff7a80',.3),blob:blob()});
   X.boss={glow:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.5}),sp:sprite({map:X.tex.b_warden}),rg:decal(X.ringG,'#ffffff',.5),blob:blob(),key:'',
     shield:(()=>{const m=new THREE.Mesh(new THREE.TorusGeometry(1,.05,6,48).rotateX(PI/2),new THREE.MeshBasicMaterial({color:hdr('#9fe8ff',2)}));m.visible=false;sc.add(m);return m;})(),
     light:(()=>{const l=new THREE.PointLight(0xffffff,0,420,1.5);sc.add(l);return l;})()};
   for(let i=0;i<12;i++)X.picks.push({halo:sprite({map:R3.glowTex,blending:THREE.AdditiveBlending,opacity:.6}),sp:sprite({map:X.tex.gold}),kind:''});
   for(let i=0;i<4;i++)X.zones.push({disc:decal(X.discG,'#ffe0a0',.1),ring:decal(X.thinG,'#ffe0a0',.7)});
   for(let i=0;i<8;i++)X.booms.push(decal(X.ringG,'#ffffff',1));
-  X.all=[];for(const o of X.foes)X.all.push(o.sp,o.halo,o.rg,o.blob);for(const o of X.picks)X.all.push(o.sp,o.halo);for(const o of X.zones)X.all.push(o.disc,o.ring);for(const m of X.booms)X.all.push(m);}
+  X.all=[];for(const o of X.foes)X.all.push(o.halo,o.rg,o.blob);for(const o of X.picks)X.all.push(o.sp,o.halo);for(const o of X.zones)X.all.push(o.disc,o.ring);for(const m of X.booms)X.all.push(m);}
 
 function frameActors(dt,ex){const X=R3.act,t=G.t,tc=R3.tmpC;
   // foes
-  for(let i=0;i<X.foes.length;i++){const o=X.foes[i],e=G.enemies[i];if(!e||e.dead){o.sp.visible=o.halo.visible=o.rg.visible=o.blob.visible=false;continue;}
-    const k=e.spawn>0?Math.max(.05,1-e.spawn/.7):1,gy=elev(e.y),y=gy+e.r+13+Math.sin(e.t*3)*1.5,f=Math.max(0,e.flash),m=o.sp.material;
-    const warn=e.def.dmg&&e.atk<1.8&&e.tier===G.focusTier&&e.spawn<=0,qc=e.quest?(e.quest.main?'main':'side'):null;
-    if(o.type!==e.type){o.type=e.type;m.map=X.tex[e.type];}
-    o.sp.visible=o.rg.visible=o.blob.visible=true;o.sp.position.set(e.x-320,y,e.y);o.sp.scale.set(86*k,86*k,1);m.opacity=(e.def.ghost?.8:1)*k;const b=1+f*2.4;m.color.setRGB(b,b,b);
-    o.blob.position.set(e.x-320,gy+.5,e.y);o.blob.scale.setScalar(e.r*1.5*k);
-    o.rg.position.set(e.x-320,gy+.7,e.y);o.rg.scale.setScalar(e.r*k);const rm=o.rg.material;
+  frameFoes(dt);
+  for(let i=0;i<X.foes.length;i++){const o=X.foes[i],e=G.enemies[i];if(!e||e.dead){o.halo.visible=o.rg.visible=o.blob.visible=false;continue;}
+    const k=e.spawn>0?Math.max(.05,1-e.spawn/.7):1,gy=elev(e.y),y=gy+e.r+13;
+    const warn=e.wind>0&&e.tier===G.focusTier,qc=e.quest?(e.quest.main?'main':'side'):null;
+    o.rg.visible=o.blob.visible=true;
+    o.blob.position.set(e.x-320,gy+.5,e.y);o.blob.scale.setScalar((e.hr||e.r)*1.5*k);
+    o.rg.position.set(e.x-320,gy+.7,e.y);o.rg.scale.setScalar((e.hr||e.r)*k);const rm=o.rg.material;
     if(warn){rm.color.copy(R3.litC.danger);rm.opacity=.6+.4*Math.sin(t*18);}else if(qc){rm.color.copy(R3.litC[qc]);rm.opacity=.5+.25*Math.sin(t*6);}else{rm.color.copy(X.foeC);rm.opacity=.32;}
     o.halo.visible=warn||!!qc;if(o.halo.visible){o.halo.position.set(e.x-320,y,e.y);o.halo.scale.setScalar(e.r*(warn?6:5));o.halo.material.color.copy(R3.litC[warn?'danger':qc]);o.halo.material.opacity=warn?.3+.25*Math.sin(t*18):.22+.1*Math.sin(t*6);}}
   // boss
