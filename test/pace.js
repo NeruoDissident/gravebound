@@ -16,14 +16,14 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       const bot=()=>{G.auto=true;G.bot={hl:0,hr:0,tl:30,tr:30,pl:0,plT:.7};};
       UI.menu(null);startRun(cls);bot();
       const tierSec=[0,0,0,0],foeSec={},waves=[],stages=[];let t=0,lastStage=-1;
-      const sw0=startWave;startWave=(tier,why)=>{const ok=sw0(tier,why);if(ok)waves.push([Math.round(t),tier,why,G.wave.active.total]);return ok;};
+      const sw0=startWave;startWave=(tier,why)=>{const ok=sw0(tier,why);if(ok)waves.push([Math.round(t),tier,why,G.wave.active.total]);return ok;};const lw0=launchWave;launchWave=(tier,list,why,c,q)=>{if(why==='call'||why==='cast')waves.push([Math.round(t),tier,why,list.length]);return lw0(tier,list,why,c,q);};
       for(;t<mins*60;t+=.5){__gb.advance(.5,0);
         if(G.choice){choose(0);}if(UI.cur&&UI.cur!=='pause'&&G.mode==='play')UI.menu(null);
         if(G.mode==='over'){UI.menu(null);startRun(cls);bot();}
         const ft=Math.min(3,G.focusTier);tierSec[ft]+=.5;
         if(ft<3){const n=G.enemies.filter(e=>!e.dead&&e.tier===ft).length;foeSec[ft+':'+n]=(foeSec[ft+':'+n]||0)+.5;}
         const q=G.run.main;if(q&&q.si!==lastStage){lastStage=q.si;stages.push([Math.round(t),q.si,qCur(q)&&qCur(q).text.slice(0,40)]);}}
-      startWave=sw0;
+      startWave=sw0;launchWave=lw0;
       return {cls,tierSec,foeSec,waves,stages};},[cls,mins]);
     console.log('\n==',res.cls,'time on level (s):',JSON.stringify({keep:res.tierSec[0],wilds:res.tierSec[1],hollow:res.tierSec[2],grave:res.tierSec[3]}));
     for(const t of [2,1,0]){const rows=Object.entries(res.foeSec).filter(([k])=>+k.split(':')[0]===t).map(([k,v])=>[+k.split(':')[1],v]).sort((a,b)=>a[0]-b[0]);const tot=rows.reduce((a,r)=>a+r[1],0);if(!tot)continue;

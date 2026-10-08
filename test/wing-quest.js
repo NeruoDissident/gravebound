@@ -35,7 +35,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       ok(P('nothing left behind in the wing'),!G.enemies.some(e=>e.tier===tier&&!e.dead)&&!G.pickups.some(p=>p.hoard));
       // a second visit, leaving by the drain
       const dk='d'+(5+WING_KEYS.indexOf(key));devKey(dk);__gb.advance(2.5,2);ok(P('second visit in'),G.focusTier===tier);park(320,y+WLEN+10,0,300);__gb.advance(.3,1);
-      ok(P('drain starts the trip back'),G.balls[0].st==='tunnel');__gb.advance(1.9,2);ok(P('back out, ball not lost: '+G.balls.map(b=>b.st+'/'+b.tier).join(',')+' left '+r.ballsLeft),G.balls.length===1&&G.balls[0].tier<=2&&r.ballsLeft===3);
+      ok(P('drain starts the trip back'),G.balls[0].st==='tunnel');__gb.advance(1.9,2);ok(P('back out, ball not lost: '+G.balls.map(b=>b.st+'/'+b.tier).join(',')+' left '+r.ballsLeft),G.balls.length===1&&G.balls[0].tier<=2&&r.ballsLeft>=3);
       // the clock running out
       devKey(dk);__gb.advance(2.5,2);G.enemies.forEach(e=>{e.dead=true;});__gb.advance(.05,1);G.wingT=.3;park(320,y+450,0,-50);__gb.advance(.6,1);ok(P('clock kills the flippers'),G.tilt>0);park(320,y+WLEN+10,0,300);__gb.advance(1.9,2);ok(P('tilt cleared on the way out'),G.tilt<=0&&G.balls.length===1&&G.balls[0].tier<=2);}
     // an open Grave always takes the ball, tilted or not

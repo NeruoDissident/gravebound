@@ -130,3 +130,11 @@ they check that everything runs and renders, not frame rate.
 
 - The tutorial is gone (title button, auto-launch, option). How to play and the glossary stay.
 - The class shot's bar is spent when the armed flip fires, not when the cradle arms it. A cradle you don't follow through on costs nothing.
+
+## 0.17: the table fills up
+
+- Waves overlap, on any level, even the same one. The single wave slot was the bug that left the Wilds empty 89% of the time (a wave left behind on the Hollow blocked every other wave).
+- The wave clock runs on the ball's level and runs three times as fast while that level is empty. Caps: 10 foes a level, 22 on the table.
+- Shots call foes: the Chapel wakes spirits, the Town Gate lets the campaign's foes in, the Goblin Camp empties three goblins, every 18 spins the Mill calls the pack (the Vane and the Winch call the campaign's foes), the Armory raises an Armored Dead, the Royal Guard sends a Corrupted Knight, and a ramp that loops back to its own level brings two foes round with you. Each call has an 8-second cooldown.
+- A spell cast on a level with fewer than three foes draws three out ("THEY FEEL IT").
+- Measured (`node test/pace.js`): the level the ball is on is empty 2-14% of the time, down from 31-89%.

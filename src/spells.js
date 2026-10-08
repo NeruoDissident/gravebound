@@ -63,6 +63,8 @@ function spellProg(slot,n,x,y){const r=G.run;if(!r||G.inGrave)return;const d=spe
 function goalText(slot){const g=G.run.goal||{},v=g[slot]||0,need=SLOT_GOAL[slot].need;if(slot==='guard')return v>=3?'shoot a scoop':v+'/3 lanes';if(slot==='pressure')return Math.floor(v/10)+'/2 orbits';return v+'/'+need;}
 function castSpell(id,b){const r=G.run,d=spellDef(id),base=spellVal(id,'dur'),c=spellCast(id);
   if(c){c.t=Math.min(base*2,c.t+base);c.max=Math.max(c.max,c.t);float(b?b.x:320,b?b.y-50:TY[2]+500,d.name.toUpperCase()+' EXTENDED',CLASSES[r.cls].glow,14);A.s('ward');return;}
+  // a spell is a flare in the dark: if the level is quiet, it draws them out
+  {const t=b?b.tier:G.focusTier;if(t<3&&foesOn(t)<3)callFoes(t,campFoes(3),'THEY FEEL IT',b?b.x:320,b?b.y:TY[2]+500);}
   const cast={id,t:base,max:base,tick:0,hits:0};G.casts.push(cast);const F=SPELL_FX[id];if(F&&F.start)F.start(cast,b);
   popup(d.name,d.text,'good');A.s('ability');G.flash=.35;G.flashC=CLASSES[r.cls].glow;G.cam.shake=Math.max(G.cam.shake,5);relight();G.dirty=true;}
 function endCast(c){const F=SPELL_FX[c.id];if(F&&F.end)F.end(c);G.casts=G.casts.filter(x=>x!==c);relight();G.dirty=true;}
