@@ -1,6 +1,6 @@
 {
   "name": "gravebound-3d",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Gravebound Pinball in 3D: a dark-fantasy RPG pinball table for the browser",
   "main": "build.js",
   "scripts": {

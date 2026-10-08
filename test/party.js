@@ -7,7 +7,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);
+  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
     const adv=(sec)=>{for(let t=0;t<sec;t+=.1)__gb.advance(.1,0);};
     const fresh=(comp,tier)=>{UI.menu(null);startRun('knight',comp);G.auto=false;DEV.on=true;__gb.advance(.5,1);devKey('d'+(tier+1));__gb.advance(.1,1);G.enemies=[];G.pickups=[];G.save=0;G.run.shield=false;G.run.hp=G.mods.maxHp;G.wave.t=999;quests().forEach(q=>{q.steps=q.steps.filter(o=>o.t!=='kill');});return G.run;};
     const posts=t=>guardPosts(t),cx=t=>t===2?303:320;
@@ -26,7 +26,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     // the Healer heals on a catch and mends itself; the Striker marks
     {const r=fresh('healer',2),c=r.party[0],p=posts(2)[0];G.run.hp=50;G.balls=[newBall(cx(2),p.y-60,0,420)];adv(.6);ok('a Healer heals you on the catch',G.run.hp>50);const h=c.hp;G.balls=[];adv(2);ok('and mends itself ('+h.toFixed(0)+' → '+c.hp.toFixed(0)+')',c.hp>h);}
     {const r=fresh('dps',2),p=posts(2)[0];const e=spawnEnemy('troll',2);e.spawn=0;e.x=cx(2);e.y=TY[2]+500;G.balls=[newBall(cx(2),p.y-60,0,420)];adv(.6);ok('a Striker marks the nearest foe on the catch',e.marked>0);}
-    // the Tavern is quests and gold again
-    {const r=fresh('tank',2);r.gold=500;const h=T.holes.tavern,b=G.balls[0]=newBall(h.x,h.y,0,0);b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);adv(.3);ok('the Tavern opens no menu',!G.choice&&!G.pending.includes('tavern'));}
-    return log;});
+    // the Tavern hires only when you can pay and have room
+    {const r=fresh('tank',2);r.gold=0;const h=T.holes.tavern,b=G.balls[0]=newBall(h.x,h.y,0,0);b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);adv(.3);ok('a Tavern visit with no gold opens nothing',!G.choice&&!G.pending.includes('tavern'));}
+    }catch(e){log.push('FAIL threw after the checks above: '+e.message+' '+(e.stack||'').split('\n').slice(1,3).join(' | '));}return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();

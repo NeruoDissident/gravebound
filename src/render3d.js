@@ -490,7 +490,7 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
         if(tn&&tn.zone){const n=tn.n-1,u=clamp(b.rs/tn.len,0,1),ax=tn.x[0]-320+ZX(tn.y[0]),az=tn.y[0]+ZZ(tn.y[0]),ay=elev(tn.y[0]),bx2=tn.x[n]-320+ZX(tn.y[n]),bz2=tn.y[n]+ZZ(tn.y[n]),by2=elev(tn.y[n]);sp.position.set(lerp(ax,bx2,u),lerp(ay,by2,u)+6-30*Math.sin(u*PI),lerp(az,bz2,u));}
         else sp.position.set(b.x-320,elev(b.y)+6,b.y);const k=.8+.2*Math.sin(t*30);sp.scale.set(70*k,70*k,1);}continue;}
     const dx=bx-o.lx,dz=bz-o.ly,d=Math.hypot(dx,dz);if(d>.001&&d<80){_ax.set(dz/d,0,-dx/d);_q.setFromAxisAngle(_ax,d/b.r);o.q.premultiply(_q);}o.lx=bx;o.ly=bz;
-    const hot=!!b.pow||b.arm>0,pc=b.party?ROLES[b.party].col:null,gc=pc||(b.pow&&cls==='mage'?'#ff8a3a':cl.glow),ghost=cloak||(cls==='rogue'&&hot);
+    const hot=!!b.pow||b.arm>0,pc=b.pc||null,gc=b.pg||pc||(b.pow&&cls==='mage'?'#ff8a3a':cl.glow),ghost=cloak||(cls==='rogue'&&hot);
     zshift(o.m.position.set(bx-320,y,bz)&&o.m);o.m.scale.setScalar(b.r);o.m.quaternion.copy(o.q);o.mat.color.set(pc||cl.color).convertSRGBToLinear();o.mat.emissive.set(gc).convertSRGBToLinear();
     o.mat.emissiveIntensity=b.pow?.9:b.arm>0?.5+.25*Math.sin(t*14):.2;if(o.mat.transparent!==ghost){o.mat.transparent=ghost;o.mat.needsUpdate=true;}o.mat.opacity=ghost?.45:1;
     zshift(o.blob.position.set(bx-320,elev(bz)+.5,bz)&&o.blob);o.blob.scale.setScalar(b.r*1.7);

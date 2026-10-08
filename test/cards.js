@@ -7,7 +7,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);
+  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
     let pin=null;const adv=(sec)=>{for(let t=0;t<sec;t+=.1){__gb.advance(.1,0);if(pin&&G.balls[0]){const b=G.balls[0];b.x=pin[0];b.y=pin[1];b.vx=0;b.vy=0;b.st='live';}}};
     const fresh=(cls,tier,comp)=>{UI.menu(null);startRun(cls,comp||null);G.auto=false;DEV.on=true;__gb.advance(.5,1);devKey('d'+(tier+1));__gb.advance(.1,1);G.enemies=[];G.pickups=[];G.save=999;G.run.hp=G.mods.maxHp;G.wave.t=999;G.ambT=999;
       const cx=tier===2?303:320;G.balls=[newBall(cx,TY[tier]+800,0,0)];pin=[cx,TY[tier]+800];quests().forEach(q=>{q.steps=q.steps.filter(o=>o.t!=='kill');});return G.balls[0];};
@@ -31,5 +31,5 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     {const b=fresh('knight',0,'tank');give('twinSoul');pin=null;G.run.charge=100;rally();ok('Twin Soul doubles the Rally ('+G.rallyT+')',G.rallyT===40);}
     {fresh('knight',0);give('hourglass');ok('Hourglass doubles ball save ('+G.mods.save+')',G.mods.save===26);G.run.wing={key:'crypt',open:true,done:false,prog:0};enterWing({id:'catacombs'});ok('and the wing clock ('+G.wingT+')',G.wingT===160);}
     {fresh('knight',0);give('deathWish');const e=only('skeleton');G.run.charge=0;killEnemy(e);ok('Death Wish: kills fill 10 ('+G.run.charge.toFixed(1)+')',G.run.charge>=10);const c1=G.run.charge;hurt(5);ok('wounds drain 10',G.run.charge<=c1-10+.01);}
-    return log;});
+    }catch(e){log.push('FAIL threw after the checks above: '+e.message+' '+(e.stack||'').split('\n').slice(1,3).join(' | '));}return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();

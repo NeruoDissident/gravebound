@@ -7,7 +7,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);
+  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
     let pin=null;const adv=(sec)=>{for(let t=0;t<sec;t+=.1){__gb.advance(.1,0);if(pin&&G.balls[0]){const b=G.balls[0];b.x=pin[0];b.y=pin[1];b.vx=0;b.vy=0;b.st='live';}}};
     const fresh=(cls,tier,comp)=>{UI.menu(null);startRun(cls,comp||null);G.auto=false;DEV.on=true;__gb.advance(.5,1);devKey('d'+(tier+1));__gb.advance(.1,1);G.enemies=[];G.pickups=[];G.save=999;G.run.hp=G.mods.maxHp;G.wave.t=999;quests().forEach(q=>{q.steps=q.steps.filter(o=>o.t!=='kill');});
       const cx=tier===2?303:320;G.balls=[newBall(cx,TY[tier]+700,0,0)];G.balls[0].hero=true;pin=[cx,TY[tier]+700];G.pending=[];G.choice=null;UI.menu(null);return G.balls[0];};
@@ -48,5 +48,12 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       G.run.charge=100;rally();adv(.3);G.save=0;G.run.shield=false;G.run.party[0].hp=0;b.y=H+60;adv(.3);ok('the hero draining ends the Rally and the ball',!G.balls.some(x=>x.party)&&G.sub==='bonus');G.sub=null;}
     {fresh('knight',2,'tank');G.run.charge=100;pin=null;rally();for(let k=0;k<25&&G.balls.some(x=>x.party);k++){adv(1);const pb=G.balls.find(x=>x.party);if(pb){pb.x=303;pb.y=TY[2]+600;pb.vx=pb.vy=0;}}ok('the party withdraws when the time is up',!G.balls.some(x=>x.party)&&G.rallyT===0);}
     {fresh('knight',2);G.run.charge=100;rally();ok('alone, the call goes unanswered',G.balls.length===1&&G.run.charge===0);}
-    return log;});
+    // the Tavern hires strangers: a class with one ability, random each visit; they ride out in the Rally
+    {fresh('knight',2,'tank');const r=G.run;pin=null;r.gold=10;const h=T.holes.tavern;let b=G.balls[0];b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);adv(.3);ok('the Tavern opens no board when you cannot pay',!G.choice&&!G.pending.includes('tavern'));
+      r.gold=200;b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);adv(.3);ok('with gold it opens the board: three strangers and Leave ['+[G.pending.join('+'),b.st,b.held&&b.held.plan,tavernOpen(),r.gold,r.recruits.length,G.choice&&G.choice.kind,G.balls.length,G.sub,G.mode].join('/')+']',G.choice&&G.choice.kind==='tavern'&&G.choice.opts.length===4&&G.choice.opts.slice(0,3).every(o=>o.face&&CLASSES[o.face[0]]&&spellDef(o.face[1])));
+      const pick0=G.choice.opts[0],g=r.gold;choose(0);ok('hiring adds a recruit and takes the gold',r.recruits.length===1&&r.recruits[0].cls===pick0.face[0]&&r.gold===g-pick0.cost);
+      b=G.balls[0];b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);adv(.3);ok('the next visit costs more and shows new faces',G.choice&&/55 gold/.test(G.choice.opts[0].tag));choose(3);
+      G.run.charge=100;pin=null;rally();const rb=G.balls.find(x=>x.party==='recruit');ok('the recruit rides out in the Rally as a ball of its class with its ability running',rb&&rb.cls===r.recruits[0].cls&&rb.spell===r.recruits[0].spell&&rb.cast&&rb.cast.t===20);
+      G.balls=G.balls.filter(x=>!x.party);G.rallyT=0;}
+    }catch(e){log.push('FAIL threw after the checks above: '+e.message+' '+(e.stack||'').split('\n').slice(1,3).join(' | '));}return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();

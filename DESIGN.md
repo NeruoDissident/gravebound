@@ -47,8 +47,9 @@ them out from a lit scoop is a later pass.
 - The companion stands guard at the bottom drain on the Hollow, between the flippers, before the Grave.
   A draining ball bounces off them at a cost to their health; a ball off the post fires their perk; swarms go
   for them; at zero they are wounded and the drain stands open until a bank is completed.
-- Later: the Tavern offers random recruits, each a class plus one of its abilities ("Rogue, Fan of Knives"),
-  nothing else. Recruits come out in Rally as balls of their class with that ability running.
+- The Tavern offers three random recruits a visit, each a class plus one of its abilities ("Rogue, Fan of Knives"),
+  shown as the ball's portrait, the class, the ability and one line. It opens only when you can pay and have a seat
+  (six). Recruits come out in Rally as balls of their class with that ability running.
 
 ## Rally
 

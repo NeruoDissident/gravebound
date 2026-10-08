@@ -8,7 +8,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);
+  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
     const ROUTES={necro:'crypt',beast:'den',dragon:'hoard'};
     const park=(x,y,vx,vy)=>{const b=G.balls[0];b.st='live';b.x=x;b.y=y;b.vx=vx||0;b.vy=vy||0;};
     for(const camp in ROUTES){const key=ROUTES[camp],d=WINGS[key],tw=T.wings[key],y=tw.y,tier=tw.tier,P=n=>'['+key+'] '+n;
@@ -46,6 +46,6 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       for(let k=0;k<12;k++){if(G.choice){const i=G.choice.opts.findIndex(o=>!/full/i.test(o.tag)&&o.name!=='Back');choose(i<0?0:i);}__gb.advance(1,1);}ok('[end] the run ends when its campaign is won',G.mode==='over'&&r.ended==='won'&&r.won===1);}
     {UI.menu(null);startRun('knight');G.auto=false;DEV.on=true;G.opt.endless=true;__gb.advance(.5,1);const r=G.run;let g=0;while(r.main&&g++<30){devKey('dn');__gb.advance(3,1);}
       for(let k=0;k<45;k++){if(G.choice){const i=G.choice.opts.findIndex(o=>!/full/i.test(o.tag)&&o.name!=='Back');choose(i<0?0:i);}__gb.advance(1,1);}ok('[end] Endless raises a new shadow instead ('+(r.main&&r.main.name)+')',G.mode==='play'&&r.main&&r.arcs.length===2);G.opt.endless=false;}
-    return log;});
+    }catch(e){log.push('FAIL threw after the checks above: '+e.message+' '+(e.stack||'').split('\n').slice(1,3).join(' | '));}return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);if(nf||logs.length)process.exitCode=1;
   console.log(logs.join('\n')||'no page errors');await br.close();})();

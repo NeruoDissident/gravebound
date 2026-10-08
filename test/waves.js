@@ -7,7 +7,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);
+  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
     let pin=null;const adv=(sec)=>{for(let t=0;t<sec;t+=.1){__gb.advance(.1,0);if(pin&&G.balls[0]){const b=G.balls[0];b.x=pin[0];b.y=pin[1];b.vx=0;b.vy=0;b.st='live';}}};
     const fresh=(camp,tier)=>{UI.menu(null);let n=0;do{startRun('knight');n++;}while(G.run.main.key!==camp&&n<200);G.auto=false;DEV.on=true;__gb.advance(.5,1);devKey('d'+(tier+1));__gb.advance(.1,1);
       G.enemies=[];G.pickups=[];G.save=999;G.run.hp=G.mods.maxHp;G.balls=[newBall(tier===2?303:320,TY[tier]+800,0,0)];pin=[tier===2?303:320,TY[tier]+800];quests().forEach(q=>{q.steps=q.steps.filter(o=>o.t!=='kill');});};
@@ -29,5 +29,5 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       G.enemies.forEach(e=>killEnemy(e));adv(1.5);ok('slaying the cultists breaks the ward',bo.phase!=='shield'&&bo.stun>0);
       while(bo.phase!=='cast')bossNext(bo);const z=G.zones.find(z=>z.fire);ok('Gravefire scorches the floor',!!z);const hp=G.run.hp;pin=[z.x,z.y];G.balls=[newBall(z.x,z.y,0,0)];adv(1.2);ok('the ball burns inside it ('+(hp-G.run.hp)+')',G.run.hp<hp);
       killBoss(bo);ok('the fire goes out with the dragon',!G.zones.some(z=>z.fire));}
-    return log;});
+    }catch(e){log.push('FAIL threw after the checks above: '+e.message+' '+(e.stack||'').split('\n').slice(1,3).join(' | '));}return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);console.log(logs.join('\n')||'no page errors');await br.close();if(nf||logs.length)process.exitCode=1;})();

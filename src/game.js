@@ -442,7 +442,7 @@ const COMPANIONS={ // roles, not people. One stands guard at the bottom drain on
   healer:{name:'Healer',role:'healer',cost:0,perk:'heal',desc:'A ball off the post heals you 10 and lifts a curse. Mends itself while it stands.'},
   dps:{name:'Striker',role:'dps',cost:0,perk:'mark',desc:'A ball off the post marks the nearest foe: everything crits it for 6 seconds.'}
 };
-const TAVERN_RECRUITS=false; // the Tavern hiring menu is off; the code stays for the recruit pass
+const TAVERN_RECRUITS=true; // the Tavern hires recruits: a random class with a random one of its abilities (see spells.js)
 const SLOTS=['center','left','right'];
 function guardPosts(tier){const P=T.gposts||(T.gposts={});if(P[tier])return P[tier];if(tier!==2)return P[tier]=[];const yF=TY[tier]+900; // one post: the bottom drain, before the Grave
   return P[tier]=[{slot:'center',x:303,y:yF+36,r:24}];}
@@ -598,7 +598,7 @@ function resetWorld(){G.gen=(G.gen||0)+1;Object.assign(G,{balls:[],enemies:[],pi
 function newRun(cls,comp){const c=CLASSES[cls],meta=store.get('meta',{}),leg=G.demo?0:Math.min(100,(meta.bosses||0)*10);
   const r={cls,score:0,ballNum:1,ballsLeft:3,level:1,xp:0,hp:c.hp,gold:leg,mult:1,charge:0,perks:[],relics:[],kills:0,questsDone:0,bossKills:0,threat:1,
     main:null,side:[],doneSide:[],arcs:[],locks:0,lockLit:false,hoardLit:false,hutLit:true,kickback:true,shield:false,shop:true,time:0,grave:{hits:0,need:8,used:0,open:false},wing:{key:null,open:false,done:false,prog:0},stat:{ramps:0,orbits:0,jackpots:0,bestCombo:0}};
-  r.party=[];r.tavern=[];r.book={};r.goal={};G.run=r;recalc();r.hp=G.mods.maxHp;if(comp&&COMPANIONS[comp])recruit(comp);else if(G.demo)recruit(pick(Object.keys(COMPANIONS)));r.main=makeCampaign(r);return r;}
+  r.party=[];r.tavern=[];r.recruits=[];r.book={};r.goal={};G.run=r;recalc();r.hp=G.mods.maxHp;if(comp&&COMPANIONS[comp])recruit(comp);else if(G.demo)recruit(pick(Object.keys(COMPANIONS)));r.main=makeCampaign(r);return r;}
 function recalc(){const r=G.run,c=CLASSES[r.cls];
   const m={dmg:1,gold:1,xp:1,crit:c.crit,save:8+c.save,flip:c.flip,dr:c.dr,hp:0,charge:1,combo:5,comboPay:0,healKill:0,pierce:false,kickRelight:false,bumpGold:0,bumpDmg:0,multMin:1,laneHeal:0,killGold:0,rampHeal:0,jackpot:1,lockKeep:false,
     dmgMul:1,rampScore:0,aegisT:12,aegisK:.5,nudgeCd:0,phaseT:.7,critCharge:0,zoneT:9,zoneHeal:1.5,rampCharge:0,ironFlip:0,toll:0,hpK:1,saveK:1,hour:1,laneWard:0,bellHeal:0,bargain:0,cutpurse:0,marked:0,poison:0,chain:0,scorch:0,deathWish:0};
@@ -658,7 +658,7 @@ function relight(){const L={},add=(id,c)=>{(L[id]||(L[id]=[])).push(c);},r=G.run
     else if(o.t==='shot'||o.t==='done'){add(o.id,c);const s=T.shots[o.id];if(s)way(s.tier,c);}
     else if(o.t==='boss')way(BOSSES[o.boss].tier,c);else way(o.tier,c);}
   if(r.lockLit)add('catacombs','lock');if(r.hoardLit)add('sanctum','gold');if(r.hutLit)add('hut','soft');
-  if(r.side.length<2||(TAVERN_RECRUITS&&r.tavern.length&&r.party.length<3))add('tavern','soft');
+  if(r.side.length<2||(TAVERN_RECRUITS&&tavernOpen()))add('tavern','soft');
   if(G.doorT>0)add('secret','gold');else if(T.banks.door.segs.some(x=>!x.on))add('secret','soft');
   const bo=G.boss;if(bo&&bo.alive&&bo.phase==='cast')bo.def.cast.shots.forEach(id=>add(id,'danger'));
   if(G.mb)for(const id in T.rails)add(id,'gold');}
@@ -790,7 +790,7 @@ function ev(type,o,b,imp){const r=G.run;if(!r)return;if(type==='sling')G.slingRu
     if(o.bell&&G.mods.bellHeal){heal(G.mods.bellHeal);G.buffs.hallow=Math.max(G.buffs.hallow||0,8);float(o.x,o.y-50,'WARDED','#ffe0a0',13);}else if(o.group==='bones'&&G.graveBones<4){G.graveBones++;G.graveT+=1;float(o.x,o.y-30,'+1s','#9dffc8',12);}
     else if(o.tier>=4){gold(1,o.x,o.y);if(G.wingUrns<6){G.wingUrns++;G.wingT+=1;float(o.x,o.y-30,'+1s',PAL[o.tier].glow,12);}}
     if(G.mods.bumpGold&&Math.random()<.35)gold(1,o.x,o.y);
-    if(spellOn('judgement'))holyFire(o.x,o.y,o.tier);if(b.party==='healer')heal(2);
+    if(spellOn('judgement')||b.spell==='judgement')holyFire(o.x,o.y,o.tier);if(b.party==='healer')heal(2);
     if(G.mods.bumpDmg||(r.cls==='mage'&&(o.group==='stones'||G.mods.conduit||spellOn('blink')))){const n=G.mods.conduit&&o.group==='stones'?2:1,near=G.enemies.filter(e=>e.tier===o.tier&&e.spawn<=0&&!e.dead).sort((p,q)=>Math.hypot(p.x-o.x,p.y-o.y)-Math.hypot(q.x-o.x,q.y-o.y)).slice(0,n);for(const best of near){bolt(o,best);damageEnemy(best,G.mods.pow*.5,false);}}
     powerImpact(b,type);break;}
   case 'target':{if(o.bank==='sigils'&&!o.lit&&T.wings.crypt.seal[0].on){G.wingT+=6;float(b.x,b.y-26,'+6s','#d8f070',12);}o.lit=true;score(500,b.x,b.y);A.s('target');charge(1,'hit');shot(o.bank,b.x,b.y);if(spellOn('judgement'))holyFire(b.x,b.y,b.tier);const B=T.banks[o.bank];
@@ -835,7 +835,7 @@ function openDoor(open){T.banks.door.segs.forEach(s=>s.on=!open);if(!open)G.door
 function handleHole(h,b){const r=G.run,hd=b.held;hd.plan='eject';hd.delay=1;A.s('hole');major(h.x,h.y);spellProg('guard',4,h.x,h.y);score(2500*comboF(),h.x,h.y);shot(h.id,h.x,h.y);
   switch(h.id){
   case 'tavern':{let got=false;if(r.side.length<2){newSide();got=true;}
-    if(TAVERN_RECRUITS&&!G.demo&&r.tavern.length&&r.party.length<3&&!G.pending.includes('tavern')){hd.plan='wait';G.pending.push('tavern');}else if(!got){float(h.x,h.y-36,'The Drowned Lantern','#ffd9a0',12);gold(5,h.x,h.y);}hd.delay=1.2;break;}
+    if(TAVERN_RECRUITS&&!G.demo&&tavernOpen()&&!G.pending.includes('tavern')){r.tavern=drawTavern(3);hd.plan='wait';G.pending.push('tavern');}else if(!got){float(h.x,h.y-36,r.recruits.length>=RECRUIT_MAX?'The Lantern: your band is full':'The Lantern: '+recruitCost()+' gold to hire','#ffd9a0',12);gold(5,h.x,h.y);}hd.delay=1.2;break;}
   case 'crypt':hd.plan='tunnel';hd.delay=.6;float(h.x,h.y-32,'CRYPT STAIR','#9dffc8',13);break;
   case 'oubliette':hd.plan='tunnel';hd.delay=.6;float(h.x,h.y-32,'DOWN THE OUBLIETTE','#ff9a7a',13);break;
   case 'rise':hd.plan='tunnel';hd.delay=.5;G.inGrave=false;G.graveLive=false;G.tilt=0;G.save=Math.max(G.save,6);score(50000,h.x,h.y,'RISEN');xp(20);popup('Risen','The grave gives you back','main');A.s('victory');G.flash=.8;G.flashC='#eaffd0';break;
@@ -949,8 +949,9 @@ function strikeEnemy(e,b,imp,sure){const r=G.run,m=G.mods,pw=b&&b.pow?r.cls:null
   if(e.armor>0){if(m.pierce){e.armor=0;float(e.x,e.y-26,'ARMOR SHATTERED','#cfd8e0',12);}
     else if(imp>500){e.armor--;e.flash=1;A.s('clank');float(e.x,e.y-26,e.armor?'ARMOR CRACKED':'ARMOR BROKEN','#cfd8e0',12);burst(e.x,e.y,6,'#cfd8e0',200,.5);charge(1,'hit');return false;}
     else{A.s('clank');float(e.x,e.y-26,'CLANG','#8a96a3',11);return false;}}
-  const crit=sure||pw==='rogue'||G.buffs.stealth>0||e.marked>0||b&&b.party==='dps'||spellOn('markedPrey')||(sure&&spellVal('cloak','crit')>0)||Math.random()<m.crit+spellVal('smoke','crit')||(r.cls==='rogue'&&G.combo>1&&G.comboT>0);
+  const crit=sure||pw==='rogue'||G.buffs.stealth>0||e.marked>0||b&&(b.party==='dps'||b.spell==='markedPrey')||spellOn('markedPrey')||(sure&&spellVal('cloak','crit')>0)||Math.random()<m.crit+spellVal('smoke','crit')||(r.cls==='rogue'&&G.combo>1&&G.comboT>0);
   if(sure&&spellOn('cloak')&&spellVal('cloak','gold'))gold(spellVal('cloak','gold'),e.x,e.y);
+  if(b&&(b.spell==='warcry'||b.spell==='shieldWall')){e.wind=0;e.stun=Math.max(e.stun,.8);}
   if(spellOn('warcry')){e.wind=0;e.stun=Math.max(e.stun,spellVal('warcry','stun'));const ck=spellVal('warcry','crack');if(ck&&e.armor>0){e.armor=Math.max(0,e.armor-ck);float(e.x,e.y-26,'ARMOR CRACKED','#cfd8e0',12);}}
   if(spellOn('markedPrey'))e.marked=Math.max(e.marked||0,spellVal('markedPrey','mark'));
   if(spellOn('radiance')){heal(3);if(spellVal('radiance','cleanse'))for(const k in G.curse)if(G.curse[k]>0){G.curse[k]=0;break;}}
@@ -1041,7 +1042,7 @@ function killBoss(bo){const r=G.run,d=bo.def;bo.alive=false;bo.dying=2.2;bo.hp=0
   metaAdd('bosses');qEvent('boss',bo.key);relight();}
 function collideActors(b){
   for(const e of G.enemies){if(e.spawn>0||e.dead||Math.abs(e.y-b.y)>60)continue;if(e.job==='gate'&&b.noHole>0)continue; // a ball leaving a scoop slips past the troll that holds it
-    if(e.def.ghost||G.phase>0){const dx=b.x-e.x,dy=b.y-e.y,rr=b.r+(e.hr||e.r);if(dx*dx+dy*dy<rr*rr&&e.hitCd<=0){e.hitCd=.45;strikeEnemy(e,b,Math.hypot(b.vx,b.vy),G.phase>0);}continue;}
+    if(e.def.ghost||G.phase>0||b.phased){const dx=b.x-e.x,dy=b.y-e.y,rr=b.r+(e.hr||e.r);if(dx*dx+dy*dy<rr*rr&&e.hitCd<=0){e.hitCd=.45;strikeEnemy(e,b,Math.hypot(b.vx,b.vy),G.phase>0);}continue;}
     const pvx=b.vx,pvy=b.vy,imp=hitCircle(b,e,e.r,.35);
     if(imp>30&&e.hitCd<=0){e.hitCd=.12;const plow=b.pow&&G.run.cls==='knight';if(strikeEnemy(e,b,imp)||plow){b.vx=pvx*(plow?.94:.82);b.vy=pvy*(plow?.94:.82);}else{const k=e.def.kick&&e.stun<=0?420:e.job==='wall'?220:90;b.vx+=b._nx*k;b.vy+=b._ny*k;if(e.def.kick&&e.stun<=0)A.s('kick');}}}
   const bo=G.boss;if(bo&&bo.alive&&Math.abs(bo.y-b.y)<90){const imp=hitCircle(b,bo,bo.r,.35);if(imp>30&&bo.hitCd<=0){bo.hitCd=.15;b.vx+=b._nx*300;b.vy+=b._ny*300;strikeBoss(bo,b,imp);}}
@@ -1105,7 +1106,7 @@ function startRun(cls,comp){G.demo=false;G.bot=null;resetWorld();G.mode='play';n
   popup(G.run.main.name,G.run.main.text,'main');newSideQuiet();UI.sync(true);}
 function newSideQuiet(){const r=G.run,pool=SIDE.filter(s=>s.steps[0].tier===2||(s.steps[0].id&&T.shots[s.steps[0].id]&&T.shots[s.steps[0].id].tier===2));const s=pick(pool);
   const q={id:s.id,name:s.name,giver:s.giver,text:s.text,steps:s.steps.map(o=>Object.assign({},o)),rw:s.rw,si:0,prog:0,tl:0};r.side.push(q);qBegin(q);}
-function continueRun(){const d=store.get('run',null);if(!d||!d.run)return false;G.demo=false;G.bot=null;resetWorld();G.mode='play';G.run=d.run;if(!G.run.grave)G.run.grave={hits:0,need:8,used:0,open:false};if(!G.run.party){G.run.party=[];G.run.tavern=[];}if(!G.run.book){G.run.book={};G.run.goal={};}G.run.party=G.run.party.filter(c=>COMPANIONS[c.id]).slice(0,1);if(G.run.party[0])G.run.party[0].slot='center';if(TAVERN_RECRUITS&&!G.run.tavern.length&&G.run.party.length<3)G.run.tavern=drawRecruits(3);if(!G.run.wing||G.run.wing.key===undefined){const m=G.run.main,cw=m&&CAMPAIGNS[m.key].wing;G.run.wing={key:cw&&m.steps.some(x=>x.id==='wing')?cw.key:null,open:false,done:false,prog:0};}recalc();G.cam.y=TY[2]-20;
+function continueRun(){const d=store.get('run',null);if(!d||!d.run)return false;G.demo=false;G.bot=null;resetWorld();G.mode='play';G.run=d.run;if(!G.run.grave)G.run.grave={hits:0,need:8,used:0,open:false};if(!G.run.party){G.run.party=[];G.run.tavern=[];}if(!G.run.book){G.run.book={};G.run.goal={};}if(!G.run.recruits)G.run.recruits=[];G.run.party=G.run.party.filter(c=>COMPANIONS[c.id]).slice(0,1);if(G.run.party[0])G.run.party[0].slot='center';if(TAVERN_RECRUITS&&!G.run.tavern.length&&G.run.party.length<3)G.run.tavern=drawRecruits(3);if(!G.run.wing||G.run.wing.key===undefined){const m=G.run.main,cw=m&&CAMPAIGNS[m.key].wing;G.run.wing={key:cw&&m.steps.some(x=>x.id==='wing')?cw.key:null,open:false,done:false,prog:0};}recalc();G.cam.y=TY[2]-20;
   if(!G.run.main){G.run.main=makeCampaign(G.run);qBegin(G.run.main);}else quests().forEach(qResume);startBall();UI.sync(true);return true;}
 function startDemo(){G.demo=true;resetWorld();G.mode='title';newRun(pick(Object.keys(CLASSES)));qBegin(G.run.main);newSideQuiet();G.bot={hl:0,hr:0,tl:rand(20,60),tr:rand(20,60),pl:0,plT:rand(.3,.9)};startBall();}
 
@@ -1120,6 +1121,7 @@ function openChoice(kind){const r=G.run;let c;
     c={kind,title:'A Boon',sub:'The spoils of the fight. Choose one',opts:picks.map(p=>({name:p.name,desc:p.desc,tag:tag(p),key:p.kind==='key',act:()=>{r.perks.push(p.id);recalc();if(p.now)p.now();}}))};}
   else if(kind==='book'){c=bookChoice();}
   else if(kind==='bookUp'){c=bookUpChoice(G.bookUp);}
+  else if(kind==='tavern'&&TAVERN_RECRUITS){c=tavernChoice();}
   else{const opts=r.tavern.map(id=>{const d=COMPANIONS[id],R=ROLES[d.role];return {name:d.name,desc:R.name+'. '+d.desc,cost:d.cost,tag:d.cost+' gold',role:d.role,act:()=>{const c=recruit(id);if(c)popup(d.name+' Joins','They take the '+c.slot+' post','good',d.desc);}};});
     c={kind,title:'The Drowned Lantern',sub:'Recruits for hire. You have '+r.gold+' gold'+(r.party.length?'; '+(3-r.party.length)+' post'+(3-r.party.length===1?'':'s')+' free':''),opts:opts.concat([{name:'Leave',desc:'Keep your coin and get back to it.',tag:'',act:()=>{}}])};}
   if(G.demo||G.auto){const o=pick(c.opts.filter(o=>!o.cost||o.cost<=r.gold));if(o.cost)r.gold-=o.cost;o.act();resumeHeld();return;}
@@ -1460,7 +1462,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.11';
+const $=id=>document.getElementById(id),VERSION='3D build 0.12';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1498,12 +1500,12 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     h='<h4 style="color:'+c.color+'">'+c.name+'</h4><p class="flav">'+esc(c.tag)+'</p><dl><dt>Level</dt><dd>'+r.level+'</dd><dt>Power</dt><dd>'+Math.round(m.pow)+'</dd><dt>Crit</dt><dd>'+Math.round(m.crit*100)+'%</dd><dt>Gold</dt><dd>'+r.gold+'</dd><dt>Slain</dt><dd>'+r.kills+'</dd><dt>Threat</dt><dd>'+r.threat+'</dd></dl>'+
       '<h3>Powers</h3><p class="pw"><b>Nudge: '+esc(c.nudge)+'.</b> '+esc(c.nudgeText)+'</p><p class="pw"><b>Cradle: '+esc(c.shot)+'.</b> '+esc(c.shotText)+'</p><p class="pw"><b>Full meter: Rally.</b> Cradle 1.5 s and the party comes out.</p><h3>Spellbook</h3>'+SLOTS_ORDER.map(sl=>{const d=spellOf(r.cls,sl),rk=spellRank(d.id);return '<p class="pw"'+(rk<0?' style="opacity:.5"':'')+'><b>'+esc(d.name)+(rk>=0?' '+(rk+1):'')+'.</b> '+(rk<0?'Locked. ':'')+esc(SLOT_GOAL[sl].text)+(rk>=0?' <small>'+esc(goalText(sl))+'</small>':'')+'</p>';}).join('')+'<h3>Boons</h3><ul class="tags">'+(Object.keys(cnt).map(id=>{const p=PERKS.find(x=>x.id===id);if(!p)return '';return '<li class="'+p.kind+'" title="'+esc(p.desc)+'">'+esc(p.name)+(cnt[id]>1?' '+cnt[id]:'')+'</li>';}).join('')||'<li class="none">None yet</li>')+'</ul>'+
       '<h3>Relics</h3><ul class="tags">'+(Object.keys(rc).map(id=>{const p=RELICS.find(x=>x.id===id);return '<li title="'+esc(p.desc)+'">'+esc(p.name)+(rc[id]>1?' '+rc[id]:'')+'</li>';}).join('')||'<li class="none">None yet</li>')+'</ul>'+
-      '<h3>Party</h3>'+((r.party||[]).map(q=>{const d=COMPANIONS[q.id],R=ROLES[d.role];return '<p class="pw mate" title="'+esc(d.desc)+'"><b style="color:'+R.col+'">'+esc(d.name)+'</b> <small>'+R.name+', '+q.slot+' post</small><i class="bar"><i style="width:'+Math.round(100*q.hp/q.maxHp)+'%;background:'+(q.hp>0?R.col:'#553')+'"></i></i>'+(q.hp<=0?' <small>wounded</small>':'')+'</p>';}).join('')||'<p class="flav">You ride alone. The Tavern has company.</p>');
+      '<h3>Party</h3>'+((r.recruits||[]).map(q=>{const cc=CLASSES[q.cls],sp=spellDef(q.spell);return '<p class="pw mate"><i class="orb" style="--c:'+cc.color+';--g:'+cc.glow+'"></i><b style="color:'+cc.glow+'">'+cc.name+'</b> <small>'+esc(sp.name)+'</small></p>';}).join(''))+((r.party||[]).map(q=>{const d=COMPANIONS[q.id],R=ROLES[d.role];return '<p class="pw mate" title="'+esc(d.desc)+'"><b style="color:'+R.col+'">'+esc(d.name)+'</b> <small>'+R.name+', '+q.slot+' post</small><i class="bar"><i style="width:'+Math.round(100*q.hp/q.maxHp)+'%;background:'+(q.hp>0?R.col:'#553')+'"></i></i>'+(q.hp<=0?' <small>wounded</small>':'')+'</p>';}).join('')||'<p class="flav">You ride alone. The Tavern has company.</p>');
     $('sheetBody').innerHTML=h;},
   bonus(b,more){const el=$('bonus');if(!b){el.hidden=true;return;}el.hidden=false;
     el.innerHTML='<h2>'+(b.fallen?'Fallen':b.tilt?'Tilt':'Ball lost')+'</h2><dl>'+b.lines.map(l=>'<dt>'+l[0]+'</dt><dd>'+l[1]+' <small>'+fmt(l[2])+'</small></dd>').join('')+'<dt>Multiplier</dt><dd>'+b.mult+'x</dd></dl><p class="big">'+(b.tilt?'No bonus':'+'+fmt(b.total))+'</p><p>'+(more?'The next ball is on its way.':'That was your last ball.')+'</p>';},
   choice(c){if(!c){UI.menu(null);return;}let h='<div class="pane wide"><h2>'+esc(c.title)+'</h2><p class="lead">'+esc(c.sub)+'</p><div class="cards">';
-    c.opts.forEach((o,i)=>{const no=o.cost&&G.run.gold<o.cost;h+='<button class="card'+(o.key?' key':'')+'" data-act="choose" data-i="'+i+'"'+(no?' disabled':'')+'><small>'+esc(o.tag||'')+'</small><b>'+esc(o.name)+'</b><span>'+esc(o.desc)+'</span></button>';});
+    c.opts.forEach((o,i)=>{const no=o.cost&&G.run.gold<o.cost;h+='<button class="card'+(o.key?' key':'')+(o.orb?' hire':'')+'" data-act="choose" data-i="'+i+'"'+(no?' disabled':'')+'>'+(o.orb?(o.face?'<img class="face" src="'+portrait(o.face[0],o.face[1])+'" alt="">':'<i class="orb big" style="--c:'+o.orb[0]+';--g:'+o.orb[1]+'"></i>'):'')+'<small>'+esc(o.tag||'')+'</small><b>'+esc(o.name)+'</b><span>'+esc(o.desc)+'</span></button>';});
     h+='</div><p class="hint">'+(UI.touch?'Tap one to take it.':'Flippers move, Space or Enter picks.')+'</p></div>';UI.show(h,'choice');},
   gameOver(r){UI.overRun=r;UI.menu('over');},
   show(html,name){const m=$('menu');m.innerHTML=html;m.hidden=false;m.className=name==='title'?'attract':'';UI.cur=name;const b=m.querySelector('button:not([disabled]),input');if(b)b.focus({preventScroll:true});},

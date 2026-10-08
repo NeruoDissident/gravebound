@@ -153,3 +153,6 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
 .tags li.key{color:var(--gold);border-color:var(--gold)}
 
 .mate{margin:4px 0}.mate .bar{display:block;height:5px;margin-top:3px;background:#1a1a24;border:1px solid #2a2a3a}.mate .bar i{display:block;height:100%}
+
+.card.hire{grid-template-columns:64px 1fr;grid-template-areas:'orb tag' 'orb name' 'orb desc';column-gap:14px}.card.hire .orb.big{grid-area:orb;width:52px;height:52px;align-self:center;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,var(--c) 28%,color-mix(in srgb,var(--c) 40%,#000) 100%);box-shadow:0 0 18px var(--g),inset -4px -6px 10px rgba(0,0,0,.5)}.card.hire small{grid-area:tag}.card.hire b{grid-area:name}.card.hire span{grid-area:desc}.mate .orb{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;background:radial-gradient(circle at 35% 30%,#fff 0,var(--c) 40%,#000 110%);box-shadow:0 0 6px var(--g);vertical-align:-1px}
+.card.hire .face{grid-area:orb;width:60px;height:70px;align-self:center;border-radius:4px;box-shadow:0 0 14px rgba(0,0,0,.6)}

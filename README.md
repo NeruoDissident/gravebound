@@ -24,7 +24,7 @@ a star.
 | `src/art3d.js` | Playfield art painted to textures; procedural stone, wood, sky |
 | `src/render3d.js` | Scene: terraces, walls, ramps, bumpers, targets, scenery, camera, lighting, post |
 | `src/wing3d.js` | The campaign wings as places in the world (the Crypt, the Den, the Hoard) |
-| `src/spells.js` | The spellbook: sixteen abilities, their goals, upgrades and the Rally |
+| `src/spells.js` | The spellbook: sixteen abilities, their goals, upgrades, the Rally and the Tavern |
 | `src/foes3d.js` | The foes as jointed figures: one builder per type, posed from the game's state every frame |
 | `src/actors3d.js` | Bosses, pickups, hit rings and spell effects in 3D |
 | `src/game3d.js` | Overlay gauges and text, settings, dev keys, resize, loop, boot |
@@ -84,6 +84,10 @@ level-up and cast by the table: complete a bank, roll three lanes then a scoop, 
 twenty spins. Casts last a duration and ride the ball; unlocked abilities all have their goals live at once, so they
 stack, and recasting extends to twice the base. The level-up screen shows the same four cards every time: Unlock, or
 Level Up into three upgrade rows with concrete numbers. The pool is `SPELLS` in `src/spells.js`.
+
+The Tavern scoop hires recruits: three strangers a visit, each a class with one of its four abilities and a price
+(40 gold, 15 more for each recruit already in the band, up to six). It opens only when you can pay and have a seat.
+Recruits ride with you for the run and come out in every Rally as balls of their class with that ability running.
 
 A full meter cradled for 1.5 s is the Rally: the party comes out as balls for 20 seconds. The camera stays on your
 own ball and losing it ends the Rally and the ball. Table boons, stats and the rare keystones (`PERKS` in
