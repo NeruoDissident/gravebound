@@ -2275,14 +2275,15 @@ function endBall(){const r=G.run;G.sub='bonus';G.mb=null;
   if(G.demo){later(1.5,startDemo);return;}
   UI.bonus(G.bonus,r.ballsLeft>0);
   later(3.4,()=>{if(G.run!==r)return;G.sub=null;UI.bonus(null);if(r.ballsLeft>0){r.ballNum++;startBall();}else gameOver();});}
-function gameOver(won){const r=G.run;r.ended=won?'won':'fell';G.mode='over';G.sub=null;store.del('run');A.s(won?'victory':'over');metaAdd('runs');const m=store.get('meta',{});if(r.level>(m.bestLevel||0)){m.bestLevel=r.level;store.set('meta',m);}UI.gameOver(r);}
+function gameOver(won){if(G.demo){later(1.5,startDemo);return;} // the attract mode never ends a run of yours, never touches your save
+  const r=G.run;r.ended=won?'won':'fell';G.mode='over';G.sub=null;store.del('run');A.s(won?'victory':'over');metaAdd('runs');const m=store.get('meta',{});if(r.level>(m.bestLevel||0)){m.bestLevel=r.level;store.set('meta',m);}UI.gameOver(r);}
 function startRun(cls,comp){G.demo=false;G.bot=null;resetWorld();G.mode='play';newRun(cls,comp);G.cam.y=TY[2]-20;qBegin(G.run.main);startBall();
   popup(G.run.main.name,G.run.main.text,'main');newSideQuiet();UI.sync(true);}
 function newSideQuiet(){const r=G.run,pool=SIDE.filter(s=>s.steps[0].tier===2||(s.steps[0].id&&T.shots[s.steps[0].id]&&T.shots[s.steps[0].id].tier===2));const s=pick(pool);
   const q={id:s.id,name:s.name,giver:s.giver,text:s.text,steps:s.steps.map(o=>Object.assign({},o)),rw:s.rw,si:0,prog:0,tl:0};r.side.push(q);qBegin(q);}
 function continueRun(){const d=store.get('run',null);if(!d||!d.run)return false;G.demo=false;G.bot=null;resetWorld();G.mode='play';G.run=d.run;if(!G.run.grave)G.run.grave={hits:0,need:8,used:0,open:false};if(!G.run.party){G.run.party=[];G.run.tavern=[];}if(!G.run.book){G.run.book={};G.run.goal={};}if(!G.run.recruits)G.run.recruits=[];G.run.party=G.run.party.filter(c=>COMPANIONS[c.id]).slice(0,1);if(G.run.party[0])G.run.party[0].slot='center';if(TAVERN_RECRUITS&&!G.run.tavern.length&&G.run.party.length<3)G.run.tavern=drawRecruits(3);if(!G.run.wing||G.run.wing.key===undefined){const m=G.run.main,cw=m&&CAMPAIGNS[m.key].wing;G.run.wing={key:cw&&m.steps.some(x=>x.id==='wing')?cw.key:null,open:false,done:false,prog:0};}recalc();G.cam.y=TY[2]-20;
   if(!G.run.main){G.run.main=makeCampaign(G.run);qBegin(G.run.main);}else quests().forEach(qResume);startBall();UI.sync(true);return true;}
-function startDemo(){G.demo=true;resetWorld();G.mode='title';newRun(pick(Object.keys(CLASSES)));qBegin(G.run.main);newSideQuiet();G.bot={hl:0,hr:0,tl:rand(20,60),tr:rand(20,60),pl:0,plT:rand(.3,.9)};startBall();}
+function startDemo(){G.demo=true;G.demoT=180;resetWorld();G.mode='title';newRun(pick(Object.keys(CLASSES)));qBegin(G.run.main);newSideQuiet();G.bot={hl:0,hr:0,tl:rand(20,60),tr:rand(20,60),pl:0,plT:rand(.3,.9)};startBall();}
 
 /* ---------- choices (perks, shop) ---------- */
 function openChoice(kind){const r=G.run;let c;
@@ -2311,7 +2312,7 @@ function updateRules(dt){const r=G.run;r.time+=dt;
   for(const k in G.curse)if(G.curse[k]>0){G.curse[k]-=dt;if(G.curse[k]<=0)G.dirty=true;}
   if(G.curse.burn>0){G.burnAcc=(G.burnAcc||0)+dt;if(G.burnAcc>=1){G.burnAcc=0;hurt(3);}}
   G.flipPow=G.mods.flip*(G.curse.weak>0?.84:1);
-  if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}if(G.lampShow>0)G.lampShow-=dt;
+  if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}if(G.lampShow>0)G.lampShow-=dt;if(G.demo&&G.mode==='title'&&(G.demoT-=dt)<=0)startDemo();
   if(G.mods.kickRelight&&!r.kickback){G.kickT-=dt;if(G.kickT<=0){r.kickback=true;relight();}}
   if(G.doorT>0){G.doorT-=dt;if(G.doorT<=0){if(wingHoldsDoor())G.doorT=0;else openDoor(false);}}
   if(!r.hutLit){G.hutT-=dt;if(G.hutT<=0){r.hutLit=true;G.hutT=40;relight();}}
