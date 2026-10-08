@@ -622,6 +622,7 @@ function qCur(q){return q.steps[q.si];}
 function qResume(q){const o=qCur(q);if(!o)return;if(o.t==='done'&&o.id==='wing'){G.run.wing.open=true;if(G.run.wing.key==='hoard')openDoor(true);}if(o.t==='boss')wakeBoss(o.boss);if(o.t==='collect')spawnPickup(o.tier,o.item||'relic',q);}
 function qBegin(q){const o=qCur(q);if(!o)return;q.prog=0;q.tl=o.time||0;qResume(q);relight();}
 function qAdd(q,n){const o=qCur(q);if(!o)return;q.prog+=n||1;G.dirty=true;
+  if(q.prog<o.n&&o.n>1&&G.qxy){const s=o.id&&T.shots[o.id];float(G.qxy.x,G.qxy.y-34,(s?s.name.toUpperCase()+' ':'')+q.prog+'/'+o.n,q.main?'#ffd24a':'#9fe8ff',13);}
   if(q.prog>=o.n){q.si++;
     if(q.si>=q.steps.length)qFinish(q);
     else{qBegin(q);popup(q.main?(q.stages||STAGES)[q.si]||'Main Quest':'Quest Updated',qCur(q).text,q.main?'main':'quest');A.s('quest');if(q.main){score(20000);xp(25);saveRun();}}}
@@ -644,22 +645,27 @@ function newSide(){const r=G.run;let pool=SIDE.filter(s=>!r.doneSide.includes(s.
   if(!pool.length){r.doneSide=[];pool=SIDE.filter(s=>!r.side.some(q=>q.id===s.id));}
   const s=pick(pool),q={id:s.id,name:s.name,giver:s.giver,text:s.text,steps:s.steps.map(o=>Object.assign({},o)),rw:s.rw,si:0,prog:0,tl:0};
   r.side.push(q);qBegin(q);popup('Quest Accepted',s.name,'quest',s.giver+': “'+s.text+'”');A.s('quest');return q;}
-function relight(){const L={},add=(id,c)=>{(L[id]||(L[id]=[])).push(c);},r=G.run;G.lit=L;if(!r)return;G.dirty=true;const ft0=G.focusTier;
+/* Every insert has a state as well as a colour. flash: do this now (a quest step, a boss spell, a jackpot).
+   lit: worth shooting, available (the way to the quest's level, a lit lock, a spell goal, a boon waiting).
+   done: collected and still showing it (a running spell's goals, a used boon, lock 1 of 2). */
+const LAMP_RANK={done:1,lit:2,flash:3};
+function relight(){const L={},S={},add=(id,c,st)=>{(L[id]||(L[id]=[])).push(c);st=st||'flash';if(!S[id]||LAMP_RANK[st]>LAMP_RANK[S[id]])S[id]=st;},r=G.run;G.lit=L;G.lampS=S;if(!r)return;G.dirty=true;const ft0=G.focusTier;
   if(G.inGrave){add('rise',T.banks.nails.segs.some(x=>x.on)?'main':'gold');return;}
   if(G.focusTier>=4){const tw=wingOfTier(G.focusTier);if(!tw.seal[0].on)add(tw.goal,'gold');else if(tw.key==='crypt'){add('sigils','main');add('sigilsR','main');}return;}
-  if(ft0<3&&r.book)for(const sl of SLOTS_ORDER){const d=spellOf(r.cls,sl);if(!d||spellRank(d.id)<0||spellOn(d.id))continue;const g=(r.goal||{})[sl]||0;
-    if(sl==='breaker')for(const id in T.banks)if(T.banks[id].tier===ft0&&T.shots[id])add(id,'spell');
-    if(sl==='striker')for(const id in T.rails)if(T.rails[id].from===ft0)add(id,'spell');
-    if(sl==='pressure'){add('orbitL'+ft0,'spell');add('orbitR'+ft0,'spell');for(const id of ['chains','windmill','vane'])if(T.shots[id]&&T.shots[id].tier===ft0)add(id,'spell');}
-    if(sl==='guard'&&g>=3)for(const id in T.holes)if(T.holes[id].tier===ft0)add(id,'spell');}
-  const ft=G.focusTier,way=(tier,c)=>{if(ft>tier){if(ft===2){add('rampForest',c);add('crypt',c);}else{add('rampRuin',c);add('secret',c);}}else if(ft<tier&&ft===0)add('oubliette',c);};
+  if(ft0<3&&r.book)for(const sl of SLOTS_ORDER){const d=spellOf(r.cls,sl);if(!d||spellRank(d.id)<0)continue;const g=(r.goal||{})[sl]||0,st=spellOn(d.id)?'done':'lit';
+    if(sl==='breaker')for(const id in T.banks)if(T.banks[id].tier===ft0&&T.shots[id])add(id,'spell',st);
+    if(sl==='striker')for(const id in T.rails)if(T.rails[id].from===ft0)add(id,'spell',st);
+    if(sl==='pressure'){add('orbitL'+ft0,'spell',st);add('orbitR'+ft0,'spell',st);for(const id of ['chains','windmill','vane'])if(T.shots[id]&&T.shots[id].tier===ft0)add(id,'spell',st);}
+    if(sl==='guard'&&(g>=3||st==='done'))for(const id in T.holes)if(T.holes[id].tier===ft0)add(id,'spell',st);}
+  const ft=G.focusTier,way=(tier,c)=>{if(ft>tier){if(ft===2){add('rampForest',c,'lit');add('crypt',c,'lit');}else{add('rampRuin',c,'lit');add('secret',c,'lit');}}else if(ft<tier&&ft===0)add('oubliette',c,'lit');};
   for(const q of quests()){const o=qCur(q);if(!o)continue;const c=q.main?'main':'side';
     if(o.id==='wing'){if(ft===1)add(WINGS[r.wing.key].gate,c);else way(1,c);}
     else if(o.t==='shot'||o.t==='done'){add(o.id,c);const s=T.shots[o.id];if(s)way(s.tier,c);}
     else if(o.t==='boss')way(BOSSES[o.boss].tier,c);else way(o.tier,c);}
-  if(r.lockLit)add('catacombs','lock');if(r.hoardLit)add('sanctum','gold');if(r.hutLit)add('hut','soft');
-  if(r.side.length<2||(TAVERN_RECRUITS&&tavernOpen()))add('tavern','soft');
-  if(G.doorT>0)add('secret','gold');else if(T.banks.door.segs.some(x=>!x.on))add('secret','soft');
+  if(r.lockLit)add('catacombs','lock',r.locks>0?'flash':'lit');else if(r.locks>0)add('catacombs','lock','done');if(r.hoardLit)add('sanctum','gold');if(r.hutLit)add('hut','soft','lit');else if(G.hutT>0)add('hut','soft','done');
+  if(r.side.length<2||(TAVERN_RECRUITS&&tavernOpen()))add('tavern','soft','lit');
+  if(G.doorT>0)add('secret','gold');else if(T.banks.door.segs.some(x=>!x.on))add('secret','soft','lit');
+  if(G.pending.length)for(const id in T.holes)if(T.holes[id].tier===ft0&&ft0<3)add(id,'gold','lit');
   const bo=G.boss;if(bo&&bo.alive&&bo.phase==='cast')bo.def.cast.shots.forEach(id=>add(id,'danger'));
   if(G.mb)for(const id in T.rails)add(id,'gold');}
 
@@ -677,7 +683,7 @@ function hurt(n){const r=G.run;if(G.fallen||!G.balls.length)return;let v=n*(1-G.
 function charge(n,src){const r=G.run,k=CLASSES[r.cls].ch[src];if(!k||G.fallen)return;const was=r.charge;r.charge=Math.min(100,r.charge+k*n*G.mods.charge/Math.max(1,heroBalls().length));G.dirty=true;if(was<100&&r.charge>=100){A.s('ward');const b=focusBall();if(b)float(b.x,b.y-34,CLASSES[r.cls].abil.toUpperCase()+' READY',CLASSES[r.cls].glow,14);}}
 function major(x,y){const r=G.run;if(G.comboT>0)G.combo++;else G.combo=1;G.comboT=G.mods.combo;if(G.combo>r.stat.bestCombo)r.stat.bestCombo=G.combo;
   if(G.combo>1)float(x,y-34,G.combo+'x COMBO','#c9a6ff',15);charge(G.combo>1?1.6:1,'shot');}
-function shot(id,x,y){qEvent('shot',id);const bo=G.boss;if(bo&&bo.alive&&bo.phase==='cast'&&bo.def.cast.shots.includes(id))interruptBoss(bo);}
+function shot(id,x,y){G.qxy=x===undefined?null:{x,y};qEvent('shot',id);G.qxy=null;const bo=G.boss;if(bo&&bo.alive&&bo.phase==='cast'&&bo.def.cast.shots.includes(id))interruptBoss(bo);}
 function jackpot(x,y){const m=G.mb;if(!m)return;score(m.jackpot*G.mods.jackpot,x,y,'JACKPOT');m.jackpot=Math.min(200000,m.jackpot+8000);G.run.stat.jackpots++;A.s('jackpot');G.flash=.35;G.flashC='#ffd24a';}
 function ability(){const r=G.run,c=CLASSES[r.cls],b=focusBall();G.flash=.4;G.flashC=c.glow;A.s('ability');
   switch(r.cls){
@@ -963,7 +969,7 @@ function killEnemy(e){const r=G.run;e.dead=true;r.kills++;if(r.bb)r.bb.kills++;i
   charge(1,'kill');A.s('kill');burst(e.x,e.y,16,e.def.undead?'#9dffc8':'#ff8a6a',260,.9);if(G.boss&&e.minion)G.boss.minions--;
   if(Math.random()<.12)later(.05,()=>{G.pickups.push({x:e.x,y:e.y,tier:e.tier,kind:'heart',t:0,quest:null});});
   if(e.pack&&r.wing.key==='den'&&!r.wing.done&&T.wings.den.seal[0].on)wingProg(8,e.x,e.y);
-  qEvent('kill',e.type,e.tier);}
+  G.qxy={x:e.x,y:e.y};qEvent('kill',e.type,e.tier);G.qxy=null;}
 /* ---------- waves: foes come together, and the night goes quiet after ----------
    A wave is drawn from the campaign's foes on a budget that grows with level and threat. Shots call waves early
    (the bell), add to them (the gravestones) or hold them off (lighting the lanes). Clearing one pays a bounty. */
@@ -1052,7 +1058,7 @@ function collideActors(b){
 function serve(){const hb=newBall(T.shooter.x,T.shooter.y,0,0);hb.hero=true;G.balls.push(hb);G.skill=irand(0,2);G.dirty=true;}
 function startBall(){const r=G.run;r.bb={kills:0,quests:0,ramps:0};G.chanceUsed=false;G.martyrUsed=false;Object.assign(G,{balls:[],tilt:0,fallen:false,hoardDone:false,slingRun:0,booms:[],zones:[],phase:0,nudgeCd:0,hidden:false,inGrave:false,graveLive:false,nudges:[],curse:{},buffs:{},combo:0,comboT:0,mb:null,save:0,sub:null});
   if(r.hp<G.mods.maxHp*.6)r.hp=Math.round(G.mods.maxHp*.6);r.mult=G.mods.multMin;r.kickback=true;r.shop=true;
-  T.sets.candles.lanes.forEach(l=>l.lit=false);saveRun();serve();popup('Ball '+r.ballNum,r.ballsLeft>1?(r.ballsLeft-1)+' in reserve':'Last ball','info',r.ballNum===1&&r.time<1?(UI.touch?'Tap the left and right sides to flip. Hold Nudge and release to launch.':'Z and / flip. Hold Space and release to launch. Space also nudges.'):r.ballNum===1?'':'');relight();}
+  T.sets.candles.lanes.forEach(l=>l.lit=false);G.lampShow=1.6;saveRun();serve();popup('Ball '+r.ballNum,r.ballsLeft>1?(r.ballsLeft-1)+' in reserve':'Last ball','info',r.ballNum===1&&r.time<1?(UI.touch?'Tap the left and right sides to flip. Hold Nudge and release to launch.':'Z and / flip. Hold Space and release to launch. Space also nudges.'):r.ballNum===1?'':'');relight();}
 function updatePlunger(dt){const p=G.plunge;
   if(p.auto>0){p.auto-=dt;if(p.auto<=0)addBall('shooter');}
   const b=G.balls.find(b=>b.st==='live'&&b.x>586&&b.y>3040&&Math.abs(b.vy)<60);p.ready=!!b;
@@ -1138,7 +1144,7 @@ function updateRules(dt){const r=G.run;r.time+=dt;
   for(const k in G.curse)if(G.curse[k]>0){G.curse[k]-=dt;if(G.curse[k]<=0)G.dirty=true;}
   if(G.curse.burn>0){G.burnAcc=(G.burnAcc||0)+dt;if(G.burnAcc>=1){G.burnAcc=0;hurt(3);}}
   G.flipPow=G.mods.flip*(G.curse.weak>0?.84:1);
-  if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}
+  if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}if(G.lampShow>0)G.lampShow-=dt;
   if(G.mods.kickRelight&&!r.kickback){G.kickT-=dt;if(G.kickT<=0){r.kickback=true;relight();}}
   if(G.doorT>0){G.doorT-=dt;if(G.doorT<=0){if(wingHoldsDoor())G.doorT=0;else openDoor(false);}}
   if(!r.hutLit){G.hutT-=dt;if(G.hutT<=0){r.hutLit=true;G.hutT=40;relight();}}

@@ -1,0 +1,6 @@
+[
+ {"eval":"(UI.menu(null),startRun('knight'),DEV.on=true,G.auto=false,__gb.advance(.5,1),G.lampShow=0,G.run.mult=3,G.save=20,G.run.lockLit=true,G.pending.push('book'),G.run.charge=100,relight(),G.balls=[newBall(303,TY[2]+700,0,0)],__gb.draw(3,.3),[G.focusTier,R3.dyn.lamps.length])","shot":"01-status"},
+ {"eval":"(G.pending=[],G.run.charge=0,G.lampShow=.55,relight(),__gb.draw(1,.1),G.lampShow)","shot":"02-lampshow"},
+ {"eval":"(G.lampShow=0,devKey('d2'),__gb.advance(.2,1),G.balls=[newBall(320,TY[1]+700,0,0)],G.run.locks=1,G.comboT=5,G.combo=3,relight(),__gb.draw(2,.3),[G.focusTier,Object.keys(G.lit)])","shot":"03-wilds"},
+ {"eval":"(devKey('d1'),__gb.advance(.2,1),G.balls=[newBall(320,TY[0]+700,0,0)],G.save=2,relight(),__gb.draw(2,.3),[G.focusTier,Object.keys(G.lit)])","shot":"04-keep"}
+]
