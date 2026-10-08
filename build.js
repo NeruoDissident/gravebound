@@ -3,7 +3,7 @@
 // standalone file for web hosting.
 const fs = require('fs'), path = require('path');
 const root = __dirname, rd = f => fs.readFileSync(path.join(root, f), 'utf8');
-const SOURCES = ['src/game.js', 'src/spells.js', 'src/art3d.js', 'src/render3d.js', 'src/wing3d.js', 'src/foes3d.js', 'src/actors3d.js', 'src/game3d.js'];
+const SOURCES = ['src/game.js', 'src/spells.js', 'src/help.js', 'src/art3d.js', 'src/render3d.js', 'src/wing3d.js', 'src/foes3d.js', 'src/actors3d.js', 'src/game3d.js'];
 const guard = "if(typeof THREE==='undefined'){document.getElementById('menu').innerHTML='<div class=\"pane\"><p class=\"lead\">The 3D library did not load. Check the connection and reload the page.</p></div>';throw new Error('three.js did not load');}";
 const js = ["'use strict';", guard].concat(SOURCES.map(rd)).join('\n');
 try { new Function(js); } catch (e) { throw new Error('script does not parse: ' + e.message); }

@@ -108,3 +108,9 @@ Vercel at that folder.
 
 The tests serve the CDN scripts from `node_modules`, so they run offline. They use software rendering, so
 they check that everything runs and renders, not frame rate.
+
+## Help and tutorial (0.13)
+
+- **How to play** (title screen and pause menu): the rules in nine short sections, then *Every named shot*: a glossary generated from the table itself (what each shot is, where it sits on its level, and what counts), so it stays correct when the table changes.
+- **Pause** now explains the current step of every quest in plain words under the quest line: "Mill is a spinner at the middle right of the Wilds. Every turn counts, so hit it hard."
+- **Tutorial**: nine pages, on the title menu, and launched automatically on the first run of a fresh browser. Skip or close it any time; Options has "Show the tutorial when a new run starts" to turn it back on.

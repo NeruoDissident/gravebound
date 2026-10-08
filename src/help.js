@@ -1,0 +1,51 @@
+/* ================= HELP, THE GLOSSARY, THE TUTORIAL =================
+   How to Play is written here as data. The shot glossary and the "what is that?" lines under quest steps are
+   generated from the table itself, so they stay true when the table changes. */
+const HELP=[
+  ['The table','Three levels stacked up a hill: Grave Hollow at the bottom, the Wilds, then the Black Keep. Ramps climb to the level above; the gap between the upper flippers of a level drops you to the one below. Below the Hollow is the Grave, and off to the sides are the campaign wings (the Crypt, the Den, the Hoard), reached through scoops once the Warden is beaten.'],
+  ['Hardware','Flippers: every left flipper on the table moves together, and every right one. Slingshots kick the ball back up. Rollover lanes (top, inlanes, outlanes) score as you pass. Spinners score per turn. Drop targets fall when hit and a bank is complete when all are down; standup targets light. Pop bumpers (braziers, standing stones, gravestones) score and feed your meter. Scoops hold the ball, pay out and eject it. Orbits are the loops around the outside. Ramps carry the ball up a rail. The kickback on the left outlane fires once, then has to be relit.'],
+  ['Scoring','Pinball is a high-score game. Your multiplier (1x to 6x) multiplies everything; light the three Vigil Candles on the Hollow to raise it, or ask the Witch. It resets each ball. Combos: shots made quickly after one another pay more. Lock two balls at the Goblin Camp for multiball, where ramps and orbits pay jackpots. The end-of-ball bonus counts that ball\'s foes, side quests and ramps, times your multiplier. Tilt (too many nudges) kills the flippers and forfeits the bonus.'],
+  ['Your hero','The ball is the hero. Hits fill the power meter. Nudge (Space) fires your class nudge power. Hold the ball still on a raised flipper (cradle) for about a second with one bar of meter to arm your class shot: the next flip fires it. Cradle a full meter for a second and a half to Rally the party. Level up and you unlock or level one of your four spellbook abilities; each is cast by completing its goal on the table (a bank, two ramps, two orbits or twenty spins, three lanes then a scoop) and lasts a while. Two unlocked abilities can run at once.'],
+  ['Foes','Every foe has a job on the table and a wind-up you can see (a red arc) before it strikes. Hit it during the wind-up and the strike never lands. Skeletons shamble down to the slingshots or to your guard. Goblins steal gold or loose pickups and run for an outlane. Wolves lunge at the ball and bat it toward the drain. Spirits sit on a bumper and deaden it until you shoot through them. Cultists chant at a ramp mouth: shoot that ramp. Armored Dead hold an orbit entrance and shrug off soft hits. The Corrupted Knight guards the statue and parries. Trolls hold a scoop and punt the ball. Foes come in waves; clearing one pays a bounty and buys quiet.'],
+  ['Bosses','The Warden waits in the Wilds, the campaign boss in the Keep. Warded: strike the lit bumpers (or slay the cultists). Casting: hit a flashing red shot to break the spell before it lands. Open: hit the boss. Bosses use the table: the Warden bars the Wolf Run, Moonfang drives the wolves wild, Ashmaw burns the floor in front of the Sanctum.'],
+  ['The party','A companion guards the bottom drain of the Hollow: a ball that would go out bounces off them, at a cost to their health, and a ball off their post fires their perk. Swarms go for them. At zero they are wounded and the drain stands open until you complete a bank. The Tavern scoop hires recruits for gold: a class with one ability each. Rally (cradle a full meter) brings the whole party out as balls for twenty seconds. The camera stays on your own ball; losing it ends the Rally and the ball.'],
+  ['The Grave','Lose a ball with the Grave open (strike the Gravestones) and it falls into the Grave instead of draining: a timed room where driving both coffin nails at the head of the coffin opens the way back up. An open Grave always takes the ball, tilted or not.'],
+  ['Lights','Gold arrows: the main quest. Blue arrows: a side quest. Green: a lock is lit. Pink-violet: a spellbook goal. Flashing red: a boss spell, hit it to break the cast. A lit scoop with the Lantern waiting means a level-up or a boon is ready to collect there.']
+];
+const LEVEL_NAMES={0:'the Black Keep',1:'the Wilds',2:'Grave Hollow',3:'the Grave',4:'the Crypt',5:'the Den',6:'the Hoard'};
+function whereOnTable(x,y,tier){const cx=tier===2?303:320,dy=y-TY[tier],side=x<cx-70?'left':x>cx+70?'right':'centre',up=dy<380?'top':dy<560?'middle':'bottom';return up+' '+side+' of '+LEVEL_NAMES[tier];}
+// one line for a named shot: what it is, where it is, and what counts
+function explainShot(id){const s=T.shots[id];if(!s)return null;const h=T.holes[id],r=T.rails[id],B=T.banks[id],bump=T.bumps.filter(b=>b.group===id),spin=T.sens.find(q=>q.kind==='spin'&&q.id===id),orbit=/^orbit/.test(id),set=T.sets&&T.sets[id],where=whereOnTable(s.x,s.y,s.tier);let what;
+  if(h)what='a scoop at the '+where+'. The ball drops in, pays out and is kicked back';
+  else if(r)what='a ramp, entered at the '+where+(r.to!==r.from?', climbing to '+LEVEL_NAMES[r.to]:'')+'. It counts when the ball makes it all the way round';
+  else if(B)what=(B.kind==='drop'?'a bank of '+B.segs.length+' drop targets':'a bank of '+B.segs.length+' standup targets')+' at the '+where+'. '+(B.kind==='drop'?'Knock them all down to complete it':'Light them all to complete it');
+  else if(bump.length)what=bump.length+' bumper'+(bump.length>1?'s':'')+' at the '+where+'. Every hit counts';
+  else if(spin)what='a spinner at the '+where+'. Every turn counts, so hit it hard';
+  else if(orbit)what='the loop around the outside of '+LEVEL_NAMES[s.tier]+', entered at the '+where+'. Shoot up into it';
+  else if(set)what='the three rollover lanes at the '+where+'. Roll all three';
+  else what='a shot at the '+where;
+  return s.name+' is '+what+'.';}
+function explainStep(o){if(!o)return '';const id=o.id;
+  if(o.t==='kill')return (ENEMY[o.e]?ENEMY[o.e].name+'s':o.e)+' on '+LEVEL_NAMES[o.tier]+'. They come in waves; the quest counts your kills there.';
+  if(o.t==='boss')return 'Find the boss on '+LEVEL_NAMES[o.tier===undefined?0:o.tier]+' and beat it. Break its wards and its spells as it tells you.';
+  if(o.t==='collect')return 'Something is lying on '+LEVEL_NAMES[o.tier]+'. Roll over it to pick it up.';
+  if(id==='wing')return 'The campaign wing is reached through the lit scoop in the Wilds once the Warden is beaten.';
+  if(id==='door')return 'The Sealed Door is the pair of drop targets at the top centre of the Wilds; the Rogue opens it in one hit, everyone else knocks both down.';
+  if(id==='orbitL2'||id==='orbitR2'||id==='orbitL1'||id==='orbitR1'||id==='orbitL0'||id==='orbitR0')return explainShot(id);
+  const e=explainShot(id);if(e)return e;
+  if(T.banks[id]){const B=T.banks[id];return B.name+' is a bank of '+B.segs.length+' targets on '+LEVEL_NAMES[B.tier]+'.';}
+  return '';}
+function glossary(){const out=[];for(let t=0;t<3;t++){const rows=[];for(const id in T.shots){const s=T.shots[id];if(s.tier!==t||/^orbitR/.test(id))continue;const e=explainShot(id);if(e&&!rows.some(r=>r[0]===s.name))rows.push([s.name,e]);}out.push([LEVEL_NAMES[t],rows]);}return out;}
+// the tutorial: short pages, in the order a first ball meets them
+const TUTORIAL=[
+  ['Welcome to Gravebound','Flippers and a nudge are all you get. Everything else is done by hitting the table. This walks you through what the table does; skip it any time and find it again under Tutorial on the title screen.'],
+  ['Controls','Z or Left Arrow: every left flipper. / or Right Arrow: every right flipper. Space: nudge. Hold Space and release to launch the ball. P pauses. C changes the view, Q the detail, F full screen.'],
+  ['The table','You start in Grave Hollow. The Forest Road ramp on the left climbs to the Wilds; the Ruin Stair there climbs to the Black Keep. The gap between a level\'s upper flippers drops you to the level below. Lose the ball off the bottom of the Hollow and it is gone, unless the Grave is open.'],
+  ['Quests and lights','Gold arrows are your main quest; blue arrows are side quests from the Tavern. Pause at any time to read what a quest step means and where the shot is. Pink-violet lights are spellbook goals. Flashing red is a boss spell: hit it to break the cast.'],
+  ['Foes','Foes block shots, threaten the ball and guard the way up. Each shows a red arc before it strikes; hit it during the arc and the strike never lands. Wolves lunge at the ball, goblins steal your gold, cultists bar ramps, spirits deaden bumpers. Clear a wave for a bounty and some quiet.'],
+  ['Your meter','Hits fill the power meter. Nudge fires your class power. Hold the ball still on a raised flipper (cradle) with one bar to arm your class shot; the next flip fires it. Cradle a full meter for a second and a half to Rally your party.'],
+  ['The spellbook','Each level-up shows your four class abilities: unlock one, or level one up. Every ability is cast by a goal on the table: complete a bank, make two ramps, two orbits or twenty spins, or three lanes then a scoop. They last a while, and two can run at once.'],
+  ['The party','Your companion guards the bottom drain: a ball that would go out bounces off them, at a cost to their health. The Tavern hires recruits for gold, a class with one ability each. Rally and the whole band comes out as balls. The camera stays on yours; keep it alive.'],
+  ['Score','It is pinball: the score is the point. Light the Vigil Candles for a multiplier, string shots together for combos, lock two balls at the Goblin Camp for multiball jackpots. Tilt forfeits your ball bonus. Good luck.']
+];
+function tutorialPage(i){const btn=(act,label)=>'<button data-act="'+act+'">'+label+'</button>',p=TUTORIAL[i],n=TUTORIAL.length;return '<div class="pane doc"><p class="eyebrow">Tutorial '+(i+1)+' of '+n+'</p><h2>'+esc(p[0])+'</h2><p class="lead">'+esc(p[1])+'</p><nav class="row">'+(i<n-1?btn('tutNext','Next'):btn('tutDone','Play'))+(i>0?btn('tutBack','Back'):'')+btn('tutDone',i<n-1?'Skip tutorial':'Close')+'</nav></div>';}

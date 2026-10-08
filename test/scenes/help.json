@@ -1,0 +1,13 @@
+[
+ {"eval":"(store.del('meta'),UI.menu('title'),__gb.draw(2,.3),[...document.querySelectorAll('#menu button')].map(b=>b.textContent.trim()))","shot":"01-title"},
+ {"eval":"(UI.act({dataset:{act:'help'}}),__gb.draw(1,.3),[UI.cur,document.querySelectorAll('.gloss dt').length,[...document.querySelectorAll('.gloss dt')].slice(0,40).map(d=>d.textContent)])","shot":"02-help"},
+ {"eval":"(document.querySelector('.pane.doc').scrollTop=1200,__gb.draw(1,.3),[...document.querySelectorAll('.gloss dd')].map(d=>d.textContent))","shot":"03-help-glossary"},
+ {"eval":"(UI.act({dataset:{act:'title'}}),UI.act({dataset:{act:'tutorial'}}),__gb.draw(1,.3),[UI.cur,UI.tutRun])","shot":"04-tutorial-title"},
+ {"eval":"(UI.act({dataset:{act:'tutNext'}}),UI.act({dataset:{act:'tutNext'}}),__gb.draw(1,.3),[UI.tutI])","shot":"05-tutorial-p3"},
+ {"eval":"(UI.act({dataset:{act:'tutDone'}}),store.del('meta'),G.tutForce=true,UI.menu(null),startRun('mage'),G.tutForce=false,__gb.draw(2,.3),[UI.cur,G.paused,UI.tutRun,G.mode])","shot":"06-tutorial-autolaunch"},
+ {"eval":"(UI.act({dataset:{act:'tutDone'}}),__gb.advance(.5,1),[UI.cur,G.paused,store.get('meta',{}).tutSeen,G.mode,G.balls.length])"},
+ {"eval":"(DEV.on=true,G.auto=false,(()=>{let n=0;while(!G.run.side.some(q=>/mill|windmill/i.test(JSON.stringify(q)))&&n++<300){UI.menu(null);G.tutForce=false;startRun('mage');}})(),__gb.advance(.5,1),devKey('d2'),__gb.advance(.2,1),togglePause(),__gb.draw(1,.3),[UI.cur,G.run.side.map(q=>q.name+': '+UI.objText(q)),[...document.querySelectorAll('.what')].map(d=>d.textContent)])","shot":"07-pause-explain"},
+ {"eval":"(UI.act({dataset:{act:'help'}}),__gb.draw(1,.3),[UI.cur,UI.back])","shot":"08-help-from-pause"},
+ {"eval":"(UI.act({dataset:{act:UI.back}}),[UI.cur,G.paused])"},
+ {"eval":"(UI.act({dataset:{act:'resume'}}),__gb.advance(.3,1),[UI.cur,G.paused,G.mode])"}
+]
