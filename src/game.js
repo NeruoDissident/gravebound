@@ -94,7 +94,7 @@ function buildOrbits(i){const y=TY[i],yA=y+300,rr=i===2?220:254;
   poly([[320+rr,y+500],[320+rr,yA]].concat(arcPts(320,yA,rr,TAU,TAU-.7,8).slice(1)),{w:3});
   sensor(43,y+405,21,{kind:'orbit',side:-1,tier:i});sensor(i===2?563:597,y+405,21,{kind:'orbit',side:1,tier:i});}
 
-function centerScoop(cx,y){poly([[cx-20,462],[cx-22,436],[cx-13,420],[cx,415],[cx+13,420],[cx+22,436],[cx+20,462]].map(p=>[p[0],p[1]+y]),{w:3},'scoop');}
+function centerScoop(cx,y,w){w=w||20;poly([[cx-w,466],[cx-w-2,438],[cx-13,420],[cx,415],[cx+13,420],[cx+w+2,438],[cx+w,466]].map(p=>[p[0],p[1]+y]),{w:3},'scoop');}
 function sideScoopBlock(m,sx,y,xg,topY,name,tier){ // block between ramp mouth guide and orbit guide, with a scoop notch facing down
   const c=sx<0?112:528,o=p=>[p[0],p[1]+y];
   const notch=[[c+20,508],[c+20,482],[c+10,470],[c-10,470],[c-20,482],[c-20,508]].map(o);
@@ -146,31 +146,43 @@ function buildTable(){
   T.bossSpot[1]={x:320,y:y+178};
   T.spawn[1]=[[150,585],[225,640],[320,600],[415,640],[490,585],[270,560],[370,560],[320,690]].map(o);
 
-  /* ---------- GRAVE HOLLOW (lower) ---------- */
+  /* ---------- GRAVE HOLLOW (lower) ----------
+     The village. Shots fan out at every depth: the Smithy low on the left and the Crypt's mausoleum low on the right,
+     the two ramps and the Tavern across the middle, the Town Gate and the Chapel high up, shot through the gaps beside
+     the Gravestones. The Weathervane turns in front of the Forest Road, so every shot up the road spins it. */
   y=TY[2];o=p=>[p[0],p[1]+y];
   const cl=[];[266,302,338,374].forEach(x=>poly([o([x,92]),o([x,142])],{w:4},'post'));
   [284,320,356].forEach(x=>cl.push(sensor(x,y+118,13,{kind:'lane',set:'candles',tier:2})));
   T.sets.candles={id:'candles',tier:2,lanes:cl,name:'Vigil Candles'};
   bumper(258,y+234,24,'graves',2);bumper(382,y+234,24,'graves',2);bumper(320,y+304,24,'graves',2);
   const m1=mouthGeo(172,y+480,-1),m2=mouthGeo(434,y+480,1);
-  block([o([66,390]),m1.lt,m1.lb,o([72,520]),o([66,500])],{name:'smithy',tier:2});
-  bank('smithy',2,m1.lb,o([72,520]),2,'target',{pad:.12,name:'Smithy'});
+  // high banks: the Town Gate (drops) above the Forest Road mouth, open to both flippers; the Chapel (standups) up the right
+  bank('townGate',2,o([192,336]),o([254,310]),3,'drop',{name:'Town Gate'});
+  block([o([190,330]),o([252,304]),o([236,270]),o([190,282])],{name:'townGate',tier:2});
+  bank('chapel',2,o([412,298]),o([482,323]),3,'target',{pad:.05,name:'Chapel'});
+  block([o([412,298]),o([482,323]),o([540,300]),o([540,250]),o([446,262])],{name:'chapel',tier:2});
+  // the left wedge between the orbit guide and the Forest Road mouth
+  block([o([66,390]),m1.lt,m1.lb,o([72,520]),o([66,500])],{name:'roadWedge',tier:2});
   poly([m1.rb,m1.rt],{w:3});
-  centerScoop(303,y);hole('tavern',303,y+444,14,2,'Tavern');
-  bank('townGate',2,o([232,484]),o([283,462]),3,'drop',{name:'Town Gate'});
-  poly([o([323,462]),o([374,484])],{w:3});bank('chapel',2,o([323,462]),o([374,484]),3,'target',{pad:.05,name:'Chapel'});
+  // the Smithy: two standups low on the left, a cradle shot from the right flipper with the kickback below it
+  bank('smithy',2,o([70,640]),o([112,604]),2,'target',{pad:.1,name:'Smithy'});
+  block([o([70,640]),o([112,604]),o([96,584]),o([66,576]),o([66,636])],{name:'smithy',tier:2});
+  // the Tavern: the sure scoop, dead centre, with a wide mouth
+  centerScoop(303,y,28);hole('tavern',303,y+444,14,2,'Tavern');
+  // the Chapel Stair mouth and, hanging below the right orbit guide, the mausoleum with the Crypt Stair in its base
   poly([m2.lb,m2.lt],{w:3});
-  {const c=497,notch=[[c+20,508],[c+20,482],[c+10,470],[c-10,470],[c-20,482],[c-20,508]].map(o);
-   block([m2.rt,o([540,390]),o([540,500])].concat(notch,[m2.rb]),{name:'crypt',tier:2});}
-  hole('crypt',497,y+488,13,2,'Crypt Stair');
-  sensor(43,y+455,20,{kind:'spin',id:'vane',tier:2,rate:0,ang:0});
+  {const c=505,notch=[[c+20,640],[c+20,614],[c+10,602],[c-10,602],[c-20,614],[c-20,640]].map(o);
+   block([m2.rt,o([540,390]),o([540,640])].concat(notch,[o([470,640]),o([470,540]),m2.rb]),{name:'crypt',tier:2});}
+  hole('crypt',505,y+622,13,2,'Crypt Stair');
+  // the Weathervane spins in the Forest Road's approach
+  sensor(195,y+540,20,{kind:'spin',id:'vane',tier:2,rate:0,ang:0,rot:Math.atan2(.925,.38)-PI/2});
   // shooter lane
   poly([[586,y+335],[586,H+80]],{w:2});
   {const g=gseg([586,y+335],[620,y+288],480,y+200);T.wallPaths.push({pts:[[586,y+335],[620,y+288]],style:'flap'});}
   seg(586,3112,620,3112,{e:.1});
   T.shooter={x:603,y:3100};
   sensor(41,y+935,17,{kind:'kick',tier:2});
-  T.spawn[2]=[[140,585],[215,640],[303,600],[392,640],[462,585],[255,560],[350,560],[303,690]].map(o);
+  T.spawn[2]=[[160,585],[215,640],[303,600],[392,640],[445,600],[255,560],[350,560],[303,690]].map(o);
 
   /* ---------- THE GRAVE (a coffin under the Hollow; one way out) ---------- */
   y=GY;o=p=>[p[0],p[1]+y];
@@ -248,10 +260,10 @@ function buildTable(){
   shotDef('camp','Goblin Camp',1,268,524);shotDef('secret','Secret Passage',1,320,508);T.shots.door=T.shots.secret;shotDef('stones','Standing Stones',1,320,292,0,'dot');
   shotDef('rampRuin','Ruin Stair',1,434,524,aR);shotDef('hut',"Witch's Hut",1,528,545);shotDef('orbitR1','Moon Path',1,597,545);
   shotDef('windmill','Mill',1,597,500,0,'dot');shotDef('moon','Moon Phases',1,320,760,0,'dot');shotDef('keystone','Keystone',1,320,232,0,'dot');
-  shotDef('orbitL2','Night Road',2,43,545);shotDef('smithy','Smithy',2,112,548);shotDef('rampForest','Forest Road',2,190,524,aL);
-  shotDef('townGate','Town Gate',2,250,522);shotDef('tavern','Tavern',2,303,505);shotDef('graves','Gravestones',2,320,268,0,'dot');
-  shotDef('chapel','Chapel',2,356,522);shotDef('rampChapel','Chapel Stair',2,416,524,aR);shotDef('crypt','Crypt Stair',2,497,545);
-  shotDef('orbitR2','Night Road',2,563,545);shotDef('vane','Vane',2,43,500,0,'dot');shotDef('candles','Vigil Candles',2,320,172,0,'dot');
+  shotDef('orbitL2','Night Road',2,43,545);shotDef('smithy','Smithy',2,138,648,Math.atan2(-.77,-.64));shotDef('rampForest','Forest Road',2,206,586,aL);
+  shotDef('townGate','Town Gate',2,236,372,Math.atan2(-.92,-.39));shotDef('tavern','Tavern',2,303,505);shotDef('graves','Gravestones',2,320,268,0,'dot');
+  shotDef('chapel','Chapel',2,430,356,Math.atan2(-.942,.336));shotDef('rampChapel','Chapel Stair',2,416,524,aR);shotDef('crypt','Crypt Stair',2,505,668);
+  shotDef('orbitR2','Night Road',2,563,545);shotDef('vane','Vane',2,168,566,0,'dot');shotDef('candles','Vigil Candles',2,320,172,0,'dot');
 
   /* ---------- TORCHES ---------- */
   for(let i=0;i<3;i++){const yy=TY[i];const c=['#ff5a3c','#7fe0c0','#ffb050'][i];
@@ -1292,7 +1304,7 @@ const ART=[
     c.strokeStyle='rgba(180,160,120,.07)';c.lineWidth=74;c.lineCap='round';c.beginPath();c.moveTo(303,y+920);c.bezierCurveTo(250,y+760,360,y+640,303,y+520);c.stroke();
     c.strokeStyle='rgba(0,0,0,.2)';c.lineWidth=1.5;c.setLineDash([9,7]);c.beginPath();c.moveTo(303,y+920);c.bezierCurveTo(250,y+760,360,y+640,303,y+520);c.stroke();c.setLineDash([]);
     let g=c.createRadialGradient(320,y+250,10,320,y+250,200);g.addColorStop(0,'rgba(150,190,240,.14)');g.addColorStop(1,'rgba(150,190,240,0)');c.fillStyle=g;c.fillRect(20,y,600,500);
-    chapel(c,474,y+330);
+    chapel(c,478,y+286);
     // tavern roof and windows
     c.fillStyle='#161019';path(c,[[258,y+410],[303,y+372],[348,y+410],[340,y+410],[340,y+400],[266,y+400],[266,y+410]],1);c.fill();c.strokeStyle='rgba(255,190,110,.4)';c.lineWidth=1.2;c.stroke();
     fence(c,150,y+212,238,y+196,'rgba(150,175,220,.32)');fence(c,402,y+196,490,y+212,'rgba(150,175,220,.32)');fence(c,176,y+404,236,y+418,'rgba(150,175,220,.28)');

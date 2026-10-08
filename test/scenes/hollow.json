@@ -1,0 +1,4 @@
+[
+ {"eval":"(UI.menu(null),startRun('knight'),DEV.on=true,G.auto=false,__gb.advance(.5,1),G.lampShow=0,G.enemies=[],G.balls=[newBall(303,TY[2]+330,0,0)],R3.camMode=2,__gb.draw(3,.3),[G.focusTier])","shot":"01-overhead-top"},
+ {"eval":"(G.balls=[newBall(303,TY[2]+620,0,0)],R3.camMode=0,__gb.draw(3,.3),0)","shot":"02-player"}
+]

@@ -334,7 +334,7 @@ function mkSpinner(s){const g=new THREE.Group(),mat=new THREE.MeshStandardMateri
   const plate=new THREE.Mesh(new THREE.BoxGeometry(34,17,1.4),mat);plate.castShadow=true;const pv=new THREE.Group();pv.position.y=15;pv.add(plate);g.add(pv);
   for(const sx of [-1,1]){const p=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,26,6),M.steel);p.position.set(sx*20,13,0);g.add(p);}
   const bar=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,40,6).rotateZ(PI/2),M.steel);bar.position.y=15;g.add(bar);
-  g.position.set(s.x-320,elev(s.y),s.y);R3.scene.add(g);return {s,pv,mat};}
+  g.position.set(s.x-320,elev(s.y),s.y);if(s.rot)g.rotation.y=-s.rot;R3.scene.add(g);return {s,pv,mat};}
 // torches never stand in the ball's way: each is moved to the nearest wall top, block or coffin rim
 function torchSpot(tr){if(tr.fix)return tr.fix;const tier=tierOf(tr.y),ly=tr.y-TY[tier];
   if(tier===3)return ly<100?{x:320,y:GY+8,h:44}:{x:tr.x<320?46:594,y:tr.y,h:44};
@@ -596,7 +596,7 @@ function lampTex(text,w,h){const cv=mkCanvas(w*6,h*6),c=cv.getContext('2d'),W=cv
   return ctex(cv);}
 function buildLamps(){const sc=R3.scene,D=R3.dyn,tex={};
   for(let t=0;t<3;t++){const cx=t===2?303:320,y0=TY[t]+900;
-    LAMP_ROWS.forEach((row,ri)=>{const w=ri?58:21,h=ri?18:21,gap=ri?7:8,y=y0-(ri?268:236),x0=cx-((row.length-1)*(w+gap))/2;
+    LAMP_ROWS.forEach((row,ri)=>{const w=ri?50:21,h=ri?17:21,gap=ri?5:8,y=y0-(ri?200:172),x0=cx-((row.length-1)*(w+gap))/2;
       row.forEach((label,i)=>{const k=ri+':'+label;if(!tex[k])tex[k]=lampTex(label,w,h);
         const mat=new THREE.MeshBasicMaterial({map:tex[k],transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,color:0x303038});
         const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h).rotateX(-PI/2),mat);const x=x0+i*(w+gap);m.position.set(x-320,elev(y)+.45,y);m.renderOrder=2;sc.add(m);
