@@ -73,13 +73,10 @@ Bosses use the table too: the Warden's Portcullis Slam bars the Wolf Run for the
 the wolves into a frenzy, and Ashmaw is warded by three cultists rather than by the bumpers and scorches the floor
 in front of the Sanctum with Gravefire.
 
-Companions are the party. You pick one for free when you choose your hero; the Tavern scoop hires more (three
-fixed-ability recruits per campaign, gold to hire, the shop is gone). Each one stands guard on a post at one of the
-three drains: the centre gap and the two outlanes. A ball that would go out bounces off them instead, at a cost to
-their health, and a ball off a post fires their perk (Oakshield intercepts strikes, Sister Adela heals you, Vex marks
-the nearest foe, Tam Drum fills your power). Skeleton swarms go for the guards instead of you. A guard at zero is
-wounded and the drain stands open until you complete a bank. Riding alone is plain pinball; the party makes it more
-forgiving, never required.
+A companion guards the bottom drain on the Hollow, between the flippers, before the Grave. You pick one with your
+hero (Tank, Healer or Striker) or ride alone. A draining ball bounces off them at a cost to their health; a ball off the
+post fires their perk; skeleton swarms go for them; at zero they are wounded and the drain stands open until you
+complete a bank. The full rules we settled on are in `DESIGN.md`.
 
 Level-up cards come three at a time: one for your class, one for the table, and one plain stat. Past level 3 the
 third slot is sometimes a keystone instead, and a run takes only one.
