@@ -1,0 +1,5 @@
+[
+ {"eval":"(UI.menu(null),startRun('knight'),DEV.on=true,G.auto=false,__gb.advance(.5,1),devKey('d1'),__gb.advance(.2,1),G.lampShow=0,G.enemies=[],G.balls=[newBall(320,TY[0]+330,0,0)],R3.camMode=2,__gb.draw(3,.3),[G.focusTier])","shot":"01-overhead-top"},
+ {"eval":"(G.balls=[newBall(320,TY[0]+620,0,0)],R3.camMode=0,__gb.draw(3,.3),0)","shot":"02-player"},
+ {"eval":"(G.balls=[newBall(320,TY[0]+600,0,-1700)],__gb.advance(.9,8),R3.camMode=1,__gb.draw(2,.2),[G.balls[0].st,G.balls[0].x|0,(G.balls[0].y-TY[0])|0])","shot":"03-on-throne-road"}
+]

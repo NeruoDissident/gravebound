@@ -114,3 +114,15 @@ they check that everything runs and renders, not frame rate.
 - **How to play** (title screen and pause menu): the rules in nine short sections, then *Every named shot*: a glossary generated from the table itself (what each shot is, where it sits on its level, and what counts), so it stays correct when the table changes.
 - **Pause** now explains the current step of every quest in plain words under the quest line: "Mill is a spinner at the middle right of the Wilds. Every turn counts, so hit it hard."
 - **Tutorial**: nine pages, on the title menu, and launched automatically on the first run of a fresh browser. Skip or close it any time; Options has "Show the tutorial when a new run starts" to turn it back on.
+
+## The table talks, and the three levels differ (0.14, 0.15)
+
+**Lamps.** Every insert has a state: flashing (do this now: a quest step, a boss spell, a jackpot), steady (open and worth shooting: the way to the quest's level, a lit lock, a spell goal, a boon waiting), dim (collected: a running spell's goals, lock 1 of 2, a used boon). The last unlit lane of a set blinks. A row of status lamps sits above the flippers on every level: 1x-6x, LOCK 1, LOCK 2, BALL SAVE, KICKBACK, LEVEL UP, RALLY, COMBO. Quest progress is called out on the table where you made the shot ("TOWN GATE 2/3"), and a lamp sweep runs down the level at ball start.
+
+**Grave Hollow** (the village): Town Gate drops above the Forest Road mouth, open to both flippers; Chapel standups high on the right; the Tavern a wide sure scoop dead centre; the Weathervane spinning in the Forest Road's approach; the Smithy low on the left with the kickback under it; the mausoleum low on the right with the Crypt Stair in its base.
+
+**The Wilds** (the forest): the Goblin Camp's palisade high in the middle under the stone ring, the Secret Passage behind its door; the Mill a spinner lane left of centre straight into the camp's west wall; the corridor between the Wolf Run and Ruin Stair mouths wide open; the Catacombs and the Witch's Hut in their corners.
+
+**The Black Keep** (the castle): the Throne Road, a centre ramp straight up the hall between the two walls of the Royal Guard, ringing the keep and coming down to the right inlane (the boss bars it, and Ashmaw's fire burns its approach); the Sanctum a pocket in the top-left corner; the Armory three standups low on the left; the Bell's dead-end lane and the Oubliette on the right.
+
+`node test/reach.js <tier>` fans balls from both flippers across angles and speeds and reports which features they reach first and at all, and any ball left stuck. Every named shot on every level is reachable from a flipper.

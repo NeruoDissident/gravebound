@@ -74,3 +74,9 @@ threaten the ball and gate progress; abilities exist to answer that.
 - A run is one campaign; winning ends it with a summary. Endless mode chains campaigns.
 - Keystones (rare boons) stay.
 - More tables with other themes come after the rule set is solid.
+
+## The table (locked 0.15)
+
+- Three levels, each with its own silhouette and a signature shot. Hollow: shots at every depth (Smithy and mausoleum low, ramps and Tavern mid, Town Gate and Chapel high). Wilds: the camp palisade high under the stone ring, the Mill lane, an open centre corridor. Keep: the Throne Road centre ramp between the Royal Guard, the Sanctum pocket top-left.
+- Two flippers per level, no upper flippers. Every named shot must be reachable from a flipper (`test/reach.js`), and no ball may come to rest anywhere but a flipper, a scoop or a drain (block tops slope so a ball rolls off).
+- Lamps carry state (flash / steady / dim) and colour (gold main, blue side, green lock, violet spell, white open, red boss). The status row above the flippers is the only place the multiplier, locks, ball save, kickback, level-up, Rally and combo are shown on the table; the HUD repeats them but a player should never need it.

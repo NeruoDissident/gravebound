@@ -1161,7 +1161,7 @@ function bank(id,tier,p0,p1,n,kind,o){o=o||{};
     B.segs.push(seg(p0[0]+dx*t0+nx*off,p0[1]+dy*t0+ny*off,p0[0]+dx*t1+nx*off,p0[1]+dy*t1+ny*off,
       {kind,bank:id,tier,w:kind==='drop'?3:2.5,e:.3,lit:false,nx,ny}));}
   return B;}
-function mouthGeo(px,py,sx){const dx=sx*.38,dy=-.925,qx=.925,qy=sx*.38;
+function mouthGeo(px,py,sx){const dx=sx*.38,dy=sx?-.925:-1,qx=sx?.925:1,qy=sx*.38;
   const lb=[px-qx*28,py-qy*28],rb=[px+qx*28,py+qy*28]; // a funnel: 56 wide at the lip, 38 at the throat
   return {d:[dx,dy],lb,rb,lt:[px+dx*70-qx*19,py+dy*70-qy*19],rt:[px+dx*70+qx*19,py+dy*70+qy*19],c0:[px+dx*36,py+dy*36],c1:[px+dx*100,py+dy*100],p:[px,py]};}
 function catmull(P,n){const o=[];for(let i=0;i<P.length-1;i++){const p0=P[Math.max(0,i-1)],p1=P[i],p2=P[i+1],p3=P[Math.min(P.length-1,i+2)];
@@ -1227,15 +1227,22 @@ function buildTable(){
   buildFloor(0,20,620,320);buildFloor(1,20,620,320);buildFloor(2,20,586,303);
   let y,o;
 
-  /* ---------- THE BLACK KEEP (upper) ---------- */
+  /* ---------- THE BLACK KEEP (upper) ----------
+     The castle. The Throne Road is a centre ramp straight up the hall between the two walls of the Royal Guard; it rings
+     the keep and comes down to the right inlane. The Sanctum is a pocket in the top-left corner, the Armory a bank of
+     standups low on the left, the Bell a dead-end lane up the right, the Oubliette the pocket beside it. */
   y=TY[0];o=p=>[p[0],p[1]+y];
   bumper(236,y+300,24,'braziers',0);bumper(404,y+300,24,'braziers',0);
-  const m5=mouthGeo(172,y+480,-1),mb=mouthGeo(452,y+480,1);
-  block([o([66,390]),m5.lt,m5.lb,o([72,520]),o([66,500])],{name:'armory',tier:0});
-  bank('armory',0,m5.lb,o([72,520]),2,'target',{pad:.12,name:'Armory'});
-  poly([m5.rb,m5.rt],{w:3});
-  centerScoop(320,y);hole('sanctum',320,y+444,14,0,'Sanctum');
-  bank('guard',0,o([249,484]),o([300,462]),2,'drop',{name:'Royal Guard'});bank('guard',0,o([340,462]),o([391,484]),2,'drop');
+  const m5=mouthGeo(320,y+470,0),mb=mouthGeo(452,y+480,1);
+  // the Sanctum: a pocket in the top-left corner, under the Throne Road's first bend
+  {const c=112,notch=[[c+20,340],[c+20,314],[c+10,302],[c-10,302],[c-20,314],[c-20,340]].map(o);
+   block([o([66,250]),o([150,262]),o([150,340])].concat(notch,[o([66,340])]),{name:'sanctum',tier:0});}
+  hole('sanctum',112,y+322,14,0,'Sanctum');
+  // the Armory: three standups low on the left
+  bank('armory',0,o([78,546]),o([128,496]),3,'target',{pad:.08,name:'Armory'});
+  block([o([78,546]),o([128,496]),o([112,470]),o([66,462]),o([66,540])],{name:'armory',tier:0});
+  // the Royal Guard flank the Throne Road
+  bank('guard',0,o([236,486]),o([286,464]),2,'drop',{name:'Royal Guard'});bank('guard',0,o([354,464]),o([404,486]),2,'drop');
   const blt=[mb.lb[0]+38,mb.lb[1]-92.5],brt=[mb.rb[0]+38,mb.rb[1]-92.5];
   poly([mb.lb,blt],{w:3});
   bumper(452+.38*116,y+480-.925*116,20,'bell',0,{kick:520,bell:true});
@@ -1247,23 +1254,30 @@ function buildTable(){
   T.bossSpot[0]={x:320,y:y+205};
   T.spawn[0]=[[150,585],[225,640],[320,600],[415,640],[490,585],[270,560],[370,560],[320,690]].map(o);
 
-  /* ---------- THE WILDS (middle) ---------- */
+  /* ---------- THE WILDS (middle) ----------
+     The forest. The Goblin Camp's palisade stands high in the middle under the stone ring, with the Secret Passage
+     behind its door; the Mill is a spinner lane in the centre that feeds the camp's west wall; the corridor between
+     the two ramp mouths is wide open, so the whole upper field is in play. The Catacombs and the Witch's Hut keep
+     their corners. */
   y=TY[1];o=p=>[p[0],p[1]+y];
-  bumper(252,y+262,24,'stones',1);bumper(388,y+262,24,'stones',1);bumper(320,y+338,24,'stones',1);
+  bumper(236,y+232,24,'stones',1);bumper(404,y+232,24,'stones',1);bumper(320,y+262,24,'stones',1);
   const m4=mouthGeo(188,y+480,-1),m3=mouthGeo(452,y+480,1);
   sideScoopBlock(m4,-1,y,66,380,'catacombs',1);hole('catacombs',112,y+488,13,1,'Catacombs');
   poly([m4.rb,m4.rt],{w:3});
-  bank('camp',1,o([248,488]),o([300,464]),2,'drop',{name:'Goblin Camp'});bank('camp',1,o([340,464]),o([392,488]),2,'drop');
-  bank('door',1,o([300,464]),o([320,458]),1,'drop',{name:'Sealed Door'});bank('door',1,o([320,458]),o([340,464]),1,'drop');
-  poly([[300,464],[298,438],[308,424],[320,420],[332,424],[342,438],[340,464]].map(o),{w:3},'scoop');
-  hole('secret',320,y+444,13,1,'Secret Passage');
+  // the camp: two walls of drops either side of the Sealed Door, the Secret Passage scoop behind it
+  bank('camp',1,o([248,396]),o([300,372]),2,'drop',{name:'Goblin Camp'});bank('camp',1,o([340,372]),o([392,396]),2,'drop');
+  bank('door',1,o([300,372]),o([320,366]),1,'drop',{name:'Sealed Door'});bank('door',1,o([320,366]),o([340,372]),1,'drop');
+  poly([[300,372],[298,346],[308,332],[320,328],[332,332],[342,346],[340,372]].map(o),{w:3},'scoop');
+  hole('secret',320,y+352,13,1,'Secret Passage');
+  // the Mill: a spinner lane left of centre, straight up into the camp's west wall
+  poly([o([252,548]),o([252,468])],{w:3});poly([o([296,548]),o([296,468])],{w:3});
+  sensor(274,y+508,20,{kind:'spin',id:'windmill',tier:1,rate:0,ang:0});
   poly([m3.lb,m3.lt],{w:3});
   sideScoopBlock(m3,1,y,574,380,'hut',1);hole('hut',528,y+488,13,1,"Witch's Hut");
-  sensor(597,y+455,20,{kind:'spin',id:'windmill',tier:1,rate:0,ang:0});
   {const yF=y+900,ls=T.sens.filter(s=>s.tier===1&&(s.kind==='inlane'||s.kind==='outlane'));ls.sort((a,b)=>a.x-b.x);ls.forEach(s=>s.set='moon');
    T.sets.moon={id:'moon',tier:1,lanes:ls,name:'Moon Phases'};}
   T.bossSpot[1]={x:320,y:y+178};
-  T.spawn[1]=[[150,585],[225,640],[320,600],[415,640],[490,585],[270,560],[370,560],[320,690]].map(o);
+  T.spawn[1]=[[150,585],[225,640],[320,600],[415,640],[490,585],[236,578],[370,560],[320,690]].map(o);
 
   /* ---------- GRAVE HOLLOW (lower) ----------
      The village. Shots fan out at every depth: the Smithy low on the left and the Crypt's mausoleum low on the right,
@@ -1351,7 +1365,7 @@ function buildTable(){
   rail('rampChapel','Chapel Stair',m2,[[510,2420],[528,2340],[500,2262],[420,2206],[320,2188],[220,2206],[140,2262],[106,2340],[92,2440],[84,2600],[81,2760],[81,2832]],{from:2,to:2});
   rail('rampRuin','Ruin Stair',m3,[[528,1380],[566,1270],[592,1150],[600,1010],[600,880],[598,770],[590,722],[574,706],[560,720],[559,756]],{from:1,to:0,up:true});
   rail('rampWolf','Wolf Run',m4,[[118,1390],[92,1300],[118,1222],[200,1166],[320,1146],[440,1166],[522,1222],[550,1300],[560,1500],[559,1760],[559,1796]],{from:1,to:1});
-  rail('rampTower','Tower Ramp',m5,[[104,330],[100,260],[140,186],[220,126],[320,106],[420,126],[500,186],[540,260],[558,360],[559,560],[559,754]],{from:0,to:0});
+  rail('rampTower','Throne Road',m5,[[300,300],[250,220],[185,160],[130,138],[200,108],[320,92],[430,110],[500,170],[540,260],[558,360],[559,560],[559,754]],{from:0,to:0});
   T.mouthGeo={rampForest:m1,rampChapel:m2,rampRuin:m3,rampWolf:m4,rampTower:m5,bell:mb};
 
   /* ---------- TUNNELS (hole to hole) ---------- */
@@ -1371,14 +1385,14 @@ function buildTable(){
 
   /* ---------- SHOT INSERTS ---------- */
   const aL=Math.atan2(-.925,-.38),aR=Math.atan2(-.925,.38);
-  shotDef('orbitL0','Rampart Walk',0,43,545);shotDef('armory','Armory',0,112,548);shotDef('rampTower','Tower Ramp',0,190,524,aL);
-  shotDef('guard','Royal Guard',0,264,520);shotDef('sanctum','Sanctum',0,320,505);shotDef('braziers','Braziers',0,320,300,0,'dot');
+  shotDef('orbitL0','Rampart Walk',0,43,545);shotDef('armory','Armory',0,136,556,Math.atan2(-.7,-.7));shotDef('rampTower','Throne Road',0,320,540);
+  shotDef('guard','Royal Guard',0,262,528);shotDef('sanctum','Sanctum',0,112,380);shotDef('braziers','Braziers',0,320,272,0,'dot');
   shotDef('bell','The Bell',0,434,524,aR);shotDef('oubliette','Oubliette',0,528,545);shotDef('orbitR0','Rampart Walk',0,597,545);
-  shotDef('chains','Winch',0,43,500,0,'dot');shotDef('throne','The Throne',0,320,262,0,'dot');
+  shotDef('chains','Winch',0,43,500,0,'dot');shotDef('throne','The Throne',0,320,238,0,'dot');
   shotDef('orbitL1','Moon Path',1,43,545);shotDef('catacombs','Catacombs',1,112,545);shotDef('rampWolf','Wolf Run',1,206,524,aL);
-  shotDef('camp','Goblin Camp',1,268,524);shotDef('secret','Secret Passage',1,320,508);T.shots.door=T.shots.secret;shotDef('stones','Standing Stones',1,320,292,0,'dot');
+  shotDef('camp','Goblin Camp',1,368,436);shotDef('secret','Secret Passage',1,320,444);T.shots.door=T.shots.secret;shotDef('stones','Standing Stones',1,320,304,0,'dot');
   shotDef('rampRuin','Ruin Stair',1,434,524,aR);shotDef('hut',"Witch's Hut",1,528,545);shotDef('orbitR1','Moon Path',1,597,545);
-  shotDef('windmill','Mill',1,597,500,0,'dot');shotDef('moon','Moon Phases',1,320,760,0,'dot');shotDef('keystone','Keystone',1,320,232,0,'dot');
+  shotDef('windmill','Mill',1,274,574,0,'dot');shotDef('moon','Moon Phases',1,320,760,0,'dot');shotDef('keystone','Keystone',1,320,216,0,'dot');
   shotDef('orbitL2','Night Road',2,43,545);shotDef('smithy','Smithy',2,138,648,Math.atan2(-.77,-.64));shotDef('rampForest','Forest Road',2,206,586,aL);
   shotDef('townGate','Town Gate',2,236,372,Math.atan2(-.92,-.39));shotDef('tavern','Tavern',2,303,505);shotDef('graves','Gravestones',2,320,268,0,'dot');
   shotDef('chapel','Chapel',2,430,356,Math.atan2(-.942,.336));shotDef('rampChapel','Chapel Stair',2,416,524,aR);shotDef('crypt','Crypt Stair',2,505,668);
@@ -1698,8 +1712,8 @@ const SIDE=[
     steps:[{t:'shot',id:'orbitL2',n:2,text:'Patrol the Night Road, west'},{t:'shot',id:'orbitR2',n:1,text:'Patrol the Night Road, east'}],rw:{gold:30,xp:35}},
   {id:'armory',name:'Steel for the Hollow',giver:'Quartermaster Pell',text:'The Keep armory is full and nobody alive is using it.',
     steps:[{t:'done',id:'armory',n:1,text:'Raid the Keep Armory'},{t:'shot',id:'tavern',n:1,text:'Deliver the steel to the Tavern'}],rw:{gold:50,xp:60,relic:1}},
-  {id:'tower',name:'The Tower Stair',giver:'A mad astronomer',text:'Three times round the tower and the stars line up. Trust me.',
-    steps:[{t:'shot',id:'rampTower',n:3,text:'Climb the Tower Ramp three times'}],rw:{xp:90,gold:40}}
+  {id:'tower',name:'The Throne Road',giver:'A mad astronomer',text:'Three times round the keep and the stars line up. Trust me.',
+    steps:[{t:'shot',id:'rampTower',n:3,text:'Ride the Throne Road three times'}],rw:{xp:90,gold:40}}
 ];
 const STAGES=['Omens','Omens','The Trail','The Wilds','The Ruined Gate','The Climb','The Keep','The Reckoning'];
 
@@ -2407,14 +2421,14 @@ const ART=[
     c.lineWidth=16;c.beginPath();c.arc(320,y+100,94,PI,PI+1.15);c.stroke();c.beginPath();c.arc(320,y+100,94,TAU-.8,TAU);c.stroke();
     const dk='#07100d',md='#0c1a15';
     [[92,150,70],[132,100,56],[548,150,70],[508,100,56],[92,640,80],[128,585,60],[548,640,80],[512,585,60],[96,800,64],[544,800,64],[180,208,50],[460,208,50]].forEach((q,k)=>pine(c,q[0],y+q[1],q[2],k%2?dk:md));
-    tree(c,246,y+420,70,3,'#0a1512');tree(c,398,y+420,70,8,'#0a1512');
+    tree(c,170,y+560,70,3,'#0a1512');tree(c,470,y+560,70,8,'#0a1512');
     // moonlit stream
     c.lineCap='round';c.strokeStyle='rgba(90,200,200,.10)';c.lineWidth=30;c.beginPath();c.moveTo(20,y+520);c.bezierCurveTo(160,y+600,220,y+740,330,y+760);c.bezierCurveTo(440,y+780,520,y+700,620,y+730);c.stroke();
     c.strokeStyle='rgba(190,245,245,.16)';c.lineWidth=1.4;c.setLineDash([14,22]);for(let k=-1;k<2;k++){c.beginPath();c.moveTo(20,y+520+k*8);c.bezierCurveTo(160,y+600+k*8,220,y+740+k*8,330,y+760+k*8);c.bezierCurveTo(440,y+780+k*8,520,y+700+k*8,620,y+730+k*8);c.stroke();}c.setLineDash([]);
     // mushroom ring and standing stones
     for(let k=0;k<14;k++){const a=k*TAU/14,x=320+Math.cos(a)*108,yy=y+650+Math.sin(a)*108;c.fillStyle='rgba(230,90,90,.45)';c.beginPath();c.arc(x,yy,4.2,PI,TAU);c.fill();c.fillStyle='rgba(240,230,210,.4)';c.fillRect(x-1.2,yy,2.4,4);}
     for(const q of [[206,236,26],[434,236,26],[262,330,18],[378,330,18],[320,396,16]]){c.fillStyle='#1b2e28';path(c,[[q[0]-q[2]*.4,y+q[1]],[q[0]-q[2]*.3,y+q[1]-q[2]],[q[0]+q[2]*.2,y+q[1]-q[2]*1.15],[q[0]+q[2]*.42,y+q[1]]],1);c.fill();c.strokeStyle='rgba(140,232,208,.5)';c.lineWidth=1.1;c.beginPath();c.moveTo(q[0]-3,y+q[1]-q[2]*.3);c.lineTo(q[0]+1,y+q[1]-q[2]*.8);c.lineTo(q[0]+4,y+q[1]-q[2]*.45);c.stroke();}
-    for(const q of [[170,470],[470,470],[110,720],[530,720],[250,560],[390,560]])lantern(c,q[0],y+q[1],'#7fe0c0');
+    for(const q of [[170,470],[470,470],[110,720],[530,720],[228,570],[390,560]])lantern(c,q[0],y+q[1],'#7fe0c0');
     sigil(c,320,y+650,82,p.acc,1);
     c.fillStyle='rgba(200,235,240,.08)';for(let k=0;k<9;k++){const t=k/8,x=lerp(210,430,t),yy=y+560+Math.sin(t*PI)*-30;c.beginPath();c.ellipse(x,yy,5,7,0,0,TAU);c.fill();for(let j=-1;j<2;j++){c.beginPath();c.arc(x+j*5,yy-10,2.2,0,TAU);c.fill();}}
     c.fillStyle='#0b1512';[[206,300,20,2],[434,300,20,2],[282,390,14,0],[358,390,14,0]].forEach(q=>tomb(c,q[0],y+q[1],q[2],q[3],'#132420'));
@@ -2879,7 +2893,7 @@ function portrait(cls,spell){const key=cls+':'+spell;portrait.cache=portrait.cac
    How to Play is written here as data. The shot glossary and the "what is that?" lines under quest steps are
    generated from the table itself, so they stay true when the table changes. */
 const HELP=[
-  ['The table','Three levels stacked up a hill: Grave Hollow at the bottom, the Wilds, then the Black Keep. Ramps climb to the level above; the gap between the upper flippers of a level drops you to the one below. Below the Hollow is the Grave, and off to the sides are the campaign wings (the Crypt, the Den, the Hoard), reached through scoops once the Warden is beaten.'],
+  ['The table','Three levels stacked up a hill: Grave Hollow at the bottom, the Wilds, then the Black Keep. Ramps climb to the level above; the gap between the upper flippers of a level drops you to the one below. Each level plays its own way: the Hollow has shots at every depth, from the Smithy and the mausoleum low down to the Town Gate and the Chapel high up; the Wilds has the Goblin Camp high under the stone ring and the Mill lane feeding it; the Keep has the Throne Road, a centre ramp between the Royal Guard. Below the Hollow is the Grave, and off to the sides are the campaign wings (the Crypt, the Den, the Hoard), reached through scoops once the Warden is beaten.'],
   ['Hardware','Flippers: every left flipper on the table moves together, and every right one. Slingshots kick the ball back up. Rollover lanes (top, inlanes, outlanes) score as you pass. Spinners score per turn. Drop targets fall when hit and a bank is complete when all are down; standup targets light. Pop bumpers (braziers, standing stones, gravestones) score and feed your meter. Scoops hold the ball, pay out and eject it. Orbits are the loops around the outside. Ramps carry the ball up a rail. The kickback on the left outlane fires once, then has to be relit.'],
   ['Scoring','Pinball is a high-score game. Your multiplier (1x to 6x) multiplies everything; light the three Vigil Candles on the Hollow to raise it, or ask the Witch. It resets each ball. Combos: shots made quickly after one another pay more. Lock two balls at the Goblin Camp for multiball, where ramps and orbits pay jackpots. The end-of-ball bonus counts that ball\'s foes, side quests and ramps, times your multiplier. Tilt (too many nudges) kills the flippers and forfeits the bonus.'],
   ['Your hero','The ball is the hero. Hits fill the power meter. Nudge (Space) fires your class nudge power. Hold the ball still on a raised flipper (cradle) for about a second with one bar of meter to arm your class shot: the next flip fires it. Cradle a full meter for a second and a half to Rally the party. Level up and you unlock or level one of your four spellbook abilities; each is cast by completing its goal on the table (a bank, two ramps, two orbits or twenty spins, three lanes then a scoop) and lasts a while. Two unlocked abilities can run at once.'],
