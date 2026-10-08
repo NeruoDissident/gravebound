@@ -113,7 +113,6 @@ they check that everything runs and renders, not frame rate.
 
 - **How to play** (title screen and pause menu): the rules in nine short sections, then *Every named shot*: a glossary generated from the table itself (what each shot is, where it sits on its level, and what counts), so it stays correct when the table changes.
 - **Pause** now explains the current step of every quest in plain words under the quest line: "Mill is a spinner at the middle right of the Wilds. Every turn counts, so hit it hard."
-- **Tutorial**: nine pages, on the title menu, and launched automatically on the first run of a fresh browser. Skip or close it any time; Options has "Show the tutorial when a new run starts" to turn it back on.
 
 ## The table talks, and the three levels differ (0.14, 0.15)
 
@@ -126,3 +125,8 @@ they check that everything runs and renders, not frame rate.
 **The Black Keep** (the castle): the Throne Road, a centre ramp straight up the hall between the two walls of the Royal Guard, ringing the keep and coming down to the right inlane (the boss bars it, and Ashmaw's fire burns its approach); the Sanctum a pocket in the top-left corner; the Armory three standups low on the left; the Bell's dead-end lane and the Oubliette on the right.
 
 `node test/reach.js <tier>` fans balls from both flippers across angles and speeds and reports which features they reach first and at all, and any ball left stuck. Every named shot on every level is reachable from a flipper.
+
+## 0.16
+
+- The tutorial is gone (title button, auto-launch, option). How to play and the glossary stay.
+- The class shot's bar is spent when the armed flip fires, not when the cradle arms it. A cradle you don't follow through on costs nothing.
