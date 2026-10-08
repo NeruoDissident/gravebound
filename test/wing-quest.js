@@ -43,9 +43,9 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       G.balls=[newBall(303,H-40,0,300)];for(let k=0;k<30&&!G.inGrave;k++)__gb.advance(.1,0);ok('[grave] an open Grave catches a tilted ball',G.inGrave);G.inGrave=false;G.graveLive=false;G.tilt=0;}
     // the run ends with its campaign unless Endless is on
     {UI.menu(null);startRun('knight');G.auto=false;DEV.on=true;G.opt.endless=false;__gb.advance(.5,1);const r=G.run;let g=0;while(r.main&&g++<30){devKey('dn');__gb.advance(3,1);}
-      for(let k=0;k<12;k++){if(G.choice)choose(0);__gb.advance(1,1);}ok('[end] the run ends when its campaign is won',G.mode==='over'&&r.ended==='won'&&r.won===1);}
+      for(let k=0;k<12;k++){if(G.choice){const i=G.choice.opts.findIndex(o=>!/full/i.test(o.tag)&&o.name!=='Back');choose(i<0?0:i);}__gb.advance(1,1);}ok('[end] the run ends when its campaign is won',G.mode==='over'&&r.ended==='won'&&r.won===1);}
     {UI.menu(null);startRun('knight');G.auto=false;DEV.on=true;G.opt.endless=true;__gb.advance(.5,1);const r=G.run;let g=0;while(r.main&&g++<30){devKey('dn');__gb.advance(3,1);}
-      for(let k=0;k<22;k++){if(G.choice)choose(0);__gb.advance(1,1);}ok('[end] Endless raises a new shadow instead ('+(r.main&&r.main.name)+')',G.mode==='play'&&r.main&&r.arcs.length===2);G.opt.endless=false;}
+      for(let k=0;k<45;k++){if(G.choice){const i=G.choice.opts.findIndex(o=>!/full/i.test(o.tag)&&o.name!=='Back');choose(i<0?0:i);}__gb.advance(1,1);}ok('[end] Endless raises a new shadow instead ('+(r.main&&r.main.name)+')',G.mode==='play'&&r.main&&r.arcs.length===2);G.opt.endless=false;}
     return log;});
   console.log(out.join('\n'));const nf=out.filter(l=>l.startsWith('FAIL')).length;console.log(nf+' failed of '+out.length);if(nf||logs.length)process.exitCode=1;
   console.log(logs.join('\n')||'no page errors');await br.close();})();

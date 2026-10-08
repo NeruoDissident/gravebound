@@ -24,6 +24,7 @@ a star.
 | `src/art3d.js` | Playfield art painted to textures; procedural stone, wood, sky |
 | `src/render3d.js` | Scene: terraces, walls, ramps, bumpers, targets, scenery, camera, lighting, post |
 | `src/wing3d.js` | The campaign wings as places in the world (the Crypt, the Den, the Hoard) |
+| `src/spells.js` | The spellbook: sixteen abilities, their goals, upgrades and the Rally |
 | `src/foes3d.js` | The foes as jointed figures: one builder per type, posed from the game's state every frame |
 | `src/actors3d.js` | Bosses, pickups, hit rings and spell effects in 3D |
 | `src/game3d.js` | Overlay gauges and text, settings, dev keys, resize, loop, boot |
@@ -78,24 +79,22 @@ hero (Tank, Healer or Striker) or ride alone. A draining ball bounces off them a
 post fires their perk; skeleton swarms go for them; at zero they are wounded and the drain stands open until you
 complete a bank. The full rules we settled on are in `DESIGN.md`.
 
-Level-up cards come three at a time: one for your class, one for the table, and one plain stat. Past level 3 the
-third slot is sometimes a keystone instead, and a run takes only one.
+Every class has four abilities, one per purpose (Breaker, Guard, Striker, Pressure), unlocked and levelled on
+level-up and cast by the table: complete a bank, roll three lanes then a scoop, make two ramps, or two orbits or
+twenty spins. Casts last a duration and ride the ball; unlocked abilities all have their goals live at once, so they
+stack, and recasting extends to twice the base. The level-up screen shows the same four cards every time: Unlock, or
+Level Up into three upgrade rows with concrete numbers. The pool is `SPELLS` in `src/spells.js`.
 
-| Kind | What it does | Examples |
-| --- | --- | --- |
-| Class (5 each) | Changes how one of your three powers behaves | Knight: Bulwark, Juggernaut. Rogue: Marked for Death, Cutpurse. Mage: Chain Lightning, Scorched Earth. Cleric: Sanctuary, Martyr's Light |
-| Table (11) | Changes what a part of the table gives you | Ramp Runner, Second Chance, Tollgate, Iron Flippers, Bell Ringer, Hallowed Lanes |
-| Stat (9) | A plain number, in bigger steps and fewer ranks than before | Keen Edge, Iron Will, Zeal |
-| Keystone (4) | Defines the run | Blood Pact, Twin Soul, The Hourglass, Death Wish |
-
-The whole pool is the `PERKS` table in `src/game.js`.
+A full meter cradled for 1.5 s is the Rally: the party comes out as balls for 20 seconds. The camera stays on your
+own ball and losing it ends the Rally and the ball. Table boons, stats and the rare keystones (`PERKS` in
+`src/game.js`) are drawn one at a time after each boss kill.
 
 ## Build and test
 
 ```
 npm install
 npm run build        # writes dist/
-npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job, the waves and boss moves, every card and the party are walked end to end
+npm run soak         # a bot plays every class in headless Chromium, then each wing's route, each foe's job, the waves and boss moves, every boon, the spellbook, the Rally and the party are walked end to end
 npm run shots        # screenshots into test/out/
 npm run standalone   # checks the one-file copy loads with no network
 ```

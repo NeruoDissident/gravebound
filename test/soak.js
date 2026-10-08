@@ -10,7 +10,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8><meta name=view
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);});
+  await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);G.opt.endless=true;});
   let bad=false;for(const cls of ['knight','rogue','mage','cleric']){
     const res=await pg.evaluate(([cls,mins])=>{const seen={},err=[];UI.menu(null);startRun(cls);G.stuck=[];G.auto=true;DEV.on=true;G.bot={hl:0,hr:0,tl:30,tr:30,pl:0,plT:.7};
       const note=k=>{seen[k]=(seen[k]||0)+1;};let runs=1;
