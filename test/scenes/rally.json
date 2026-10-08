@@ -1,0 +1,4 @@
+[
+ {"eval":"(UI.menu(null),startRun('mage','tank'),DEV.on=true,G.auto=false,__gb.advance(.5,1),devKey('d3'),__gb.advance(.2,1),G.wave.t=999,G.run.recruits=[{cls:'rogue',spell:'cloak'},{cls:'cleric',spell:'radiance'},{cls:'knight',spell:'charge'}],['skeleton','skeleton','goblin','wolf','spirit','skeleton'].forEach(t=>{const e=spawnEnemy(t,2);if(e)e.spawn=0;}),G.balls=[newBall(303,TY[2]+700,0,0)],G.save=99,G.run.charge=100,rally(),__gb.advance(1.4,6),__gb.draw(2,.05),[G.balls.length,G.balls.filter(b=>b.party).length,G.booms.length])","shot":"01-launching"},
+ {"eval":"(__gb.advance(2.2,8),__gb.draw(2,.05),[G.balls.filter(b=>b.party).length,G.enemies.length,G.booms.length,G.bolts.length])","shot":"02-mayhem"}
+]

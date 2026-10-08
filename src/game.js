@@ -479,7 +479,7 @@ function recruit(id){const r=G.run,d=COMPANIONS[id],slot=SLOTS.find(sl=>!partyAt
 function drawRecruits(n){const have=new Set((G.run&&G.run.party||[]).map(c=>c.id)),pool=shuffle(Object.keys(COMPANIONS).filter(k=>!have.has(k))),out=[],roles=new Set();
   for(const k of pool){if(out.length>=n)break;if(roles.has(COMPANIONS[k].role))continue;roles.add(COMPANIONS[k].role);out.push(k);}
   for(const k of pool){if(out.length>=n)break;if(!out.includes(k))out.push(k);}return out;}
-function guardHit(c,p,b,imp){const r=G.run,d=COMPANIONS[c.id],tier=b.tier;c.cool=.35;c.hp-=12;c.saves++;c.flash=1;A.s('kick');burst(p.x,p.y-10,10,ROLES[d.role].col,220,.6);
+function guardHit(c,p,b,imp){const r=G.run,d=COMPANIONS[c.id],tier=b.tier;c.cool=.35;if(!b.party)c.hp-=12;c.saves++;c.flash=1;A.s('kick');burst(p.x,p.y-10,10,ROLES[d.role].col,220,.6);
   const near=()=>{let best=null,bd=1e9;for(const e of G.enemies){if(e.dead||e.spawn>0||e.tier!==tier)continue;const dd=Math.hypot(e.x-p.x,e.y-p.y);if(dd<bd){bd=dd;best=e;}}return best;};
   float(p.x,p.y-44,d.name.toUpperCase()+' HOLDS','#ffe9b0',12);score(500);charge(1,'hit');
   switch(d.perk){
@@ -704,8 +704,8 @@ function xp(n){const r=G.run;r.xp+=n*G.mods.xp;G.dirty=true;
 function heal(n){const r=G.run;r.hp=Math.min(G.mods.maxHp,r.hp+n);G.dirty=true;}
 // The ball is your life. Player health is switched off while we find whether it fits: a strike still lands (shake, sound,
 // and a Death Wish still drains the meter) but nothing can make you fall.
-const PLAYER_HP=()=>!!G.playerHp; // off by default; the test suites switch it on to exercise strikes
-function hurt(n){const r=G.run;if(G.fallen||!G.balls.length)return;G.struck=(G.struck||0)+n;if(!PLAYER_HP()){if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.4;G.cam.shake=Math.max(G.cam.shake,6);A.s('hurt');G.dirty=true;return;}let v=n*(1-G.mods.dr);if(G.buffs.aegis>0)v*=G.mods.aegisK;if(G.buffs.aegisK)v*=G.buffs.aegisK;v=Math.max(1,Math.ceil(v));r.hp-=v;if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.6;G.cam.shake=Math.max(G.cam.shake,8);A.s('hurt');
+const PLAYER_HP=()=>G.playerHp!==false,HURT_K=.3; // health is on and tuned way down: foes hit for 30% of their old damage
+function hurt(n){const r=G.run;if(G.fallen||!G.balls.length)return;G.struck=(G.struck||0)+n;if(!PLAYER_HP()){if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.4;G.cam.shake=Math.max(G.cam.shake,6);A.s('hurt');G.dirty=true;return;}let v=n*(G.playerHp===true?1:HURT_K)*(1-G.mods.dr);if(G.buffs.aegis>0)v*=G.mods.aegisK;if(G.buffs.aegisK)v*=G.buffs.aegisK;v=Math.max(1,Math.ceil(v));r.hp-=v;if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.6;G.cam.shake=Math.max(G.cam.shake,8);A.s('hurt');
   const b=focusBall();if(b)float(b.x,b.y-22,'-'+v,'#ff5a5a',16);G.dirty=true;
   if(r.hp<=0&&G.mods.martyr&&!G.martyrUsed){G.martyrUsed=true;r.hp=40;G.curse={};popup("Martyr's Light",'You stand. 40 health','good');A.s('ward');G.flash=.5;G.flashC='#ffe0a0';return;}
   if(r.hp<=0){r.hp=0;G.fallen=true;G.tilt=1e9;G.save=0;r.shield=false;popup('Fallen','Your hero collapses. The flippers go dead','bad');A.s('tilt');}}
@@ -1506,18 +1506,19 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
     case 'victory':A.arp([294,370,440,587,740,880,1175,1480],.11,'triangle',.14,.7);break;}},
   // generative music: D minor, slow harp over pads, a low bell every fourth bar; bosses add a pulse
   sched(){const x=A.ctx;if(!x||x.state!=='running')return;const boss=(!!(G.boss&&G.boss.alive)||G.inGrave)&&!G.demo,quiet=G.mode==='title';
-    const beat=boss?.3:.4;while(A.next<x.currentTime+.3){const st=A.step++,bar=(st/8|0)%4,k=st%8,t=A.next-x.currentTime;
+    const rly=G.rallyT>0&&!G.demo,beat=rly?.2:boss?.3:.4;while(A.next<x.currentTime+.3){const st=A.step++,bar=(st/8|0)%4,k=st%8,t=A.next-x.currentTime;
       const ch=[[146.8,174.6,220],[116.5,146.8,174.6],[98,116.5,146.8],[110,138.6,164.8]][bar];
       if(k===0){for(const f of ch)A.tone(f,beat*8.5,'triangle',.035,0,t,A.mus);A.tone(ch[0]/2,beat*8,'sine',.07,0,t,A.mus);
         if(bar===0&&((st/32|0)%2===0)){A.tone(146.8,3,'sine',.07,0,t,A.wet);A.tone(146.8*2.76,2,'sine',.02,0,t,A.wet);}}
       const pat=[0,1,2,1,0,2,1,2][k],oct=[2,2,2,4,2,2,4,2][(k+bar)%8],tier=G.focusTier;
       if(!quiet||k%2===0){if(Math.random()>.18)A.tone(ch[pat]*oct*(tier===0&&k===3?.5:1),beat*2.2,tier===1?'sine':'triangle',.045,0,t,A.wet);}
-      if(boss){A.tone(ch[0]/2,beat*.8,'sawtooth',.05,0,t,A.mus);if(k%2===0)A.tone(70,.12,'sine',.16,35,t,A.mus);}
+      if(boss&&!rly){A.tone(ch[0]/2,beat*.8,'sawtooth',.05,0,t,A.mus);if(k%2===0)A.tone(70,.12,'sine',.16,35,t,A.mus);}
+      if(rly){A.tone(k%2?62:52,.16,'sine',.22,30,t,A.mus);if(k%2)A.tone(ch[0]/2,beat*.9,'sawtooth',.06,0,t,A.mus);A.tone(ch[(k+bar)%3]*4,beat*.7,'square',.022,0,t,A.wet);if(k===4)A.tone(196,.08,'triangle',.08,0,t,A.mus);}
       A.next+=beat;}}
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.13';
+const $=id=>document.getElementById(id),VERSION='3D build 0.19';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,

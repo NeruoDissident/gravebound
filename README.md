@@ -151,3 +151,11 @@ they check that everything runs and renders, not frame rate.
 ## 0.18.1
 
 - Player health is switched off (`G.playerHp`, off by default). The ball is your life. Foe strikes still shake the table and still drain the meter under Death Wish, but nothing can make you fall. The health bar is hidden. The test suites switch health on so strikes, shields and parries stay covered.
+
+## 0.19: the Rally is a spectacle
+
+- The party is fired up the field one ball at a time from between the flippers, half a second apart. Each launch is an explosion: a shockwave, a burst in the ball's colour, its name called out ("ROGUE!"), the table shakes.
+- Every party ball works the whole time it's out. A pulse every 1.1 s on top of its own ability: the Tank shockwaves and staggers foes around it, the Healer heals you and your guard, the Striker and recruits bolt the nearest foe (or the boss when no foe is near), and every third pulse they burst.
+- The music goes double time with drums for the length of the Rally.
+- Party balls never wear down your guard at the drain; only your own ball does.
+- Health is back on, tuned way down: foes hit for 30% of their old damage. A number to tune by playtesting (`HURT_K`).

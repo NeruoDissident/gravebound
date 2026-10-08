@@ -94,16 +94,32 @@ function heroBalls(){return G.balls.filter(b=>!b.party);}
 
 /* ---------- Rally: three bars cradled, the party comes out ---------- */
 const RALLY_T=20;
+/* The Rally is a spectacle: the party is fired up the field one ball at a time from between the flippers, each
+   launch an explosion, and every ball out there keeps working: a pulse every second (bolts, shockwaves, heals, bursts)
+   on top of its own ability. The music goes double time. */
+const RALLY_GAP=.55,RALLY_PULSE=1.1;
 function rally(){const r=G.run,h=heroBall()||focusBall();if(!h)return;r.charge=0;const party=(r.party||[]).filter(c=>c.hp>0);
   if(!party.length&&!(r.recruits&&r.recruits.length)){popup('No One Answers','You ride alone. Nothing comes to the call','info');A.s('deny');return;}
-  const T0=RALLY_T*(G.mods.twin?2:1);let n=0;const spawn=()=>{const a=rand(TAU),b=newBall(h.x+Math.cos(a)*30,h.y-20,h.vx*.5+rand(-200,200),Math.min(h.vy,0)-rand(200,400));b.life=T0;b.noHole=1e9;b.noMouth=0;G.balls.push(b);n++;return b;};
-  for(const c of party){const d=COMPANIONS[c.id],b=spawn();b.party=d.role;b.pc=ROLES[d.role].col;if(d.role==='tank'){b.r=12.5;b.kx=.6;}else if(d.role==='dps'){b.r=10;b.kx=1.05;}burst(b.x,b.y,16,b.pc,320,.8);}
-  for(const q of r.recruits||[]){const cc=CLASSES[q.cls],b=spawn();b.party='recruit';b.cls=q.cls;b.pc=cc.color;b.pg=cc.glow;b.r=cc.r;b.kx=cc.kx;armRecruit(b,q.spell,T0);burst(b.x,b.y,16,cc.glow,320,.8);}
-  G.save=Math.max(G.save,3);G.rallyT=T0;popup('Rally','The party comes out for '+T0+' seconds. Keep your own ball alive','good');A.s('multiball');G.flash=.5;G.flashC='#ffe9b0';G.cam.shake=Math.max(G.cam.shake,10);G.dirty=true;}
-function endRally(why){const had=G.balls.some(b=>b.party);G.balls=G.balls.filter(b=>{if(b.party){burst(b.x,b.y,10,'#ffe9b0',200,.6);return false;}return true;});G.rallyT=0;if(had)popup('The Party Withdraws',why||'The rally is over','info');G.dirty=true;}
-function updateRally(dt){if(!G.balls.some(b=>b.party)){G.rallyT=0;return;}G.rallyT=Math.max(0,(G.rallyT||0)-dt);let gone=false;
+  const T0=RALLY_T*(G.mods.twin?2:1),tier=h.tier,cx=tier===2?303:320,yF=TY[tier]+900,gen=G.gen,list=[];
+  for(const c of party){const d=COMPANIONS[c.id];list.push(b=>{b.party=d.role;b.pc=ROLES[d.role].col;b.pg=b.pc;b.label=d.name;if(d.role==='tank'){b.r=12.5;b.kx=.6;}else if(d.role==='dps'){b.r=10;b.kx=1.05;}});}
+  for(const q of r.recruits||[]){const cc=CLASSES[q.cls];list.push(b=>{b.party='recruit';b.cls=q.cls;b.pc=cc.color;b.pg=cc.glow;b.label=cc.name;b.r=cc.r;b.kx=cc.kx;armRecruit(b,q.spell,T0);});}
+  G.rallyPend=list.length;list.forEach((dress,i)=>later(.35+i*RALLY_GAP,()=>{G.rallyPend=Math.max(0,(G.rallyPend||0)-1);if(G.gen!==gen||G.run!==r||!heroBalls().length||G.rallyT<=0)return;
+    const a=rand(-.42,.42),v=rand(1900,2250),b=newBall(cx+rand(-14,14),yF-34,Math.sin(a)*v,-Math.cos(a)*v);b.tier=tier;b.life=T0-i*RALLY_GAP;b.noHole=1e9;b.noMouth=0;b.pulse=rand(.2,RALLY_PULSE);dress(b);G.balls.push(b);
+    G.booms.push({x:b.x,y:b.y,r:120,t:0,c:b.pg});burst(b.x,b.y,34,b.pg,520,.9);burst(b.x,b.y,18,'#ffe9b0',300,.7);float(b.x,b.y-46,b.label.toUpperCase()+'!',b.pg,17);
+    A.s('launch');A.s('slam');G.cam.shake=Math.max(G.cam.shake,9);G.flash=.18;G.flashC=b.pg;G.dirty=true;}));
+  G.save=Math.max(G.save,3+list.length*RALLY_GAP);G.rallyT=T0;popup('Rally','The party is coming. Keep your own ball alive','good');A.s('multiball');G.flash=.5;G.flashC='#ffe9b0';G.cam.shake=Math.max(G.cam.shake,12);G.dirty=true;}
+// what each party ball does on its pulse, besides its own ability
+function rallyPulse(b){const e=nearFoes(b.x,b.y,260,b.tier)[0],P=G.mods.pow,bo=G.boss&&G.boss.alive&&G.boss.tier===b.tier&&G.boss.rise<=0?G.boss:null;
+  burst(b.x,b.y,10,b.pg||'#ffe9b0',260,.5);
+  if(b.party==='tank'){G.booms.push({x:b.x,y:b.y,r:110,t:0,c:b.pg});for(const f of nearFoes(b.x,b.y,110,b.tier)){f.stun=Math.max(f.stun,1.2);f.wind=0;damageEnemy(f,P*.3,false);}A.s('slam');}
+  else if(b.party==='healer'){heal(3);for(const c of G.run.party||[])if(c.hp>0)c.hp=Math.min(c.maxHp,c.hp+4);G.booms.push({x:b.x,y:b.y,r:90,t:0,c:'#ffe0a0'});}
+  else{if(e){bolt(b,e);damageEnemy(e,P*(b.party==='dps'?.6:.45),b.party==='dps');}else if(bo&&bo.phase!=='shield'){bolt(b,bo);hitBoss(bo,P*.35,false);}
+    if((b.pn=(b.pn||0)+1)%3===0){G.booms.push({x:b.x,y:b.y,r:130,t:0,c:b.pg});for(const f of nearFoes(b.x,b.y,130,b.tier))damageEnemy(f,P*.4,false);A.s('slam');G.cam.shake=Math.max(G.cam.shake,5);}}}
+function endRally(why){G.rallyPend=0;const had=G.balls.some(b=>b.party);G.balls=G.balls.filter(b=>{if(b.party){burst(b.x,b.y,10,'#ffe9b0',200,.6);return false;}return true;});G.rallyT=0;if(had)popup('The Party Withdraws',why||'The rally is over','info');G.dirty=true;}
+function updateRally(dt){if(!G.balls.some(b=>b.party)){if(!(G.rallyPend>0))G.rallyT=0;return;}G.rallyT=Math.max(0,(G.rallyT||0)-dt);let gone=false;
   const hero=heroBall();
   for(const b of G.balls)if(b.party){b.life-=dt;if(b.life<=0||b.st!=='live'&&b.st!=='rail'){b.gone=true;gone=true;}
+    else if(b.st==='live'&&(b.pulse-=dt)<=0){b.pulse=RALLY_PULSE;rallyPulse(b);}
     else if(b.cast){b.cast.t-=dt;b.cast.tick-=dt;const F=SPELL_FX[b.spell];if(F&&F.tick)F.tick(b.cast,dt,b);
       if(b.spell==='radiance'){b.tk=(b.tk||0)-dt;if(b.tk<=0){b.tk=.5;for(const e of nearFoes(b.x,b.y,170,b.tier))damageEnemy(e,G.mods.pow*.2,false);}}}}
   if(gone)G.balls=G.balls.filter(b=>{if(b.gone&&b.party){burst(b.x,b.y,10,'#ffe9b0',200,.6);
