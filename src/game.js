@@ -17,7 +17,7 @@ const store={
 const W=640,H=3180,GY=3270,HW=4010,WY=4200,WSTEP=900,WLEN=640,WB=[WY,WY+WSTEP,WY+2*WSTEP],BR=11,TY=[40,1080,2120,GY,WB[0],WB[1],WB[2]],FY=[940,1980,3020,GY+650,WB[0]+570,WB[1]+570,WB[2]+570],CELL=80,GRAV=1150,VMAX=2300;
 const TIER_NAME=['The Black Keep','The Wilds','Grave Hollow','The Grave','The Crypt','The Den','The Hoard'];
 const T={segs:[],grid:[],flips:[],bumps:[],sens:[],holes:{},rails:{},mouths:[],shots:{},banks:{},sets:{},
-  slings:[],spawn:[[],[],[],[],[],[],[]],torches:[],wallPaths:[],blocks:[],chans:[],bossSpot:[],tunnels:{},posts:[]};
+  slings:[],spawn:[[],[],[],[],[],[],[]],torches:[],wallPaths:[],blocks:[],chans:[],bossSpot:[],statueSpot:[],tunnels:{},posts:[]};
 const tierOf=y=>y<TY[1]?0:y<TY[2]?1:y<GY-60?2:y<WY-100?3:4+Math.min(2,Math.floor((y-(WY-100))/WSTEP));
 
 function seg(x1,y1,x2,y2,o){const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;
@@ -132,7 +132,7 @@ function buildTable(){
   poly([o([574,280]),o([474,350])],{w:3}); // a lid over the pocket behind the bell, so nothing can lodge there
   hole('oubliette',528,y+488,13,0,'Oubliette');
   sensor(43,y+455,20,{kind:'spin',id:'chains',tier:0,rate:0,ang:0});
-  T.bossSpot[0]={x:320,y:y+205};
+  T.statueSpot[0]={x:320,y:y+205};T.bossSpot[0]={x:320,y:y+650}; // the boss rises from the summoning circle in the middle of the field
   T.spawn[0]=[[150,585],[225,640],[320,600],[415,640],[490,585],[270,560],[370,560],[320,690]].map(o);
 
   /* ---------- THE WILDS (middle) ----------
@@ -157,7 +157,7 @@ function buildTable(){
   sideScoopBlock(m3,1,y,574,380,'hut',1);hole('hut',528,y+488,13,1,"Witch's Hut");
   {const yF=y+900,ls=T.sens.filter(s=>s.tier===1&&(s.kind==='inlane'||s.kind==='outlane'));ls.sort((a,b)=>a.x-b.x);ls.forEach(s=>s.set='moon');
    T.sets.moon={id:'moon',tier:1,lanes:ls,name:'Moon Phases'};}
-  T.bossSpot[1]={x:320,y:y+178};
+  T.statueSpot[1]={x:320,y:y+178};T.bossSpot[1]={x:320,y:y+650};
   T.spawn[1]=[[150,585],[225,640],[320,600],[415,640],[490,585],[236,578],[370,560],[320,690]].map(o);
 
   /* ---------- GRAVE HOLLOW (lower) ----------
@@ -614,7 +614,7 @@ function focusBall(){let f=null;const rallying=G.balls.some(b=>b.party);for(cons
 function comboF(){return G.combo>1?1+.25*Math.min(8,G.combo-1)*(1+G.mods.comboPay):1;}
 
 function initGame(){buildTable();
-  G.statues=[{x:T.bossSpot[0].x,y:T.bossSpot[0].y,r:22,tier:0,id:'throne',on:true,flash:0,cool:0},{x:T.bossSpot[1].x,y:T.bossSpot[1].y,r:20,tier:1,id:'keystone',on:true,flash:0,cool:0}];}
+  G.statues=[{x:T.statueSpot[0].x,y:T.statueSpot[0].y,r:22,tier:0,id:'throne',on:true,flash:0,cool:0},{x:T.statueSpot[1].x,y:T.statueSpot[1].y,r:20,tier:1,id:'keystone',on:true,flash:0,cool:0}];}
 function resetWorld(){G.gen=(G.gen||0)+1;Object.assign(G,{balls:[],enemies:[],pickups:[],queue:[],pending:[],boss:null,choice:null,sub:null,mb:null,tilt:0,fallen:false,curse:{},buffs:{},combo:0,comboT:0,save:0,paused:false,bonus:null,doorT:0,orbitMem:{},booms:[],zones:[],phase:0,nudgeCd:0,hidden:false,inGrave:false,graveLive:false,wave:{n:0,t:18,active:null,list:[]},casts:[],rallyT:0});for(const id in T.rails)T.rails[id].closed=false;
   G.plunge={ready:false,charge:0,held:false,auto:0};
   for(const s of T.segs){if(s.bank){s.on=true;s.lit=false;}}for(const id in T.banks)T.banks[id].reset=0;for(const k in T.wings)T.wings[k].seal.forEach(s=>s.on=true);
@@ -916,7 +916,8 @@ function spawnEnemy(type,tier,quest,minion){const def=ENEMY[type],r=G.run,P=foeP
   else if(def.job==='duel'){const st=G.statues.find(q=>q.tier===tier),bo=G.boss&&G.boss.alive&&G.boss.tier===tier?G.boss:null,q=bo?{x:bo.x,y:bo.y+bo.r+34}:st?{x:st.x,y:st.y+st.r+30}:null;if(q&&!taken(q.x,q.y,30))post={kind:'guard',x:q.x,y:q.y};}
   else if(def.job==='gate'){const h=free(P.holes);if(h)post={kind:'hole',x:h.x,y:h.y,id:h.id};}
   if(!p&&post&&post.kind!=='bump')p=[post.x,post.y];
-  if(!p)for(const c of shuffle(T.spawn[tier])){if(taken(c[0],c[1],50))continue;if(G.pickups.some(q=>Math.hypot(q.x-c[0],q.y-c[1])<40))continue;if(G.balls.some(b=>b.st==='live'&&Math.hypot(b.x-c[0],b.y-c[1])<70))continue;p=c;break;}
+  const bz=G.boss&&G.boss.alive&&G.boss.tier===tier?G.boss:null;if(p&&bz&&Math.hypot(p[0]-bz.x,p[1]-bz.y)<bz.r+34)p=null;
+  if(!p)for(const c of shuffle(T.spawn[tier])){if(taken(c[0],c[1],50))continue;if(bz&&Math.hypot(c[0]-bz.x,c[1]-bz.y)<bz.r+40)continue;if(G.pickups.some(q=>Math.hypot(q.x-c[0],q.y-c[1])<40))continue;if(G.balls.some(b=>b.st==='live'&&Math.hypot(b.x-c[0],b.y-c[1])<70))continue;p=c;break;}
   if(!p)return null;const th=1+.4*(r.threat-1);
   const e={type,def,job:def.job,tier,x:p[0],y:p[1],ax:p[0],ay:p[1],r:def.r,hr:def.r,hp:def.hp*th,maxHp:def.hp*th,armor:def.armor||0,spawn:.7,hitCd:0,wind:0,stun:0,ripCd:0,
     castT:def.cast?def.cast+rand(2):0,atk:rand(def.rate?def.rate[0]:9,def.rate?def.rate[1]:14),t:rand(9),flash:0,quest:quest||null,minion:!!minion,hopT:rand(2,3.5),hop:1,post,state:post&&post.kind==='bump'?'drift':'idle',goal:null,want:null,loot:null,lunge:0,lungeCd:rand(2,4),dead:false};
@@ -1037,8 +1038,16 @@ function updatePickups(dt){let hit=false;for(const p of G.pickups){p.t+=dt;if(p.
   if(hit)G.pickups=G.pickups.filter(p=>!p.gone);}
 
 /* ---------- bosses ---------- */
+/* The circle: every level's resident is there from ball 1. Its runes fill as the main quest closes in on its step;
+   when that step comes up the boss rises. Returns {key, fill 0-1, state: 'dormant'|'awake'|'dead'} or null. */
+function wakeInfo(tier){const r=G.run,q=r&&r.main;if(!q)return null;const st=q.steps;let pb=-1,bi=-1;
+  for(let i=0;i<st.length;i++)if(st[i].t==='boss'){if(BOSSES[st[i].boss].tier===tier){bi=i;break;}pb=i;}
+  if(bi<0)return null;const key=st[bi].boss;if(q.si>bi)return {key,fill:1,state:'dead'};const bo=G.boss;
+  if(q.si===bi)return {key,fill:1,state:bo&&bo.alive&&bo.key===key?'awake':'dead'};
+  const span=bi-pb-1,o=qCur(q),done=q.si-pb-1+(o&&o.n?Math.min(q.prog,o.n)/o.n:0);return {key,fill:span>0?clamp(done/span,0,1):0,state:'dormant'};}
 function wakeBoss(key){const d=BOSSES[key],r=G.run,sp=T.bossSpot[d.tier],th=1+.4*(r.threat-1);
-  const bo={key,def:d,tier:d.tier,x:sp.x,y:sp.y,ax:sp.x,ay:sp.y,r:d.r,hp:d.hp*th,maxHp:d.hp*th,alive:true,pi:-1,phase:'',pt:0,pdmg:0,hitCd:0,flash:0,t:0,minions:0,stun:0,castT:0,rise:1.5,th,dying:0};
+  const bo={key,def:d,tier:d.tier,x:sp.x,y:sp.y,ax:sp.x,ay:sp.y,r:d.r,hp:d.hp*th,maxHp:d.hp*th,alive:true,pi:-1,phase:'',pt:0,pdmg:0,hitCd:0,flash:0,t:0,minions:0,stun:0,castT:0,rise:3,th,dying:0};
+  G.enemies.forEach(e=>{if(e.tier===d.tier&&Math.hypot(e.x-sp.x,e.y-sp.y)<d.r+40)e.dead=true;});float(sp.x,sp.y-60,'SOMETHING IS COMING','#ff6070',16);
   G.boss=bo;G.statues[d.tier].on=false;bossNext(bo);popup('Boss Awakened',d.name,'boss');A.s('boss');G.cam.shake=14;G.flash=.6;G.flashC='#ff3040';relight();}
 function bossPhaseEnd(bo){for(const id in T.rails)T.rails[id].closed=false;G.enemies.forEach(e=>{e.frenzy=false;});T.bumps.forEach(c=>{if(c.tier===bo.tier)c.ward=false;});}
 function bossNext(bo){const d=bo.def;bo.pi=(bo.pi+1)%d.seq.length;bo.phase=d.seq[bo.pi];bo.pt=0;bo.pdmg=0;bossPhaseEnd(bo);
@@ -1049,12 +1058,12 @@ function bossNext(bo){const d=bo.def;bo.pi=(bo.pi+1)%d.seq.length;bo.phase=d.seq
   case 'cast':bo.castT=d.cast.time;popup(d.cast.name,'Hit a flashing red shot to break the spell','boss',d.cast.note||'');A.s('cast');
     if(d.cast.closes)T.rails[d.cast.closes].closed=true;
     if(d.cast.howl){let n=G.enemies.filter(e=>e.type==='wolf'&&e.tier===bo.tier&&!e.dead).length;while(n<2){const e=spawnEnemy('wolf',bo.tier,null,true);if(!e)break;n++;}G.enemies.forEach(e=>{if(e.type==='wolf'&&e.tier===bo.tier){e.frenzy=true;e.lungeCd=Math.min(e.lungeCd,1);}});}
-    if(d.cast.fire)G.zones.push({x:T.bossSpot[bo.tier].x,y:T.bossSpot[bo.tier].y+300,r:125,t:d.cast.time+6,tick:0,fire:true});break;
+    if(d.cast.fire)G.zones.push({x:320,y:TY[bo.tier]+505,r:125,t:d.cast.time+6,tick:0,fire:true});break;
   case 'frenzy':if(G.balls.length<3&&G.balls.length>0)startMultiball('Frenzy',2,bo.tier===0?'sanctum':'hut');break;}
   relight();}
 function updateBoss(dt){const bo=G.boss;if(!bo)return;bo.t+=dt;if(bo.flash>0)bo.flash-=dt*4;if(bo.hitCd>0)bo.hitCd-=dt;
   if(!bo.alive){bo.dying-=dt;if(Math.random()<.5)burst(bo.x+rand(-30,30),bo.y+rand(-30,30),3,bo.def.color,200,1);return;}
-  bo.pt+=dt;if(bo.rise>0)bo.rise-=dt;if(bo.stun>0)bo.stun-=dt;if(bo.marked>0)bo.marked-=dt;if(bo.poison>0){bo.poison-=dt;bo.dot=(bo.dot||0)+dt;if(bo.dot>=1){bo.dot=0;if(bo.phase!=='shield')hitBoss(bo,G.mods.pow*.35,false);}}
+  if(G.focusTier!==bo.tier){if(bo.rise>0)bo.rise=Math.max(bo.rise,.01);return;}bo.pt+=dt;if(bo.rise>0)bo.rise-=dt;if(bo.stun>0)bo.stun-=dt;if(bo.marked>0)bo.marked-=dt;if(bo.poison>0){bo.poison-=dt;bo.dot=(bo.dot||0)+dt;if(bo.dot>=1){bo.dot=0;if(bo.phase!=='shield')hitBoss(bo,G.mods.pow*.35,false);}}
   if(bo.def.moving){bo.x=bo.ax+Math.sin(bo.t*.8)*118;bo.y=bo.ay+18+Math.sin(bo.t*1.6)*22;}
   if(!G.balls.length||G.fallen||G.inGrave||G.focusTier!==bo.tier)return;
   switch(bo.phase){
@@ -1087,7 +1096,7 @@ function collideActors(b){
     if(e.def.ghost||G.phase>0||b.phased){const dx=b.x-e.x,dy=b.y-e.y,rr=b.r+(e.hr||e.r);if(dx*dx+dy*dy<rr*rr&&e.hitCd<=0){e.hitCd=.45;strikeEnemy(e,b,Math.hypot(b.vx,b.vy),G.phase>0);}continue;}
     const pvx=b.vx,pvy=b.vy,imp=hitCircle(b,e,e.r,.35);
     if(imp>30&&e.hitCd<=0){e.hitCd=.12;const plow=b.pow&&G.run.cls==='knight';if(strikeEnemy(e,b,imp)||plow){b.vx=pvx*(plow?.94:.82);b.vy=pvy*(plow?.94:.82);}else{const k=e.def.kick&&e.stun<=0?420:e.job==='wall'?220:90;b.vx+=b._nx*k;b.vy+=b._ny*k;if(e.def.kick&&e.stun<=0)A.s('kick');}}}
-  const bo=G.boss;if(bo&&bo.alive&&Math.abs(bo.y-b.y)<90){const imp=hitCircle(b,bo,bo.r,.35);if(imp>30&&bo.hitCd<=0){bo.hitCd=.15;b.vx+=b._nx*300;b.vy+=b._ny*300;strikeBoss(bo,b,imp);}}
+  const bo=G.boss;if(bo&&bo.alive&&Math.abs(bo.y-b.y)<90){const imp=hitCircle(b,bo,bo.r,b.y>bo.y?.14:.3);if(imp>30&&bo.hitCd<=0){bo.hitCd=.15;strikeBoss(bo,b,imp);}}
   for(const s of G.statues){if(!s.on||Math.abs(s.y-b.y)>50)continue;const imp=hitCircle(b,s,s.r,.5);if(imp>60&&s.cool<=0){s.cool=.2;s.flash=1;score(600);A.s('target');charge(1,'hit');shot(s.id,s.x,s.y);}}}
 
 /* ---------- ball lifecycle ---------- */
@@ -1530,7 +1539,11 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     if(G.buffs.sharp>0)ch('Sharpened','gold');if(G.buffs.stealth>0)ch('Shadowstrike','violet');if(G.buffs.aegis>0)ch('Aegis','frost');if(G.buffs.moon>0)ch('Moonlight 2x','frost');
     if(G.curse.dark>0)ch('Darkness','bad');if(G.curse.weak>0)ch('Weakened','bad');if(G.curse.hex>0)ch('Hexed','bad');if(G.curse.burn>0)ch('Burning','bad');
     if(G.tilt>0)ch(G.fallen?'Fallen':'Tilt','bad');$('hFx').innerHTML=chips.join('');
-    const bo=G.boss;$('bossbar').hidden=!(bo&&bo.alive);if(bo&&bo.alive){$('bossName').textContent=bo.def.name;$('bossHp').style.width=clamp(bo.hp/bo.maxHp*100,0,100)+'%';
+    const bo=G.boss,wk=G.focusTier<3?wakeInfo(G.focusTier):null,here=bo&&bo.alive&&bo.tier===G.focusTier;
+    $('bossbar').hidden=!(here||(wk&&wk.state==='dormant')||(bo&&bo.alive));$('bossbar').classList.toggle('dormant',!here&&!!(wk&&wk.state==='dormant'));
+    if(!here&&wk&&wk.state==='dormant'){$('bossName').textContent=BOSSES[wk.key].name;$('bossHp').style.width=Math.round(wk.fill*100)+'%';$('bossPhase').textContent=wk.fill<.01?'Sleeping in the circle':wk.fill<1?'Stirring. The circle fills as the quest goes on':'Rising';}
+    else if(bo&&bo.alive&&!here){$('bossName').textContent=bo.def.name;$('bossHp').style.width=clamp(bo.hp/bo.maxHp*100,0,100)+'%';$('bossPhase').textContent='Waiting on '+LEVEL_NAMES[bo.tier];}
+    else if(bo&&bo.alive){$('bossName').textContent=bo.def.name;$('bossHp').style.width=clamp(bo.hp/bo.maxHp*100,0,100)+'%';
       $('bossPhase').textContent={shield:'Warded. Strike the lit bumpers',open:bo.stun>0?'Staggered. Double damage':'Exposed. Strike the boss',summon:'Summoning. Slay the minions',cast:'Casting '+bo.def.cast.name+'. Hit a red shot',frenzy:'Frenzy'}[bo.phase]||'';}
     // side panels
     let h='';if(r.main){const q=r.main;h+='<h4>'+esc(q.name)+'</h4><p class="flav">'+esc(q.text)+'</p><ol class="steps">';

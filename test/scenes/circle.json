@@ -1,0 +1,6 @@
+[
+ {"eval":"(UI.menu(null),startRun('knight'),DEV.on=true,G.auto=false,__gb.advance(.5,1),G.run.main.si=2,G.run.main.prog=0,devKey('d2'),__gb.advance(.2,1),G.lampShow=0,G.enemies=[],G.wave.t=999,G.balls=[newBall(320,TY[1]+840,0,0)],R3.camMode=0,G.dirty=true,UI.sync(true),__gb.draw(3,.3),[G.focusTier,JSON.stringify(wakeInfo(1))])","shot":"01-wilds-stirring"},
+ {"eval":"(qBegin(G.run.main),(()=>{const q=G.run.main;while(qCur(q).t!=='boss')qAdd(q,99);})(),__gb.advance(1,2),G.balls=[newBall(320,TY[1]+840,0,0)],__gb.draw(3,.3),[G.boss&&G.boss.key,G.boss&&G.boss.rise])","shot":"02-rising"},
+ {"eval":"(__gb.advance(3,2),devKey('d2'),__gb.advance(.2,1),G.boss.rise=0,G.enemies=[],G.balls=[newBall(320,TY[1]+840,0,0)],__gb.advance(.05,1),__gb.draw(3,.3),[G.boss.phase,Math.round(G.boss.x),Math.round(G.boss.y-TY[1])])","shot":"03-awake"},
+ {"eval":"(devKey('d3'),__gb.advance(.3,1),G.balls=[newBall(303,TY[2]+840,0,0)],G.dirty=true,UI.sync(true),__gb.draw(3,.3),[G.focusTier,document.getElementById('bossPhase').textContent])","shot":"04-hollow-boss-waiting"}
+]

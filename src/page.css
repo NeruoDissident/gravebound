@@ -64,6 +64,7 @@ h4{font:500 23px/1.05 var(--display);color:var(--bone);text-wrap:balance}
 #bossbar{display:grid;gap:3px;justify-items:center;text-align:center;margin-top:2px}
 #bossbar b{font:500 21px/1 var(--display);color:#ffd9dc;text-shadow:0 0 14px var(--blood),0 2px 0 #000}
 #bossbar .bar{width:min(100%,420px);height:10px;border-color:var(--blood)}#bossbar .bar i{background:linear-gradient(90deg,#7a0f22,#ff4a5a)}
+#bossbar.dormant .bar i{background:linear-gradient(90deg,#3a2a52,#b98cff)}#bossbar.dormant b{color:#d8c8f0;text-shadow:0 0 14px #5a3a8a,0 2px 0 #000}#bossbar.dormant span{color:#c9b8e8}
 #bossbar span{font:700 9px var(--label);letter-spacing:.14em;text-transform:uppercase;color:#ffb9bf;text-shadow:0 1px 2px #000}
 #pauseBtn{position:absolute;top:8px;right:8px;width:30px;height:30px;padding:0;font:700 11px var(--label);letter-spacing:.1em}
 

@@ -138,3 +138,12 @@ they check that everything runs and renders, not frame rate.
 - Shots call foes: the Chapel wakes spirits, the Town Gate lets the campaign's foes in, the Goblin Camp empties three goblins, every 18 spins the Mill calls the pack (the Vane and the Winch call the campaign's foes), the Armory raises an Armored Dead, the Royal Guard sends a Corrupted Knight, and a ramp that loops back to its own level brings two foes round with you. Each call has an 8-second cooldown.
 - A spell cast on a level with fewer than three foes draws three out ("THEY FEEL IT").
 - Measured (`node test/pace.js`): the level the ball is on is empty 2-14% of the time, down from 31-89%.
+
+## 0.18: the boss in the circle (phase 1)
+
+- The status lamp row is gone. Each level's summoning circle (the sigil in the middle of the field) is now the boss's stage.
+- Dormant: twelve runes round the circle light as the main quest closes in on that level's boss, pulsing faster as they fill. The boss bar is always up on a level with a resident: purple while it's stirring (the bar is the wake meter), red once it's up.
+- Rising: three seconds of warning ("SOMETHING IS COMING"), the ring burns red, then the boss stands in the circle.
+- Persistence: a boss's health, phase and clocks hold while the ball is on another level. The bar reads "Waiting on the Wilds" from below.
+- Squishy: the boss soaks the ball. Same bounce direction, much less speed; softest on the side facing the flippers.
+- Measured with `node test/reach.js <tier> boss`: with the boss up, 8-15% of flips hit it and the drain rate barely moves (Wilds 125 to 130 of 384 shots back below the flippers within 3 s, Keep 137 to 143).

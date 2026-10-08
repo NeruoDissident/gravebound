@@ -256,7 +256,7 @@ function buildDynamic(){const sc=R3.scene,D=R3.dyn,S=SM;
     const mat=new THREE.MeshBasicMaterial({color:hdr(col,1.6),transparent:true,opacity:.1,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
     const m=new THREE.Mesh(s.kind==='dot'?dot:arrow,mat);m.position.set(s.x-320,elev(s.y)+.4,s.y);if(s.kind!=='dot')m.rotation.y=-s.ang;m.renderOrder=2;sc.add(m);
     D.shots[s.x+','+s.y]={ids:Object.keys(T.shots).filter(k=>T.shots[k]===s),mat,base:mat.color.clone(),ph:hash(s.x+s.y)*TAU,tier:s.tier,y:s.y,big:/^(ramp|orbit)/.test(id),bank:T.banks[id]||null};}
-  buildLamps();
+  buildRunes();
   // scoops glow
   for(const id in T.holes){const h=T.holes[id],sp=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.glowTex,color:hdr(h.tier===3?'#eaffd0':'#ffd9a0',1.4),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
     sp.position.set(h.x-320,elev(h.y)+8,h.y);sp.scale.set(74,74,1);sc.add(sp);
@@ -533,7 +533,7 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
     else if(o.bank&&o.bank.segs.some(q=>q.kind==='drop'?!q.on:q.lit)){o.mat.color.copy(o.base);o.mat.opacity=.3;}
     else{o.mat.color.copy(o.base);o.mat.opacity=.05+.03*Math.sin(t*1.6+o.ph);}}
   for(const o of D.holes){const h=o.h,L=G.lit[h.id],st=S[h.id]||'flash',m=o.sp.material;if(L)m.color.copy(R3.litC[L[0]]);else m.color.copy(o.base);m.opacity=clamp(Math.max(h.glow,L?st==='flash'?.4+.25*Math.sin(t*5):st==='lit'?.45:.2:0),0,1)*.9;}
-  frameLamps(t,show);
+  frameRunes(t);
   for(const o of D.spins){o.pv.rotation.x=o.s.ang||0;o.mat.emissiveIntensity=o.s.rate>0?.9:.05;}
   for(const o of D.torches){const k=1+.14*Math.sin(t*13+o.tr.ph)+.09*Math.sin(t*29+o.tr.ph*2);o.fl.scale.set(o.fs*k,o.fs*1.5*k,1);const h=o.hs*(.92+.08*Math.sin(t*9+o.tr.ph));o.halo.scale.set(h,h,1);}
   // plunger, the Grave, ball save
@@ -586,38 +586,28 @@ function project3D(x,y,h,out){_v.set(x-320+ZX(y),elev(y)+(h||0),y+ZZ(y)).project
 // screen pixels per table unit at a point on the table, for sizing overlay rings
 function pxPerUnit(x,y,h){const ox=ZX(y),oz=ZZ(y);_v.set(x-320+ox,elev(y)+(h||0),y+oz).project(R3.camera);const ax=_v.x;_v.set(x-320+10+ox,elev(y)+(h||0),y+oz).project(R3.camera);return Math.abs(_v.x-ax)*.5*R3.w/10;}
 
-/* ---------- STATUS LAMPS: the inserts above the flippers that say what the table is doing ----------
-   One row per level: the multiplier 1x-6x, then LOCK 1, LOCK 2, BALL SAVE, KICKBACK, LEVEL UP, RALLY, COMBO. */
-const LAMP_ROWS=[['1X','2X','3X','4X','5X','6X'],['LOCK 1','LOCK 2','BALL SAVE','KICKBACK','LEVEL UP','RALLY','COMBO']];
-function lampTex(text,w,h){const cv=mkCanvas(w*6,h*6),c=cv.getContext('2d'),W=cv.width,Hh=cv.height,r=Hh*.42;
-  c.fillStyle='#0a0a10';c.beginPath();c.moveTo(r,2);c.lineTo(W-r,2);c.arc(W-r,Hh/2,r,-PI/2,PI/2);c.lineTo(r,Hh-2);c.arc(r,Hh/2,r,PI/2,1.5*PI);c.closePath();c.fill();
-  c.strokeStyle='#5a5244';c.lineWidth=5;c.stroke();
-  c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.font='700 '+Math.round(Hh*.56)+'px '+R.fontL;c.fillText(text,W/2,Hh/2+2);
-  return ctex(cv);}
-function buildLamps(){const sc=R3.scene,D=R3.dyn,tex={};
-  for(let t=0;t<3;t++){const cx=t===2?303:320,y0=TY[t]+900;
-    LAMP_ROWS.forEach((row,ri)=>{const w=ri?50:21,h=ri?17:21,gap=ri?5:8,y=y0-(ri?200:172),x0=cx-((row.length-1)*(w+gap))/2;
-      row.forEach((label,i)=>{const k=ri+':'+label;if(!tex[k])tex[k]=lampTex(label,w,h);
-        const mat=new THREE.MeshBasicMaterial({map:tex[k],transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,color:0x303038});
-        const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h).rotateX(-PI/2),mat);const x=x0+i*(w+gap);m.position.set(x-320,elev(y)+.45,y);m.renderOrder=2;sc.add(m);
-        D.lamps.push({m,mat,tier:t,row:ri,i,y,x,label});});});}}
-// what each status lamp shows: 0 off, 1 steady, 2 flashing
-function lampState(o,r){const i=o.i;
-  if(o.row===0)return i+1<=r.mult?(i+1===r.mult?2:1):0;
-  switch(o.label){
-  case 'LOCK 1':return G.mb?1:r.locks>=1?1:r.lockLit?2:0;
-  case 'LOCK 2':return G.mb?1:r.lockLit&&r.locks>=1?2:0;
-  case 'BALL SAVE':return G.save>0?(G.save<3?2:1):0;
-  case 'KICKBACK':return r.kickback?1:0;
-  case 'LEVEL UP':return G.pending.length?2:0;
-  case 'RALLY':return r.charge>=100?2:0;
-  case 'COMBO':return G.comboT>0&&G.combo>=2?2:0;}return 0;}
-const LAMP_COL={0:'#ffd24a',1:'#ffd24a','LOCK 1':'#9dffc8','LOCK 2':'#9dffc8','BALL SAVE':'#62d8ff','KICKBACK':'#62d8ff','LEVEL UP':'#ffd24a','RALLY':'#ff9a7a','COMBO':'#ffe9b0'};
-function frameLamps(t,show){const r=G.run,D=R3.dyn,tc=R3.tmpC;
-  for(const o of D.lamps){const sw=show&&o.tier===G.focusTier?show(o.y):0;let k=0;
-    if(sw>0)k=sw;else if(r){const st=lampState(o,r);k=st===2?(.6+.4*Math.sin(t*(o.label==='BALL SAVE'?12:7))):st===1?.85:0;}
-    if(k<.02){o.mat.color.setRGB(.19,.19,.22);o.mat.opacity=.9;}
-    else{tc.set(LAMP_COL[o.row===0?0:o.label]).convertSRGBToLinear();o.mat.color.setRGB(.19+(tc.r*1.6-.19)*k,.19+(tc.g*1.6-.19)*k,.22+(tc.b*1.6-.22)*k);o.mat.opacity=1;}}}
+/* ---------- THE CIRCLE: twelve runes round each level's summoning circle ----------
+   Dormant: the runes light one by one as the main quest closes in on that level's boss, pulsing faster as it fills.
+   Rising and awake: the whole ring burns red. Slain: the ring turns gold and stays lit. */
+function runeTex(k){const cv=mkCanvas(64,64),c=cv.getContext('2d');c.translate(32,32);c.strokeStyle='#fff';c.lineWidth=5;c.lineCap='round';c.shadowColor='#fff';c.shadowBlur=6;
+  const g=[[[-10,-14],[10,14]],[[-12,0],[12,0]],[[0,-15],[0,15]],[[-10,14],[0,-14],[10,14]],[[-10,-12],[10,-12],[-10,12],[10,12]],[[0,-15],[12,0],[0,15],[-12,0],[0,-15]]][k%6];
+  c.beginPath();g.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.stroke();if(k>5){c.beginPath();c.arc(0,0,5,0,TAU);c.stroke();}return ctex(cv);}
+function buildRunes(){const sc=R3.scene,D=R3.dyn,tex=[];for(let k=0;k<12;k++)tex.push(runeTex(k));D.runes=[];
+  for(let t=0;t<3;t++){const cx=t===2?303:320,cy=TY[t]+650,ring=[];
+    for(let k=0;k<12;k++){const a=-PI/2+k*TAU/12,x=cx+Math.cos(a)*96,y=cy+Math.sin(a)*96;
+      const mat=new THREE.MeshBasicMaterial({map:tex[k],transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:0x000000,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(26,26).rotateX(-PI/2),mat);m.position.set(x-320,elev(y)+.45,y);m.rotation.y=-a-PI/2;m.renderOrder=2;sc.add(m);ring.push(mat);}
+    const core=new THREE.Mesh(new THREE.CircleGeometry(90,48).rotateX(-PI/2),new THREE.MeshBasicMaterial({map:R3.glowTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:0x000000,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+    core.position.set(cx-320,elev(cy)+.4,cy);core.renderOrder=2;sc.add(core);D.runes.push({tier:t,ring,core:core.material,v:0});}}
+function frameRunes(t){const D=R3.dyn,tc=R3.tmpC,bo=G.boss;if(!D.runes)return;
+  for(const o of D.runes){const wk=G.run?wakeInfo(o.tier):null,alive=bo&&bo.alive&&bo.tier===o.tier,rising=alive&&bo.rise>0;
+    let lit=0,col='#b98cff',pulse=0,core=0;
+    if(alive){lit=12;col='#ff3a4a';pulse=rising?.5+.5*Math.sin(t*22):.75+.25*Math.sin(t*4);core=rising?.55+.35*Math.sin(t*22):.18;}
+    else if(wk&&wk.state==='dead'){lit=12;col='#ffd24a';pulse=.8;core=.08;}
+    else if(wk){const f=wk.fill;lit=f*12;const sp=2+f*10;pulse=.75+.25*Math.sin(t*sp);core=f*f*(.18+.1*Math.sin(t*sp));}
+    tc.set(col).convertSRGBToLinear();
+    o.ring.forEach((m,k)=>{const on=k<Math.floor(lit)?1:k<lit?lit-Math.floor(lit):0,b=on?(.4+1.2*on)*pulse:.07;m.color.setRGB(tc.r*b*2.6,tc.g*b*2.6,tc.b*b*2.6);});
+    o.core.color.setRGB(tc.r*core*1.4,tc.g*core*1.4,tc.b*core*1.4);}}
 // the lamp show: a wave down the level at ball start, and a slow roll in attract mode; returns a brightness function of table y, or null
 function lampShow(){const ft=G.focusTier;if(ft>2)return null;
   if(G.lampShow>0){const k=1-G.lampShow/1.6,yw=TY[ft]+k*1050-60;return y=>{const d=Math.abs(y-yw);return d<170?1-d/170:0;};}

@@ -37,10 +37,10 @@ function frameActors(dt,ex){const X=R3.act,t=G.t,tc=R3.tmpC;
   // boss
   {const bo=G.boss,B=X.boss;
     if(!bo){B.sp.visible=B.glow.visible=B.rg.visible=B.blob.visible=B.shield.visible=false;B.light.intensity=0;}
-    else{const d=bo.def,k=bo.alive?clamp(1-bo.rise/1.5,0,1):clamp(bo.dying/2.2,0,1),gy=elev(bo.y),y=gy+78+Math.sin(bo.t*2)*3,f=Math.max(0,bo.flash),m=B.sp.material;
+    else{const d=bo.def,k=bo.alive?clamp(1-bo.rise/1.5,0,1):clamp(bo.dying/2.2,0,1),gy=elev(bo.y),y=gy+58+Math.sin(bo.t*2)*3,f=Math.max(0,bo.flash),m=B.sp.material;
       if(B.key!==bo.key){B.key=bo.key;m.map=X.tex['b_'+bo.key];}
       const pc=bo.phase==='cast'?'#ff4050':bo.phase==='shield'?'#62d8ff':d.color,on=k>.02;
-      B.sp.visible=B.glow.visible=B.rg.visible=B.blob.visible=on;B.sp.position.set(bo.x-320,y,bo.y);B.sp.scale.set(208*k,208*k,1);m.opacity=k;const b=1+f*2.2;m.color.setRGB(b,b,b);
+      B.sp.visible=B.glow.visible=B.rg.visible=B.blob.visible=on;B.sp.position.set(bo.x-320,y,bo.y);B.sp.scale.set(152*k,152*k,1);m.opacity=k;const b=1+f*2.2;m.color.setRGB(b,b,b);
       B.glow.position.set(bo.x-320,y,bo.y-4);B.glow.scale.setScalar(bo.r*9*k);B.glow.material.color.copy(tc.set(pc).convertSRGBToLinear().multiplyScalar(1.3));B.glow.material.opacity=(.4+.2*Math.sin(t*4))*k;
       B.blob.position.set(bo.x-320,gy+.5,bo.y);B.blob.scale.setScalar(bo.r*1.6*k);
       B.rg.position.set(bo.x-320,gy+.7,bo.y);B.rg.scale.setScalar(bo.r*k);B.rg.material.color.copy(tc.set(pc).convertSRGBToLinear().multiplyScalar(1.5));B.rg.material.opacity=.45+.2*Math.sin(t*4);

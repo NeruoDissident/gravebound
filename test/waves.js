@@ -20,6 +20,10 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
       const t0=G.wave.t;const L=T.sets.candles.lanes;L.forEach(l=>ev('lane',l,G.balls[0]));ok('lighting all the lanes holds the watch (+'+(G.wave.t-t0).toFixed(0)+'s)',G.wave.t>t0);}
     {fresh('necro',1);G.wave.t=99;const h=T.holes.catacombs;G.run.wing.open=false;const b=G.balls[0];b.st='held';b.held={id:'catacombs',t:0};handleHole(h,b);pin=null;adv(1.5);ok('the catacombs cough up an Armored Dead',G.enemies.some(e=>e.type==='revenant'));}
     // the Warden bars the Wolf Run while casting
+    // the circle: the boss rises from the middle of the field and waits there when you leave
+    {fresh('necro',1);G.wave.t=99;wakeBoss('warden');const bo=G.boss;ok('the Warden rises from the circle ('+Math.round(bo.y-TY[1])+')',Math.abs(bo.y-(TY[1]+650))<1&&bo.rise>=2.9);bo.rise=0;bo.phase='open';hitBoss(bo,50,false);const hp=bo.hp,ph=bo.phase,pt=bo.pt;
+     pin=null;devKey('d3');adv(.2);G.balls.forEach(b=>{b.y=TY[2]+500;b.x=303;b.vx=0;b.vy=0;});pin=[303,TY[2]+500];adv(30);ok('away from its level it waits: health and phase hold ('+[Math.round(hp),Math.round(bo.hp),ph,bo.phase,pt.toFixed(1),bo.pt.toFixed(1),G.focusTier,bo.alive]+')',bo.hp===hp&&bo.phase===ph&&Math.abs(bo.pt-pt)<.5);
+     G.dirty=true;UI.sync(true);ok('the bar still shows it from below',!document.getElementById('bossbar').hidden&&/Waiting/.test(document.getElementById('bossPhase').textContent));}
     {fresh('necro',1);G.wave.t=99;wakeBoss('warden');const bo=G.boss;bo.rise=0;while(bo.phase!=='cast')bossNext(bo);ok('Portcullis Slam bars the Wolf Run',T.rails.rampWolf.closed);
       const m=T.mouths.find(q=>q.rail==='rampWolf');pin=null;G.balls=[newBall(m.x,m.y,m.dx*600,m.dy*600)];adv(.2);ok('the ball is thrown back from the barred ramp',G.balls[0].st!=='rail');interruptBoss(bo);ok('the bar lifts when the spell breaks',!T.rails.rampWolf.closed);}
     // Moonfang's howl sends the wolves wild
