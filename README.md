@@ -147,3 +147,7 @@ they check that everything runs and renders, not frame rate.
 - Persistence: a boss's health, phase and clocks hold while the ball is on another level. The bar reads "Waiting on the Wilds" from below.
 - Squishy: the boss soaks the ball. Same bounce direction, much less speed; softest on the side facing the flippers.
 - Measured with `node test/reach.js <tier> boss`: with the boss up, 8-15% of flips hit it and the drain rate barely moves (Wilds 125 to 130 of 384 shots back below the flippers within 3 s, Keep 137 to 143).
+
+## 0.18.1
+
+- Player health is switched off (`G.playerHp`, off by default). The ball is your life. Foe strikes still shake the table and still drain the meter under Death Wish, but nothing can make you fall. The health bar is hidden. The test suites switch health on so strikes, shields and parries stay covered.

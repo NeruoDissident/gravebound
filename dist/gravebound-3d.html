@@ -910,7 +910,10 @@ function gold(n,x,y){if(n<=0)return;const r=G.run,v=Math.ceil(n*G.mods.gold*(G.b
 function xp(n){const r=G.run;r.xp+=n*G.mods.xp;G.dirty=true;
   while(r.xp>=xpNeed(r.level)){r.xp-=xpNeed(r.level);r.level++;recalc();heal(20);r.shop=true;G.pending.push('book');popup('Level Up','You are now level '+r.level,'level');A.s('level');}}
 function heal(n){const r=G.run;r.hp=Math.min(G.mods.maxHp,r.hp+n);G.dirty=true;}
-function hurt(n){const r=G.run;if(G.fallen||!G.balls.length)return;let v=n*(1-G.mods.dr);if(G.buffs.aegis>0)v*=G.mods.aegisK;if(G.buffs.aegisK)v*=G.buffs.aegisK;v=Math.max(1,Math.ceil(v));r.hp-=v;if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.6;G.cam.shake=Math.max(G.cam.shake,8);A.s('hurt');
+// The ball is your life. Player health is switched off while we find whether it fits: a strike still lands (shake, sound,
+// and a Death Wish still drains the meter) but nothing can make you fall.
+const PLAYER_HP=()=>!!G.playerHp; // off by default; the test suites switch it on to exercise strikes
+function hurt(n){const r=G.run;if(G.fallen||!G.balls.length)return;G.struck=(G.struck||0)+n;if(!PLAYER_HP()){if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.4;G.cam.shake=Math.max(G.cam.shake,6);A.s('hurt');G.dirty=true;return;}let v=n*(1-G.mods.dr);if(G.buffs.aegis>0)v*=G.mods.aegisK;if(G.buffs.aegisK)v*=G.buffs.aegisK;v=Math.max(1,Math.ceil(v));r.hp-=v;if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.6;G.cam.shake=Math.max(G.cam.shake,8);A.s('hurt');
   const b=focusBall();if(b)float(b.x,b.y-22,'-'+v,'#ff5a5a',16);G.dirty=true;
   if(r.hp<=0&&G.mods.martyr&&!G.martyrUsed){G.martyrUsed=true;r.hp=40;G.curse={};popup("Martyr's Light",'You stand. 40 health','good');A.s('ward');G.flash=.5;G.flashC='#ffe0a0';return;}
   if(r.hp<=0){r.hp=0;G.fallen=true;G.tilt=1e9;G.save=0;r.shield=false;popup('Fallen','Your hero collapses. The flippers go dead','bad');A.s('tilt');}}
@@ -1733,7 +1736,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
   sync(force){const r=G.run,play=G.mode==='play'&&r&&!G.demo;$('hud').hidden=!play;$('pauseBtn').hidden=!play;$('app').classList.toggle('playing',!!play);
     if(!play){$('bossbar').hidden=true;G.cam.top=0;return;}if(!G.dirty&&!force)return;G.dirty=false;G.cam.top=0;const m=G.mods,c=CLASSES[r.cls];
     $('hScore').textContent=fmt(r.score);$('hLv').textContent='Lv '+r.level;$('hCls').textContent=c.name;$('hGold').textContent=r.gold;
-    $('bHp').style.width=clamp(r.hp/m.maxHp*100,0,100)+'%';$('tHp').textContent=Math.ceil(r.hp)+' / '+m.maxHp;$('bHp').parentNode.classList.toggle('low',r.hp<m.maxHp*.3);
+    $('bHp').parentNode.hidden=!PLAYER_HP();$('bHp').style.width=clamp(r.hp/m.maxHp*100,0,100)+'%';$('tHp').textContent=Math.ceil(r.hp)+' / '+m.maxHp;$('bHp').parentNode.classList.toggle('low',r.hp<m.maxHp*.3);
     $('bXp').style.width=clamp(r.xp/xpNeed(r.level)*100,0,100)+'%';const armed=G.balls.some(b=>b.arm>0||b.pow),g=r.grave;$('bCh').style.width=clamp(r.charge,0,100)+'%';$('tCh').textContent=armed?c.shot+' armed':r.charge>=100?c.abil+' ready':c.shot;$('bCh').parentNode.classList.toggle('full',r.charge>=100);
     let b='';for(let i=1;i<r.ballsLeft;i++)b+='<i></i>';$('hBalls').innerHTML=b;$('hBallN').textContent='Ball '+r.ballNum;
     $('hObj').textContent=G.inGrave?(T.banks.nails.segs.some(x=>x.on)?'Drive both coffin nails at the head of the coffin':'The lid is split. Shoot the light'):G.focusTier>=4?wingText():r.main?UI.objText(r.main):'The Hollow is quiet. For now.';

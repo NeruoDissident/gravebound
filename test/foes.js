@@ -8,7 +8,7 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
     const m=u.match(/three@0\.128\.0\/(examples\/js\/.+)$/);if(m)return r.fulfill({path:path.join(root,'node_modules/three',m[1]),contentType:'application/javascript'});
     if(u.startsWith('http://local.test/'))return r.fulfill({body:skeleton(fs.readFileSync(path.join(root,'dist/gravebound-3d.html'),'utf8')),contentType:'text/html'});return r.abort();});
   await pg.goto('http://local.test/');await pg.waitForFunction(()=>typeof R3!=='undefined'&&R3.ready,null,{timeout:150000,polling:400});
-  const out=await pg.evaluate(()=>{__gb.hold(true);setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
+  const out=await pg.evaluate(()=>{__gb.hold(true);G.playerHp=true;setQuality('low',true);const log=[],ok=(n,v)=>log.push((v?'ok   ':'FAIL ')+n);try{
     const fresh=()=>{UI.menu(null);startRun('knight');G.auto=false;DEV.on=true;__gb.advance(.5,1);devKey('d1');__gb.advance(.1,1);pin=null;G.enemies=[];G.pickups=[];G.save=999;G.run.hp=G.mods.maxHp;};
     let pin=null;const ball=(x,y,vx,vy)=>{G.balls=[newBall(x,y,vx||0,vy||0)];pin=vx||vy?null:[x,y];return G.balls[0];};
     const adv=(sec,n)=>{for(let t=0;t<sec;t+=.1){G.enemies=G.enemies.filter(e=>keep.includes(e));__gb.advance(.1,0);if(pin&&G.balls[0]){const b=G.balls[0];b.x=pin[0];b.y=pin[1];b.vx=0;b.vy=0;b.st='live';}}if(n)__gb.draw(1,.05);};
