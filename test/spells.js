@@ -54,6 +54,11 @@ const skeleton=b=>'<!doctype html><html><head><meta charset=utf8></head><body>'+
      ok('cradling arms the class shot without spending the bar ('+G.run.charge+')',b.arm>0&&G.run.charge===50);
      b.arm=.01;__gb.advance(.1,0);ok('an arm that runs out costs nothing',!(b.arm>0)&&G.run.charge>=50);
      b.arm=9;b.armCost=33;ev('flipHit',null,b);ok('the flip that fires it spends the bar ('+G.run.charge+')',b.pow&&G.run.charge<=17.01&&G.run.charge>=16.99);}
+    // with a full meter the same hold arms the shot at 0.8 s and rallies at 1.5 s
+    {const hold=(b,f,sec)=>{for(let t=0;t<sec;t+=1/120){b.vx=0;b.vy=0;b.x=f.x+30;b.y=f.y-14;b.onFlip=1;f.on=true;f.a=f.up;__gb.advance(1/120,0);}};
+     let b=fresh('knight',2,'tank');G.run.charge=100;let f=T.flips.find(q=>q.tier===2&&q.side<0);hold(b,f,1.0);
+     ok('full meter: 0.8 s still arms the class shot ('+G.run.charge+')',b.arm>0&&G.run.charge===100&&G.rallyT===0);f.on=false;b.arm=9;b.armCost=33;ev('flipHit',null,b);ok('and letting go then flipping fires it for one bar ('+G.run.charge+')',b.pow&&G.run.charge>=66.9&&G.run.charge<=67.1);
+     b=fresh('knight',2,'tank');G.run.charge=100;f=T.flips.find(q=>q.tier===2&&q.side<0);hold(b,f,1.6);ok('holding on to 1.5 s rallies instead ('+G.run.charge+')',G.rallyT>0&&G.run.charge===0&&!(b.arm>0));}
     // the Tavern hires strangers: a class with one ability, random each visit; they ride out in the Rally
     {fresh('knight',2,'tank');const r=G.run;pin=null;r.gold=10;r.side=[];G.run.main.steps=G.run.main.steps.map(o=>o.id==='tavern'?Object.assign({},o,{id:'smithy'}):o);G.pending=[];G.choice=null;G.wave.list=[];G.queue=[];const h=T.holes.tavern;let b=G.balls[0];b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);ok('the Tavern opens no board when you cannot pay ('+(G.choice&&G.choice.kind)+' '+G.pending+' gold '+r.gold+' cost '+recruitCost()+')',!G.choice&&!G.pending.includes('tavern'));
       r.gold=200;b.st='held';b.held={id:'tavern',t:0};handleHole(h,b);adv(.3);ok('with gold it opens the board: three strangers and Leave ['+[G.pending.join('+'),b.st,b.held&&b.held.plan,tavernOpen(),r.gold,r.recruits.length,G.choice&&G.choice.kind,G.balls.length,G.sub,G.mode].join('/')+']',G.choice&&G.choice.kind==='tavern'&&G.choice.opts.length===4&&G.choice.opts.slice(0,3).every(o=>o.face&&CLASSES[o.face[0]]&&spellDef(o.face[1])));

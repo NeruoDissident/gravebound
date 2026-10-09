@@ -1,0 +1,4 @@
+[
+ {"eval":"(UI.menu(null),startRun('knight'),DEV.on=true,G.auto=false,__gb.advance(.5,1),G.lampShow=0,G.enemies=[],G.wave.t=999,G.run.lockLit=true,G.pending.push('book'),relight(),G.balls=[newBall(303,TY[2]+840,0,0)],__gb.advance(.05,1),G.dirty=true,UI.sync(true),__gb.draw(3,.3),[JSON.stringify(G.lampS),UI.objText(G.run.main),JSON.stringify(wakeInfo(1))])","shot":"01-hollow"},
+ {"eval":"(G.pending=[],devKey('d2'),__gb.advance(.2,1),G.enemies=[],G.balls=[newBall(320,TY[1]+840,0,0)],__gb.advance(.05,1),relight(),G.dirty=true,UI.sync(true),__gb.draw(3,.3),[JSON.stringify(G.lampS)])","shot":"02-wilds"}
+]

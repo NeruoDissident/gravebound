@@ -47,7 +47,8 @@ function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w
       if(!ok)continue;c.strokeStyle='#8fd0ff';c.lineWidth=5;c.stroke();c.strokeStyle='#fff';c.lineWidth=1.8;c.stroke();}c.restore();c.globalAlpha=1;}
   // the ball: cradle ring filling, armed shot ring
   for(let i=0;i<G.balls.length;i++){const b=G.balls[i],o=R3.balls[i];if(!o||b.st!=='live'||(!(b.cr>0)&&!(b.arm>0)))continue;_v.set(o.sx-320+ZX(o.sy),o.sh,o.sy+ZZ(o.sy)).project(R3.camera);const x=(_v.x*.5+.5)*w,y=(-_v.y*.5+.5)*h,u=pxPerUnit(o.sx,o.sy,b.r);
-    if(b.cr>0){c.strokeStyle='#05050a';c.lineWidth=6;c.beginPath();c.arc(x,y,(b.r+9)*u,0,TAU);c.stroke();c.strokeStyle=cl.glow;c.lineWidth=3.5;c.beginPath();c.arc(x,y,(b.r+9)*u,-PI/2,-PI/2+TAU*Math.min(1,b.cr/(run.charge>=100?1.5:.8)));c.stroke();}
+    if(b.cr>0){const R1=(b.r+9)*u,R2=(b.r+15)*u,k1=Math.min(1,b.cr/CRADLE_ARM);c.strokeStyle='#05050a';c.lineWidth=6;c.beginPath();c.arc(x,y,R1,0,TAU);c.stroke();c.strokeStyle=cl.glow;c.lineWidth=3.5;c.beginPath();c.arc(x,y,R1,-PI/2,-PI/2+TAU*k1);c.stroke();
+      if(run.charge>=100&&b.cr>CRADLE_ARM){const k2=Math.min(1,(b.cr-CRADLE_ARM)/(CRADLE_RALLY-CRADLE_ARM));c.strokeStyle='#05050a';c.lineWidth=6;c.beginPath();c.arc(x,y,R2,0,TAU);c.stroke();c.strokeStyle='#ffd24a';c.lineWidth=3.5;c.beginPath();c.arc(x,y,R2,-PI/2,-PI/2+TAU*k2);c.stroke();}}
     if(b.arm>0){c.strokeStyle=cl.glow;c.lineWidth=2.4;c.setLineDash([6,5]);c.lineDashOffset=-t*40;c.beginPath();c.arc(x,y,(b.r+8+Math.sin(t*10)*1.5)*u,0,TAU);c.stroke();c.setLineDash([]);}}
   // the Grave's clock, ball save
   if(G.inGrave&&G.graveLive){project3D(320,GY+470,2,_p);if(_p.ok){const u=pxPerUnit(320,GY+470,2);c.font='700 '+Math.round(96*u)+'px '+R.fontD;c.fillStyle=G.graveT<8?'rgba(255,80,90,'+(.45+.25*Math.sin(t*10))+')':'rgba(157,255,200,.28)';c.fillText(Math.ceil(G.graveT),_p.x,_p.y);}}

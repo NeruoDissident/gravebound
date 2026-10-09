@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Gravebound: a headstone in the night with a chrome ball where the epitaph should be, two flippers at its foot -->
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a1d40"/><stop offset=".55" stop-color="#120d1d"/><stop offset="1" stop-color="#06050a"/></radialGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a5470"/><stop offset=".6" stop-color="#36324a"/><stop offset="1" stop-color="#211e2e"/></linearGradient>
+    <radialGradient id="ball" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#dfe6f2"/><stop offset=".6" stop-color="#7f8aa3"/><stop offset="1" stop-color="#2b3044"/></radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd24a" stop-opacity=".75"/><stop offset=".55" stop-color="#ff7a3c" stop-opacity=".28"/><stop offset="1" stop-color="#ff7a3c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="flip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4ecd8"/><stop offset="1" stop-color="#b8ac90"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="256" cy="232" r="190" fill="#b79cff" opacity=".08"/>
+  <!-- the ground -->
+  <path d="M0 430 Q256 392 512 430 V512 H0 Z" fill="#0a0812"/>
+  <!-- headstone -->
+  <path d="M150 412 V196 Q150 104 256 104 Q362 104 362 196 V412 Z" fill="url(#stone)" stroke="#d9a441" stroke-width="7"/>
+  <path d="M172 404 V200 Q172 126 256 126 Q340 126 340 200 V404" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="4"/>
+  <!-- the ball, burning where the name would be carved -->
+  <circle cx="256" cy="236" r="92" fill="url(#halo)"/>
+  <circle cx="256" cy="236" r="50" fill="url(#ball)" stroke="#0b0b12" stroke-width="5"/>
+  <ellipse cx="238" cy="216" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(-30 238 216)"/>
+  <!-- three carved lines below -->
+  <g stroke="#14111d" stroke-width="7" stroke-linecap="round" opacity=".8"><path d="M206 318 H306"/><path d="M218 344 H294"/></g>
+  <!-- flippers -->
+  <path d="M116 416 L240 452 A11 11 0 0 1 234 474 L108 448 A16 16 0 0 1 116 416 Z" fill="url(#flip)" stroke="#0b0b12" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M396 416 L272 452 A11 11 0 0 0 278 474 L404 448 A16 16 0 0 0 396 416 Z" fill="url(#flip)" stroke="#0b0b12" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="113" cy="432" r="7" fill="#c0283c"/><circle cx="399" cy="432" r="7" fill="#c0283c"/>
+</svg>

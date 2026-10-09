@@ -2,3 +2,6 @@ node_modules
 test/out/
 *.gen.js
 dist/index.html
+dist/sw.js
+dist/manifest.webmanifest
+dist/icons/

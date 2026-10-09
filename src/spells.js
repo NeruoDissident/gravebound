@@ -104,7 +104,8 @@ function rally(){const r=G.run,h=heroBall()||focusBall();if(!h)return;r.charge=0
   for(const c of party){const d=COMPANIONS[c.id];list.push(b=>{b.party=d.role;b.pc=ROLES[d.role].col;b.pg=b.pc;b.label=d.name;if(d.role==='tank'){b.r=12.5;b.kx=.6;}else if(d.role==='dps'){b.r=10;b.kx=1.05;}});}
   for(const q of r.recruits||[]){const cc=CLASSES[q.cls];list.push(b=>{b.party='recruit';b.cls=q.cls;b.pc=cc.color;b.pg=cc.glow;b.label=cc.name;b.r=cc.r;b.kx=cc.kx;armRecruit(b,q.spell,T0);});}
   G.rallyPend=list.length;list.forEach((dress,i)=>later(.35+i*RALLY_GAP,()=>{G.rallyPend=Math.max(0,(G.rallyPend||0)-1);if(G.gen!==gen||G.run!==r||!heroBalls().length||G.rallyT<=0)return;
-    const a=rand(-.42,.42),v=rand(1900,2250),b=newBall(cx+rand(-14,14),yF-34,Math.sin(a)*v,-Math.cos(a)*v);b.tier=tier;b.life=T0-i*RALLY_GAP;b.noHole=1e9;b.noMouth=0;b.pulse=rand(.2,RALLY_PULSE);dress(b);G.balls.push(b);
+    // on the Hollow they're fired up the shooter lane like a real ball; on the levels above they drop in from the top
+    const ht=(heroBall()||heroBalls()[0]||h).tier,up=ht<2,b=up?newBall(320+rand(-70,70),TY[ht]+90,rand(-260,260),rand(120,320)):newBall(T.shooter.x,T.shooter.y-6,0,-rand(2200,2380));b.tier=up?ht:2;b.life=T0-i*RALLY_GAP;b.noHole=1e9;b.noMouth=0;b.pulse=rand(.2,RALLY_PULSE);dress(b);G.balls.push(b);
     G.booms.push({x:b.x,y:b.y,r:120,t:0,c:b.pg});burst(b.x,b.y,34,b.pg,520,.9);burst(b.x,b.y,18,'#ffe9b0',300,.7);float(b.x,b.y-46,b.label.toUpperCase()+'!',b.pg,17);
     A.s('launch');A.s('slam');G.cam.shake=Math.max(G.cam.shake,9);G.flash=.18;G.flashC=b.pg;G.dirty=true;}));
   G.save=Math.max(G.save,3+list.length*RALLY_GAP);G.rallyT=T0;popup('Rally','The party is coming. Keep your own ball alive','good');A.s('multiball');G.flash=.5;G.flashC='#ffe9b0';G.cam.shake=Math.max(G.cam.shake,12);G.dirty=true;}

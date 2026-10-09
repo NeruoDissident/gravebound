@@ -273,8 +273,8 @@ function buildTable(){
   shotDef('orbitL1','Moon Path',1,43,545);shotDef('catacombs','Catacombs',1,112,545);shotDef('rampWolf','Wolf Run',1,206,524,aL);
   shotDef('camp','Goblin Camp',1,368,436);shotDef('secret','Secret Passage',1,320,444);T.shots.door=T.shots.secret;shotDef('stones','Standing Stones',1,320,304,0,'dot');
   shotDef('rampRuin','Ruin Stair',1,434,524,aR);shotDef('hut',"Witch's Hut",1,528,545);shotDef('orbitR1','Moon Path',1,597,545);
-  shotDef('windmill','Mill',1,274,574,0,'dot');shotDef('moon','Moon Phases',1,320,760,0,'dot');shotDef('keystone','Keystone',1,320,216,0,'dot');
-  shotDef('orbitL2','Night Road',2,43,545);shotDef('smithy','Smithy',2,138,648,Math.atan2(-.77,-.64));shotDef('rampForest','Forest Road',2,206,586,aL);
+  shotDef('windmill','Mill',1,274,532,0,'dot');shotDef('moon','Moon Phases',1,320,760,0,'dot');shotDef('keystone','Keystone',1,320,216,0,'dot');
+  shotDef('orbitL2','Night Road',2,43,545);shotDef('smithy','Smithy',2,138,648,Math.atan2(-.77,-.64));shotDef('rampForest','Forest Road',2,198,574,aL);
   shotDef('townGate','Town Gate',2,236,372,Math.atan2(-.92,-.39));shotDef('tavern','Tavern',2,303,505);shotDef('graves','Gravestones',2,320,268,0,'dot');
   shotDef('chapel','Chapel',2,430,356,Math.atan2(-.942,.336));shotDef('rampChapel','Chapel Stair',2,416,524,aR);shotDef('crypt','Crypt Stair',2,505,668);
   shotDef('orbitR2','Night Road',2,563,545);shotDef('vane','Vane',2,168,566,0,'dot');shotDef('candles','Vigil Candles',2,320,172,0,'dot');
@@ -705,6 +705,7 @@ function heal(n){const r=G.run;r.hp=Math.min(G.mods.maxHp,r.hp+n);G.dirty=true;}
 // The ball is your life. Player health is switched off while we find whether it fits: a strike still lands (shake, sound,
 // and a Death Wish still drains the meter) but nothing can make you fall.
 const PLAYER_HP=()=>G.playerHp!==false,HURT_K=.3; // health is on and tuned way down: foes hit for 30% of their old damage
+const CRADLE_ARM=.8,CRADLE_RALLY=1.5;
 function hurt(n){const r=G.run;if(G.fallen||!G.balls.length)return;G.struck=(G.struck||0)+n;if(!PLAYER_HP()){if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.4;G.cam.shake=Math.max(G.cam.shake,6);A.s('hurt');G.dirty=true;return;}let v=n*(G.playerHp===true?1:HURT_K)*(1-G.mods.dr);if(G.buffs.aegis>0)v*=G.mods.aegisK;if(G.buffs.aegisK)v*=G.buffs.aegisK;v=Math.max(1,Math.ceil(v));r.hp-=v;if(G.mods.deathWish)r.charge=Math.max(0,r.charge-G.mods.deathWish);G.hurtT=.6;G.cam.shake=Math.max(G.cam.shake,8);A.s('hurt');
   const b=focusBall();if(b)float(b.x,b.y-22,'-'+v,'#ff5a5a',16);G.dirty=true;
   if(r.hp<=0&&G.mods.martyr&&!G.martyrUsed){G.martyrUsed=true;r.hp=40;G.curse={};popup("Martyr's Light",'You stand. 40 health','good');A.s('ward');G.flash=.5;G.flashC='#ffe0a0';return;}
@@ -750,8 +751,12 @@ function classNudge(){const r=G.run,m=G.mods,c=r.cls,live=G.balls.filter(b=>b.st
 function updatePowers(dt){const r=G.run,c=r.cls,m=G.mods,cl=CLASSES[c];G.hidden=false;if(G.phase>0)G.phase-=dt;if(G.nudgeCd>0)G.nudgeCd-=dt;
   if(spellOn('cloak'))G.phase=Math.max(G.phase,.2);if(spellOn('cloak')||spellOn('smoke'))G.hidden=true;
   for(const b of G.balls){if(b.st!=='live'){b.cr=0;continue;}
-    let held=false;if(b.onFlip>0&&!b.arm&&!b.pow&&G.tilt<=0&&r.charge>=33&&Math.hypot(b.vx,b.vy)<95)for(const f of T.flips)if(f.on&&f.a<=f.up+.02&&Math.abs(b.x-f.x)<75&&Math.abs(b.y-f.y)<60){held=true;break;}
-    if(held){b.cr+=dt;const need=r.charge>=100?1.5:.8;if(b.cr>=need){b.cr=0;G.dirty=true;if(r.charge>=100)rally();else{b.arm=9;b.armCost=33;A.s('ward');float(b.x,b.y-30,cl.shot.toUpperCase()+' READY',cl.glow,13);}}}
+    // one hold, two stages: at 0.8 s the class shot arms (one bar, spent when the flip fires it); hold on to 1.5 s with a
+    // full meter and the party rallies instead. Let go between the two and you keep the armed shot.
+    const full=r.charge>=100;let held=false;if(b.onFlip>0&&!b.pow&&!b.party&&G.tilt<=0&&r.charge>=33&&(!b.arm||full)&&Math.hypot(b.vx,b.vy)<95)for(const f of T.flips)if(f.on&&f.a<=f.up+.02&&Math.abs(b.x-f.x)<75&&Math.abs(b.y-f.y)<60){held=true;break;}
+    if(held){b.cr+=dt;
+      if(!b.arm&&b.cr>=CRADLE_ARM){b.arm=9;b.armCost=33;A.s('ward');float(b.x,b.y-30,cl.shot.toUpperCase()+' READY'+(full?'. HOLD TO RALLY':''),cl.glow,13);G.dirty=true;if(!full)b.cr=0;}
+      if(full&&b.cr>=CRADLE_RALLY){b.cr=0;b.arm=0;b.armCost=0;G.dirty=true;rally();}}
     else if(b.cr>0)b.cr=Math.max(0,b.cr-dt*2);
     if(b.arm>0){b.arm=Math.max(0,b.arm-dt);if(b.arm<=0)b.armCost=0;if(c==='rogue')G.hidden=true;}
     if(b.pow){b.pow.t-=dt;if(c==='rogue')G.hidden=true;if(b.pow.t<=0)endPower(b,true);}
@@ -1274,6 +1279,10 @@ function rose(c,x,y,r,cols){c.save();c.translate(x,y);c.fillStyle='#07070b';c.be
 function lancet(c,x,y,w,h,rot,cols){c.save();c.translate(x,y);c.rotate(rot);const p=()=>{c.beginPath();c.moveTo(-w/2,h/2);c.lineTo(-w/2,-h*.2);c.quadraticCurveTo(-w/2,-h*.45,0,-h/2);c.quadraticCurveTo(w/2,-h*.45,w/2,-h*.2);c.lineTo(w/2,h/2);c.closePath();};
   p();c.fillStyle='#07070b';c.fill();c.save();p();c.clip();for(let k=0;k<7;k++){c.fillStyle=cols[k%cols.length];c.globalAlpha=.5+.2*hash(k+x);c.fillRect(-w/2,-h/2+k*h/7,w,h/7-1.5);}
   c.globalAlpha=1;c.strokeStyle='#07070b';c.lineWidth=1.6;c.beginPath();c.moveTo(0,-h/2);c.lineTo(0,h/2);c.stroke();c.restore();p();c.strokeStyle='#3a3344';c.lineWidth=3;c.stroke();c.restore();}
+function runeBed(c,x,y){c.save();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=22;c.beginPath();c.arc(x,y,96,0,TAU);c.stroke();
+  c.strokeStyle='rgba(255,240,210,.14)';c.lineWidth=1.4;for(const rr of [84.5,107.5]){c.beginPath();c.arc(x,y,rr,0,TAU);c.stroke();}
+  for(let k=0;k<12;k++){const a=-PI/2+k*TAU/12,px=x+Math.cos(a)*96,py=y+Math.sin(a)*96;c.fillStyle='rgba(0,0,0,.7)';c.beginPath();c.arc(px,py,10.5,0,TAU);c.fill();
+    c.strokeStyle='rgba(255,236,200,.22)';c.lineWidth=1.2;c.beginPath();c.arc(px,py,10.5,0,TAU);c.stroke();}c.restore();}
 function sigil(c,x,y,r,col,kind){c.save();c.strokeStyle=col;c.globalAlpha=.22;c.lineWidth=2;c.beginPath();c.arc(x,y,r,0,TAU);c.stroke();c.beginPath();c.arc(x,y,r*.86,0,TAU);c.stroke();
   for(let k=0;k<24;k++){const a=k*TAU/24;c.beginPath();c.moveTo(x+Math.cos(a)*r*.86,y+Math.sin(a)*r*.86);c.lineTo(x+Math.cos(a)*r*(k%3?.92:1),y+Math.sin(a)*r*(k%3?.92:1));c.stroke();}
   if(kind===0){polyStar(c,x,y,r*.84,7,3,-PI/2);c.stroke();c.beginPath();c.arc(x,y,r*.3,0,TAU);c.stroke();}
@@ -1312,7 +1321,7 @@ const ART=[
     for(const x of [92,548])for(let k=0;k<4;k++){const yy=y+330+k*58;const g2=c.createLinearGradient(x-9,0,x+9,0);g2.addColorStop(0,'#1a1220');g2.addColorStop(.5,'#4a3a58');g2.addColorStop(1,'#1a1220');c.fillStyle=g2;c.beginPath();c.arc(x,yy,9,0,TAU);c.fill();c.strokeStyle='rgba(217,164,65,.35)';c.lineWidth=1;c.stroke();}
     for(const q of [[236,372],[404,372],[150,470],[490,470],[214,742],[426,742]])lantern(c,q[0],y+q[1],'#ff5a3c');
     c.strokeStyle='rgba(217,164,65,.22)';c.lineWidth=1.2;for(let k=0;k<2;k++){c.beginPath();c.arc(320,y+650,104+k*8,0,TAU);c.stroke();}
-    sigil(c,320,y+650,82,p.acc,0);
+    sigil(c,320,y+650,82,p.acc,0);runeBed(c,320,y+650);
     c.fillStyle='rgba(0,0,0,.4)';for(const x of [150,490])for(let k=0;k<3;k++){c.fillRect(x-7,y+560+k*70,14,40);}
     for(const x of [150,490])for(let k=0;k<3;k++){c.fillStyle='rgba(192,40,60,.22)';path(c,[[x-9,y+556+k*70],[x+9,y+556+k*70],[x+9,y+598+k*70],[x,y+590+k*70],[x-9,y+598+k*70]],1);c.fill();}
   },
@@ -1329,10 +1338,10 @@ const ART=[
     c.lineCap='round';c.strokeStyle='rgba(90,200,200,.10)';c.lineWidth=30;c.beginPath();c.moveTo(20,y+520);c.bezierCurveTo(160,y+600,220,y+740,330,y+760);c.bezierCurveTo(440,y+780,520,y+700,620,y+730);c.stroke();
     c.strokeStyle='rgba(190,245,245,.16)';c.lineWidth=1.4;c.setLineDash([14,22]);for(let k=-1;k<2;k++){c.beginPath();c.moveTo(20,y+520+k*8);c.bezierCurveTo(160,y+600+k*8,220,y+740+k*8,330,y+760+k*8);c.bezierCurveTo(440,y+780+k*8,520,y+700+k*8,620,y+730+k*8);c.stroke();}c.setLineDash([]);
     // mushroom ring and standing stones
-    for(let k=0;k<14;k++){const a=k*TAU/14,x=320+Math.cos(a)*108,yy=y+650+Math.sin(a)*108;c.fillStyle='rgba(230,90,90,.45)';c.beginPath();c.arc(x,yy,4.2,PI,TAU);c.fill();c.fillStyle='rgba(240,230,210,.4)';c.fillRect(x-1.2,yy,2.4,4);}
+    for(let k=0;k<14;k++){const a=k*TAU/14,x=320+Math.cos(a)*124,yy=y+650+Math.sin(a)*124;c.fillStyle='rgba(230,90,90,.45)';c.beginPath();c.arc(x,yy,4.2,PI,TAU);c.fill();c.fillStyle='rgba(240,230,210,.4)';c.fillRect(x-1.2,yy,2.4,4);}
     for(const q of [[206,236,26],[434,236,26],[262,330,18],[378,330,18],[320,396,16]]){c.fillStyle='#1b2e28';path(c,[[q[0]-q[2]*.4,y+q[1]],[q[0]-q[2]*.3,y+q[1]-q[2]],[q[0]+q[2]*.2,y+q[1]-q[2]*1.15],[q[0]+q[2]*.42,y+q[1]]],1);c.fill();c.strokeStyle='rgba(140,232,208,.5)';c.lineWidth=1.1;c.beginPath();c.moveTo(q[0]-3,y+q[1]-q[2]*.3);c.lineTo(q[0]+1,y+q[1]-q[2]*.8);c.lineTo(q[0]+4,y+q[1]-q[2]*.45);c.stroke();}
-    for(const q of [[170,470],[470,470],[110,720],[530,720],[228,570],[390,560]])lantern(c,q[0],y+q[1],'#7fe0c0');
-    sigil(c,320,y+650,82,p.acc,1);
+    for(const q of [[170,470],[470,470],[110,720],[530,720],[228,570],[406,560]])lantern(c,q[0],y+q[1],'#7fe0c0');
+    sigil(c,320,y+650,82,p.acc,1);runeBed(c,320,y+650);
     c.fillStyle='rgba(200,235,240,.08)';for(let k=0;k<9;k++){const t=k/8,x=lerp(210,430,t),yy=y+560+Math.sin(t*PI)*-30;c.beginPath();c.ellipse(x,yy,5,7,0,0,TAU);c.fill();for(let j=-1;j<2;j++){c.beginPath();c.arc(x+j*5,yy-10,2.2,0,TAU);c.fill();}}
     c.fillStyle='#0b1512';[[206,300,20,2],[434,300,20,2],[282,390,14,0],[358,390,14,0]].forEach(q=>tomb(c,q[0],y+q[1],q[2],q[3],'#132420'));
   },
@@ -1344,12 +1353,12 @@ const ART=[
     // tavern roof and windows
     c.fillStyle='#161019';path(c,[[258,y+410],[303,y+372],[348,y+410],[340,y+410],[340,y+400],[266,y+400],[266,y+410]],1);c.fill();c.strokeStyle='rgba(255,190,110,.4)';c.lineWidth=1.2;c.stroke();
     fence(c,150,y+212,238,y+196,'rgba(150,175,220,.32)');fence(c,402,y+196,490,y+212,'rgba(150,175,220,.32)');fence(c,176,y+404,236,y+418,'rgba(150,175,220,.28)');
-    for(const q of [[270,760],[340,700],[262,640],[330,575],[214,470],[392,470],[120,560],[486,560]])lantern(c,q[0],y+q[1],'#ffb050');
+    for(const q of [[186,772],[420,772],[214,470],[392,470],[120,560],[486,560]])lantern(c,q[0],y+q[1],'#ffb050');
     const tc='#3a4a6c';[[188,262,22,0],[214,344,18,1],[452,262,22,2],[428,344,18,1],[250,392,16,0],[392,392,16,2],[150,318,18,2],[492,318,18,0],[320,372,14,1],[122,236,16,1],[520,236,16,0]].forEach(q=>tomb(c,q[0],y+q[1],q[2],q[3],tc));
     tree(c,118,y+640,84,5,'#0b1220');tree(c,488,y+640,84,11,'#0b1220');tree(c,150,y+190,60,2,'#0b1220');tree(c,492,y+190,60,6,'#0b1220');
     rose(c,474,y+352,34,['#e0a040','#c0283c','#3a6fc0','#7a3a9a']);
     [[104,340,46],[138,372,38],[86,372,34]].forEach((q,k)=>pine(c,q[0],y+q[1],q[2],k%2?'#0a1220':'#0e182a'));
-    sigil(c,303,y+650,82,p.acc2,2);
+    sigil(c,303,y+650,82,p.acc2,2);runeBed(c,303,y+650);
     g=c.createRadialGradient(303,y+450,4,303,y+450,90);g.addColorStop(0,'rgba(255,170,70,.22)');g.addColorStop(1,'rgba(255,170,70,0)');c.fillStyle=g;c.fillRect(203,y+360,200,190);
   }];
 function drawGrave(c){const y=GY,p=PAL[3],shape=T.coffin.concat([[420,y+663],[366,HW+70],[274,HW+70],[220,y+663]]);
@@ -1518,7 +1527,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.19';
+const $=id=>document.getElementById(id),VERSION='3D build 0.20';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1546,7 +1555,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     if(G.tilt>0)ch(G.fallen?'Fallen':'Tilt','bad');$('hFx').innerHTML=chips.join('');
     const bo=G.boss,wk=G.focusTier<3?wakeInfo(G.focusTier):null,here=bo&&bo.alive&&bo.tier===G.focusTier;
     $('bossbar').hidden=!(here||(wk&&wk.state==='dormant')||(bo&&bo.alive));$('bossbar').classList.toggle('dormant',!here&&!!(wk&&wk.state==='dormant'));
-    if(!here&&wk&&wk.state==='dormant'){$('bossName').textContent=BOSSES[wk.key].name;$('bossHp').style.width=Math.round(wk.fill*100)+'%';$('bossPhase').textContent=wk.fill<.01?'Sleeping in the circle':wk.fill<1?'Stirring. The circle fills as the quest goes on':'Rising';}
+    if(!here&&wk&&wk.state==='dormant'){$('bossName').textContent=BOSSES[wk.key].name;$('bossHp').style.width=Math.round(wk.fill*100)+'%';const nq=r.main&&qCur(r.main),nt=nq&&nq.t!=='boss'?UI.objText(r.main):'';$('bossPhase').textContent=(wk.fill<1?'Wakes with the main quest. Next: ':'Rising. ')+nt;}
     else if(bo&&bo.alive&&!here){$('bossName').textContent=bo.def.name;$('bossHp').style.width=clamp(bo.hp/bo.maxHp*100,0,100)+'%';$('bossPhase').textContent='Waiting on '+LEVEL_NAMES[bo.tier];}
     else if(bo&&bo.alive){$('bossName').textContent=bo.def.name;$('bossHp').style.width=clamp(bo.hp/bo.maxHp*100,0,100)+'%';
       $('bossPhase').textContent={shield:'Warded. Strike the lit bumpers',open:bo.stun>0?'Staggered. Double damage':'Exposed. Strike the boss',summon:'Summoning. Slay the minions',cast:'Casting '+bo.def.cast.name+'. Hit a red shot',frenzy:'Frenzy'}[bo.phase]||'';}
@@ -1628,13 +1637,19 @@ function bindInput(){
   $('menu').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b&&!b.disabled)UI.act(b);});
   $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}else if(t.id==='optEndless'){G.opt.endless=t.checked;store.set('opt',G.opt);}});
   $('pauseBtn').addEventListener('click',()=>{A.init();togglePause();});
-  const zone=(el,side)=>{const ids=new Set();const up=e=>{ids.delete(e.pointerId);if(!ids.size)setFlip(side,false);};
-    el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);setFlip(side,true);e.preventDefault();});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('pointerleave',up);};
+  // a flip zone keeps the finger that pressed it until that finger lifts, even if the thumb drifts off the zone
+  const zone=(el,side)=>{const ids=new Set();const up=e=>{if(!ids.delete(e.pointerId))return;if(!ids.size)setFlip(side,false);};
+    el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);try{el.setPointerCapture(e.pointerId);}catch(_){}setFlip(side,true);e.preventDefault();});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);};
   zone($('tL'),-1);zone($('tR'),1);
-  const tn=$('tN'),nup=()=>{G.in.n=false;};tn.addEventListener('pointerdown',e=>{A.init();G.in.n=true;nudge();e.preventDefault();});tn.addEventListener('pointerup',nup);tn.addEventListener('pointercancel',nup);tn.addEventListener('pointerleave',nup);
+  const tn=$('tN'),nup=()=>{G.in.n=false;};tn.addEventListener('pointerdown',e=>{A.init();try{tn.setPointerCapture(e.pointerId);}catch(_){}G.in.n=true;nudge();e.preventDefault();});tn.addEventListener('pointerup',nup);tn.addEventListener('pointercancel',nup);tn.addEventListener('lostpointercapture',nup);
   const showTouch=()=>{$('touch').hidden=false;UI.touch=true;};if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)showTouch();
   addEventListener('pointerdown',e=>{if(e.pointerType==='touch')showTouch();A.init();},{passive:true});
   addEventListener('contextmenu',e=>e.preventDefault());
+  // iOS ignores user-scalable=no: stop pinch and double-tap zoom by hand, and long-press selection
+  for(const t of ['gesturestart','gesturechange','gestureend'])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
+  {let lastT=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastT<350&&!(e.target&&e.target.closest&&e.target.closest('input,select,textarea,button,label')))e.preventDefault();lastT=now;},{passive:false});}
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+  document.addEventListener('dblclick',e=>e.preventDefault());document.addEventListener('selectstart',e=>{if(!(e.target&&e.target.closest&&e.target.closest('input')))e.preventDefault();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.choice)togglePause();});
   addEventListener('blur',()=>{setFlip(-1,false);setFlip(1,false);G.in.n=false;});
   addEventListener('resize',resize);

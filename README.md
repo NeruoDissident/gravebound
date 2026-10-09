@@ -159,3 +159,11 @@ they check that everything runs and renders, not frame rate.
 - The music goes double time with drums for the length of the Rally.
 - Party balls never wear down your guard at the drain; only your own ball does.
 - Health is back on, tuned way down: foes hit for 30% of their old damage. A number to tune by playtesting (`HURT_K`).
+
+## 0.20
+
+- **One cradle hold, two stages.** At 0.8 s the class shot arms (one bar, spent when the flip fires it). With a full meter, keep holding: a second, gold ring fills to 1.5 s and the party rallies. Let go between the two and you keep the armed shot. Before this, a full meter skipped the 0.8 s stage entirely.
+- **Rally launches from the plunger.** On the Hollow each party ball is fired up the shooter lane; on the levels above they drop in from the top of the level. Same explosions, names and pulses as 0.19.
+- **The circle.** Twelve rune inserts set into sockets carved round each summoning circle: dark glass when off, violet as the main quest fills them (the next one blinks), red strobing as the boss rises, red while it's up, gold once it's slain. The boss bar names the next main-quest step that feeds the circle. Lanterns, the mushroom ring and the Mill marker moved off the circle.
+- **PWA.** The hosted build installs as an app: manifest, icons (the logo is `assets/logo.svg`; `node test/icons.js` renders the PNGs), and a service worker that keeps the game playable offline. `node test/pwa.js` checks it.
+- **Touch.** No double-tap or pinch zoom, no long-press callout or text selection, no pull-to-refresh. A flip zone keeps its finger until the finger lifts, so a thumb drifting off the zone no longer drops the flipper. Safe-area padding for notches.
