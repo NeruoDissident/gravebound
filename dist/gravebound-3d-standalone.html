@@ -2310,8 +2310,14 @@ function openChoice(kind){const r=G.run;let c;
   else if(kind==='tavern'&&TAVERN_RECRUITS){c=tavernChoice();}
   else{const opts=r.tavern.map(id=>{const d=COMPANIONS[id],R=ROLES[d.role];return {name:d.name,desc:R.name+'. '+d.desc,cost:d.cost,tag:d.cost+' gold',role:d.role,act:()=>{const c=recruit(id);if(c)popup(d.name+' Joins','They take the '+c.slot+' post','good',d.desc);}};});
     c={kind,title:'The Drowned Lantern',sub:'Recruits for hire. You have '+r.gold+' gold'+(r.party.length?'; '+(3-r.party.length)+' post'+(3-r.party.length===1?'':'s')+' free':''),opts:opts.concat([{name:'Leave',desc:'Keep your coin and get back to it.',tag:'',act:()=>{}}])};}
-  if(G.demo||G.auto){const o=pick(c.opts.filter(o=>!o.cost||o.cost<=r.gold));if(o.cost)r.gold-=o.cost;o.act();resumeHeld();return;}
+  if(G.demo||G.auto||G.opt.autoPick){autoPick(kind,c);resumeHeld();G.dirty=true;return;}
   c.sel=0;G.choice=c;UI.choice(c);A.s('choice');}
+// Auto pick (Options): level-ups, boons and hires are chosen for you the moment they come up, no menu, no scoop.
+// Picks at random among the real options; an option that opens a sub-menu (levelling a spell) resolves that too.
+function autoPick(kind,c){const r=G.run,n0=G.autoN||0;
+  for(const o of shuffle(c.opts.filter(o=>!/^(Back|Leave)$/.test(o.name)&&(!o.cost||o.cost<=r.gold)))){if(o.cost)r.gold-=o.cost;const res=o.act();
+    if(res!=='stay'||(G.autoN||0)>n0){G.autoN=(G.autoN||0)+1;if(kind==='perk'&&!G.demo&&!G.auto)popup(c.title,o.name,'good',o.desc);return true;}if(o.cost)r.gold+=o.cost;}
+  return false;}
 function choose(i){const c=G.choice;if(!c)return;const o=c.opts[i];if(!o)return;if(o.cost&&G.run.gold<o.cost){A.s('deny');return;}if(o.cost)G.run.gold-=o.cost;if(o.act()==='stay'){A.s('ui');return;}
   G.choice=null;UI.choice(null);G.slow=.7;resumeHeld();A.s('pick');G.dirty=true;saveRun();}
 function resumeHeld(){for(const b of G.balls)if(b.st==='held'&&b.held.plan==='wait'){b.held.plan='eject';b.held.t=0;b.held.delay=.5;}}
@@ -2333,7 +2339,7 @@ function updateRules(dt){const r=G.run;r.time+=dt;
   for(const q of r.side.slice())if(q.tl>0&&!G.inGrave&&G.focusTier<4){q.tl-=dt;G.dirty=true;if(q.tl<=0)qFail(q);}
   G.spawnT-=dt;if(G.spawnT<=0){G.spawnT=.6;manageSpawns();}updateParty(dt);updateSpells(dt);updateRally(dt);
   const f=focusBall();if(f){const ft=tierOf(f.y);if(ft!==G.focusTier){G.focusTier=ft;relight();}}
-  if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over'&&!(G.run.main===null&&!G.opt.endless)&&(G.plunge.ready||G.balls.some(b=>b.st==='held'||b.st==='tunnel')||!G.balls.some(b=>b.st==='live')))openChoice(G.pending.shift());}
+  if(G.pending.length&&!G.choice&&!G.sub&&G.mode!=='over'&&!(G.run.main===null&&!G.opt.endless)&&(G.opt.autoPick||G.plunge.ready||G.balls.some(b=>b.st==='held'||b.st==='tunnel')||!G.balls.some(b=>b.st==='live')))openChoice(G.pending.shift());}
 function updateFx(dt){
   for(const p of G.parts){p.life+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.vx*=1-dt*2;}
   if(G.parts.length)G.parts=G.parts.filter(p=>p.life<p.max);
@@ -2653,7 +2659,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.20';
+const $=id=>document.getElementById(id),VERSION='3D build 0.21';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -2717,7 +2723,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
       for(const k of UI.firstPick||[]){const d=COMPANIONS[k],R=ROLES[d.role];h+='<button class="card" data-act="recruit" data-k="'+k+'"><small style="color:'+R.col+'">'+R.name+'</small><b>'+esc(d.name)+'</b><span>'+esc(d.desc)+'</span></button>';}
       h+='</div><nav class="row">'+btn('alone','Ride alone')+btn('new','Back')+'</nav></div>';}
     else if(name==='options'){h='<div class="pane"><h2>Options</h2><label for="optMusic">Music<input id="optMusic" type="range" min="0" max="100" value="'+Math.round(A.vol.m*100)+'"></label><label for="optSfx">Sound effects<input id="optSfx" type="range" min="0" max="100" value="'+Math.round(A.vol.s*100)+'"></label>'+
-      '<label for="optShake" class="check"><input id="optShake" type="checkbox"'+(G.opt.shake?' checked':'')+'>Screen shake</label><label for="optEndless" class="check"><input id="optEndless" type="checkbox"'+(G.opt.endless?' checked':'')+'>Endless: a new shadow rises after every campaign, instead of the run ending</label><nav>'+btn('gfxCam','View: '+CAMS[R3.camMode].name)+btn('gfxQual','Detail: '+(R3.q?R3.q.label:''))+btn('erase','Erase saved run and scores')+btn(UI.back||'title','Back')+'</nav></div>';}
+      '<label for="optShake" class="check"><input id="optShake" type="checkbox"'+(G.opt.shake?' checked':'')+'>Screen shake</label><label for="optAuto" class="check"><input id="optAuto" type="checkbox"'+(G.opt.autoPick?' checked':'')+'>Auto pick: level-ups, boons and hires are chosen for you, no interruptions</label><label for="optEndless" class="check"><input id="optEndless" type="checkbox"'+(G.opt.endless?' checked':'')+'>Endless: a new shadow rises after every campaign, instead of the run ending</label><nav>'+btn('gfxCam','View: '+CAMS[R3.camMode].name)+btn('gfxQual','Detail: '+(R3.q?R3.q.label:''))+btn('erase','Erase saved run and scores')+btn(UI.back||'title','Back')+'</nav></div>';}
     else if(name==='controls'){h='<div class="pane"><h2>Controls</h2><dl class="keys"><dt>Left flippers</dt><dd>Z, Left Arrow or Left Shift</dd><dt>Right flippers</dt><dd>/, Right Arrow or Right Shift</dd><dt>Nudge</dt><dd>Space</dd><dt>Launch</dt><dd>Hold Space or the right flipper, then release</dd><dt>Class power</dt><dd>Hold the ball still on a raised flipper until the ring fills, then let it roll and flip</dd><dt>Pause</dt><dd>P or Esc</dd><dt>View, detail, full screen</dt><dd>C, Q and F</dd><dt>Touch</dt><dd>Left and right halves of the screen flip. The centre button nudges and launches.</dd></dl>'+
       '<p class="lead">Every left flipper on the table moves together, and so does every right one. Flashing gold arrows are your main quest. Blue ones are side quests. Ramps climb to the level above; the gap between the upper flippers drops you to the level below.</p><nav class="row">'+btn(UI.back||'title','Back')+'</nav></div>';}
     else if(name==='pause'){const r=G.run,ex=q=>{const t=explainStep(qCur(q));return t?'<small class="what">'+esc(t)+'</small>':'';};h='<div class="pane doc"><h2>Paused</h2>'+(r.main?'<p class="lead">'+esc(UI.objText(r.main))+'</p>'+ex(r.main):'')+r.side.map(q=>'<p class="sqline"><b>'+esc(q.name)+'.</b> '+esc(UI.objText(q))+'</p>'+ex(q)).join('')+'<nav>'+btn('resume','Resume')+btn('help','How to play')+btn('options','Options')+btn('controls','Controls')+btn('abandon','Abandon run')+'</nav></div>';}
@@ -2761,7 +2767,7 @@ function bindInput(){
     if(k==='l')setFlip(-1,true);else if(k==='r')setFlip(1,true);else if(k==='n'||k==='u'){G.in.n=true;nudge();}else if(k==='p')togglePause();else gfxKey(k);});
   addEventListener('keyup',e=>{const k=KEYS[e.code];if(!k)return;if(k==='l')setFlip(-1,false);else if(k==='r')setFlip(1,false);else if(k==='n'||k==='u')G.in.n=false;});
   $('menu').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b&&!b.disabled)UI.act(b);});
-  $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}else if(t.id==='optEndless'){G.opt.endless=t.checked;store.set('opt',G.opt);}});
+  $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}else if(t.id==='optEndless'){G.opt.endless=t.checked;store.set('opt',G.opt);}else if(t.id==='optAuto'){G.opt.autoPick=t.checked;store.set('opt',G.opt);}});
   $('pauseBtn').addEventListener('click',()=>{A.init();togglePause();});
   // a flip zone keeps the finger that pressed it until that finger lifts, even if the thumb drifts off the zone
   const zone=(el,side)=>{const ids=new Set();const up=e=>{if(!ids.delete(e.pointerId))return;if(!ids.size)setFlip(side,false);};

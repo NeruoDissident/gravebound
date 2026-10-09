@@ -167,3 +167,7 @@ they check that everything runs and renders, not frame rate.
 - **The circle.** Twelve rune inserts set into sockets carved round each summoning circle: dark glass when off, violet as the main quest fills them (the next one blinks), red strobing as the boss rises, red while it's up, gold once it's slain. The boss bar names the next main-quest step that feeds the circle. Lanterns, the mushroom ring and the Mill marker moved off the circle.
 - **PWA.** The hosted build installs as an app: manifest, icons (the logo is `assets/logo.svg`; `node test/icons.js` renders the PNGs), and a service worker that keeps the game playable offline. `node test/pwa.js` checks it.
 - **Touch.** No double-tap or pinch zoom, no long-press callout or text selection, no pull-to-refresh. A flip zone keeps its finger until the finger lifts, so a thumb drifting off the zone no longer drops the flipper. Safe-area padding for notches.
+
+## 0.21
+
+- **Auto pick** (Options): level-ups, boons and Tavern hires are chosen for you the moment they come up. No menu, no scoop to shoot, the ball never stops. Boons show what you got in a banner. Off by default.
