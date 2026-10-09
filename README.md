@@ -171,3 +171,8 @@ they check that everything runs and renders, not frame rate.
 ## 0.21
 
 - **Auto pick** (Options): level-ups, boons and Tavern hires are chosen for you the moment they come up. No menu, no scoop to shoot, the ball never stops. Boons show what you got in a banner. Off by default.
+
+## 0.21.1
+
+- **No stretch on phones.** The table checks its real on-screen size every frame and resizes the canvas when it changes, instead of trusting the resize event (iOS fires it before rotation or the toolbar has settled, which left the canvas at the old aspect, stretched). Rotation and visual-viewport changes are also listened for.
+- **View button.** On touch, a 44 px view button sits at the top right under pause (icon only on narrow screens, icon and view name when there's room). The info chip by the Nudge button is gone on touch.

@@ -169,6 +169,18 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
 .card.hire .face{grid-area:orb;width:60px;height:70px;align-self:center;border-radius:4px;box-shadow:0 0 14px rgba(0,0,0,.6)}
 
 .pane.doc{max-height:86vh;overflow:auto}.pane.doc .lead{max-width:none}.pane.doc h3{margin:10px 0 0}.pane.doc h4{margin:8px 0 0;font:700 11px var(--label);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}.gloss{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}.gloss dt{color:var(--bone);font-weight:600}.gloss dd{margin:0;color:#cfc7b6}.what{display:block;color:#9fe8ff;font-size:12.5px;line-height:1.35;margin:-6px 0 4px}
+/* touch: a real view button up top, under pause, instead of the info chip by the nudge button */
+#camBtn{position:absolute;z-index:4;display:flex;align-items:center;gap:6px;height:44px;min-width:44px;padding:0 10px;box-sizing:border-box;justify-content:center;
+  top:calc(54px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));font:700 10px var(--label);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--bone);background:#14131ccc;border:1px solid var(--line);border-radius:22px;touch-action:manipulation}
+#camBtn:active{background:#2a2540}
+@media (pointer:coarse){
+  #pauseBtn,#camBtn{left:auto;right:calc(50% - min(50%,320px) + 8px + env(safe-area-inset-right))}
+  #pauseBtn{width:44px;height:44px;font-size:12px}
+  #hud{padding-right:60px}
+  #gfx{display:none}
+}
+@media (pointer:coarse) and (max-width:600px){#camName{display:none}#camBtn{width:44px;padding:0}}
 </style>
 <div id="app">
   <aside class="side" id="journal" aria-label="Quest journal">
@@ -196,6 +208,7 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
     <div id="bonus" hidden></div>
     <div id="touch" hidden><div id="tL"></div><div id="tR"></div><button id="tN" type="button">Nudge</button></div>
     <button id="pauseBtn" type="button" hidden aria-label="Pause">II</button>
+    <button id="camBtn" type="button" hidden aria-label="Change view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg><span id="camName"></span></button>
     <div id="gfx" hidden><span class="chip" id="gDev" hidden>Dev keys on</span><span class="chip" id="gInfo"></span></div>
     <div id="menu"></div>
   </main>
@@ -2659,7 +2672,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.21';
+const $=id=>document.getElementById(id),VERSION='3D build 0.21.1';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -2769,12 +2782,13 @@ function bindInput(){
   $('menu').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b&&!b.disabled)UI.act(b);});
   $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}else if(t.id==='optEndless'){G.opt.endless=t.checked;store.set('opt',G.opt);}else if(t.id==='optAuto'){G.opt.autoPick=t.checked;store.set('opt',G.opt);}});
   $('pauseBtn').addEventListener('click',()=>{A.init();togglePause();});
+  $('camBtn').addEventListener('click',e=>{A.init();gfxKey('cam');e.currentTarget.blur();});
   // a flip zone keeps the finger that pressed it until that finger lifts, even if the thumb drifts off the zone
   const zone=(el,side)=>{const ids=new Set();const up=e=>{if(!ids.delete(e.pointerId))return;if(!ids.size)setFlip(side,false);};
     el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);try{el.setPointerCapture(e.pointerId);}catch(_){}setFlip(side,true);e.preventDefault();});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);};
   zone($('tL'),-1);zone($('tR'),1);
   const tn=$('tN'),nup=()=>{G.in.n=false;};tn.addEventListener('pointerdown',e=>{A.init();try{tn.setPointerCapture(e.pointerId);}catch(_){}G.in.n=true;nudge();e.preventDefault();});tn.addEventListener('pointerup',nup);tn.addEventListener('pointercancel',nup);tn.addEventListener('lostpointercapture',nup);
-  const showTouch=()=>{$('touch').hidden=false;UI.touch=true;};if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)showTouch();
+  const showTouch=()=>{$('touch').hidden=false;UI.touch=true;gfxInfo();};if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)showTouch();
   addEventListener('pointerdown',e=>{if(e.pointerType==='touch')showTouch();A.init();},{passive:true});
   addEventListener('contextmenu',e=>e.preventDefault());
   // iOS ignores user-scalable=no: stop pinch and double-tap zoom by hand, and long-press selection
@@ -2784,7 +2798,7 @@ function bindInput(){
   document.addEventListener('dblclick',e=>e.preventDefault());document.addEventListener('selectstart',e=>{if(!(e.target&&e.target.closest&&e.target.closest('input')))e.preventDefault();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.choice)togglePause();});
   addEventListener('blur',()=>{setFlip(-1,false);setFlip(1,false);G.in.n=false;});
-  addEventListener('resize',resize);
+  addEventListener('resize',resize);addEventListener('orientationchange',()=>{setTimeout(resize,60);setTimeout(resize,400);});if(window.visualViewport)visualViewport.addEventListener('resize',resize);
 }
 
 /* ================= THE SPELLBOOK =================
@@ -4049,7 +4063,7 @@ function frameActors(dt,ex){const X=R3.act,t=G.t,tc=R3.tmpC;
 /* ================= 3D SHELL: settings, overlay, resize, loop, boot ================= */
 const GFX=store.get('gfx',{cam:0,q:'high',auto:true}),DEV={on:false};
 function gfxSave(){store.set('gfx',{cam:R3.camMode,q:R3.qName,auto:R3.auto});}
-function gfxInfo(){const play=G.mode==='play'&&!G.demo;$('gfx').hidden=!play;if(!play)return;
+function gfxInfo(){const play=G.mode==='play'&&!G.demo;$('gfx').hidden=!play;const cb=$('camBtn');cb.hidden=!(play&&UI.touch);if(!play)return;$('camName').textContent=CAMS[R3.camMode].name;
   $('gInfo').textContent=(UI.touch?'':'C ')+CAMS[R3.camMode].name+'  ·  '+(UI.touch?'':'Q ')+(R3.q?R3.q.label+(R3.q.post&&!R3.postOn?' (no glow)':''):'')+'  ·  '+Math.round(R3.fps)+' fps';}
 function gfxKey(k){
   if(k==='cam'){R3.camMode=(R3.camMode+1)%CAMS.length;popup(CAMS[R3.camMode].name+' view','','info');gfxSave();}
@@ -4116,7 +4130,10 @@ function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w
 function resize(){const st=$('stage'),w=st.clientWidth||innerWidth,h=st.clientHeight||innerHeight||600,fx=$('fx'),d=Math.min(window.devicePixelRatio||1,1.5);
   resize3D(w,h);fx.width=Math.round(w*d);fx.height=Math.round(h*d);UI.fxS=d;}
 let lastT=0,acc=0,hudT=0,slowT=0;
-function loop(ts){requestAnimationFrame(loop);if(R3.hold){lastT=ts;return;}const raw=(ts-lastT)/1000||0,dt=Math.min(.05,raw);lastT=ts;acc+=dt;let n=0;
+// iOS fires resize (rotation, the toolbar sliding in and out) before layout settles, so a missed resize would leave the
+// canvas at the old aspect, stretched to fit. Check the real size of the table every frame instead of trusting the event.
+let _st=null;function fitCheck(){_st=_st||$('stage');const w=_st.clientWidth,h=_st.clientHeight;if(w&&h&&(w!==R3.w||h!==R3.h))resize();}
+function loop(ts){requestAnimationFrame(loop);fitCheck();if(R3.hold){lastT=ts;return;}const raw=(ts-lastT)/1000||0,dt=Math.min(.05,raw);lastT=ts;acc+=dt;let n=0;
   while(acc>=1/120&&n<8){gameStep(1/120);acc-=1/120;n++;}if(n===8)acc=0;
   R3.acc=acc;frame3D(dt);drawOverlay();
   if(raw>0&&raw<.5){R3.fps+=(1/raw-R3.fps)*.05;

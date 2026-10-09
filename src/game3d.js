@@ -1,7 +1,7 @@
 /* ================= 3D SHELL: settings, overlay, resize, loop, boot ================= */
 const GFX=store.get('gfx',{cam:0,q:'high',auto:true}),DEV={on:false};
 function gfxSave(){store.set('gfx',{cam:R3.camMode,q:R3.qName,auto:R3.auto});}
-function gfxInfo(){const play=G.mode==='play'&&!G.demo;$('gfx').hidden=!play;if(!play)return;
+function gfxInfo(){const play=G.mode==='play'&&!G.demo;$('gfx').hidden=!play;const cb=$('camBtn');cb.hidden=!(play&&UI.touch);if(!play)return;$('camName').textContent=CAMS[R3.camMode].name;
   $('gInfo').textContent=(UI.touch?'':'C ')+CAMS[R3.camMode].name+'  ·  '+(UI.touch?'':'Q ')+(R3.q?R3.q.label+(R3.q.post&&!R3.postOn?' (no glow)':''):'')+'  ·  '+Math.round(R3.fps)+' fps';}
 function gfxKey(k){
   if(k==='cam'){R3.camMode=(R3.camMode+1)%CAMS.length;popup(CAMS[R3.camMode].name+' view','','info');gfxSave();}
@@ -68,7 +68,10 @@ function drawOverlay(){const cv=$('fx'),c=cv.getContext('2d'),s=UI.fxS||1,w=R3.w
 function resize(){const st=$('stage'),w=st.clientWidth||innerWidth,h=st.clientHeight||innerHeight||600,fx=$('fx'),d=Math.min(window.devicePixelRatio||1,1.5);
   resize3D(w,h);fx.width=Math.round(w*d);fx.height=Math.round(h*d);UI.fxS=d;}
 let lastT=0,acc=0,hudT=0,slowT=0;
-function loop(ts){requestAnimationFrame(loop);if(R3.hold){lastT=ts;return;}const raw=(ts-lastT)/1000||0,dt=Math.min(.05,raw);lastT=ts;acc+=dt;let n=0;
+// iOS fires resize (rotation, the toolbar sliding in and out) before layout settles, so a missed resize would leave the
+// canvas at the old aspect, stretched to fit. Check the real size of the table every frame instead of trusting the event.
+let _st=null;function fitCheck(){_st=_st||$('stage');const w=_st.clientWidth,h=_st.clientHeight;if(w&&h&&(w!==R3.w||h!==R3.h))resize();}
+function loop(ts){requestAnimationFrame(loop);fitCheck();if(R3.hold){lastT=ts;return;}const raw=(ts-lastT)/1000||0,dt=Math.min(.05,raw);lastT=ts;acc+=dt;let n=0;
   while(acc>=1/120&&n<8){gameStep(1/120);acc-=1/120;n++;}if(n===8)acc=0;
   R3.acc=acc;frame3D(dt);drawOverlay();
   if(raw>0&&raw<.5){R3.fps+=(1/raw-R3.fps)*.05;

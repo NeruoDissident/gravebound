@@ -1533,7 +1533,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.21';
+const $=id=>document.getElementById(id),VERSION='3D build 0.21.1';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1643,12 +1643,13 @@ function bindInput(){
   $('menu').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b&&!b.disabled)UI.act(b);});
   $('menu').addEventListener('input',e=>{const t=e.target;if(t.id==='optMusic'){A.vol.m=t.value/100;A.setVol();}else if(t.id==='optSfx'){A.vol.s=t.value/100;A.setVol();A.s('target');}else if(t.id==='optShake'){G.opt.shake=t.checked;store.set('opt',G.opt);}else if(t.id==='optEndless'){G.opt.endless=t.checked;store.set('opt',G.opt);}else if(t.id==='optAuto'){G.opt.autoPick=t.checked;store.set('opt',G.opt);}});
   $('pauseBtn').addEventListener('click',()=>{A.init();togglePause();});
+  $('camBtn').addEventListener('click',e=>{A.init();gfxKey('cam');e.currentTarget.blur();});
   // a flip zone keeps the finger that pressed it until that finger lifts, even if the thumb drifts off the zone
   const zone=(el,side)=>{const ids=new Set();const up=e=>{if(!ids.delete(e.pointerId))return;if(!ids.size)setFlip(side,false);};
     el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);try{el.setPointerCapture(e.pointerId);}catch(_){}setFlip(side,true);e.preventDefault();});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);};
   zone($('tL'),-1);zone($('tR'),1);
   const tn=$('tN'),nup=()=>{G.in.n=false;};tn.addEventListener('pointerdown',e=>{A.init();try{tn.setPointerCapture(e.pointerId);}catch(_){}G.in.n=true;nudge();e.preventDefault();});tn.addEventListener('pointerup',nup);tn.addEventListener('pointercancel',nup);tn.addEventListener('lostpointercapture',nup);
-  const showTouch=()=>{$('touch').hidden=false;UI.touch=true;};if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)showTouch();
+  const showTouch=()=>{$('touch').hidden=false;UI.touch=true;gfxInfo();};if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)showTouch();
   addEventListener('pointerdown',e=>{if(e.pointerType==='touch')showTouch();A.init();},{passive:true});
   addEventListener('contextmenu',e=>e.preventDefault());
   // iOS ignores user-scalable=no: stop pinch and double-tap zoom by hand, and long-press selection
@@ -1658,5 +1659,5 @@ function bindInput(){
   document.addEventListener('dblclick',e=>e.preventDefault());document.addEventListener('selectstart',e=>{if(!(e.target&&e.target.closest&&e.target.closest('input')))e.preventDefault();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.choice)togglePause();});
   addEventListener('blur',()=>{setFlip(-1,false);setFlip(1,false);G.in.n=false;});
-  addEventListener('resize',resize);
+  addEventListener('resize',resize);addEventListener('orientationchange',()=>{setTimeout(resize,60);setTimeout(resize,400);});if(window.visualViewport)visualViewport.addEventListener('resize',resize);
 }

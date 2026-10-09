@@ -165,3 +165,15 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
 .card.hire .face{grid-area:orb;width:60px;height:70px;align-self:center;border-radius:4px;box-shadow:0 0 14px rgba(0,0,0,.6)}
 
 .pane.doc{max-height:86vh;overflow:auto}.pane.doc .lead{max-width:none}.pane.doc h3{margin:10px 0 0}.pane.doc h4{margin:8px 0 0;font:700 11px var(--label);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}.gloss{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}.gloss dt{color:var(--bone);font-weight:600}.gloss dd{margin:0;color:#cfc7b6}.what{display:block;color:#9fe8ff;font-size:12.5px;line-height:1.35;margin:-6px 0 4px}
+/* touch: a real view button up top, under pause, instead of the info chip by the nudge button */
+#camBtn{position:absolute;z-index:4;display:flex;align-items:center;gap:6px;height:44px;min-width:44px;padding:0 10px;box-sizing:border-box;justify-content:center;
+  top:calc(54px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));font:700 10px var(--label);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--bone);background:#14131ccc;border:1px solid var(--line);border-radius:22px;touch-action:manipulation}
+#camBtn:active{background:#2a2540}
+@media (pointer:coarse){
+  #pauseBtn,#camBtn{left:auto;right:calc(50% - min(50%,320px) + 8px + env(safe-area-inset-right))}
+  #pauseBtn{width:44px;height:44px;font-size:12px}
+  #hud{padding-right:60px}
+  #gfx{display:none}
+}
+@media (pointer:coarse) and (max-width:600px){#camName{display:none}#camBtn{width:44px;padding:0}}
