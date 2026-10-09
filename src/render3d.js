@@ -559,7 +559,7 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
   updateCam3D(dt);
   {const m=R3.moon,c=R3.cam.t;m.target.position.set(0,c.y,c.z-120);m.position.set(-460,c.y+1200,c.z+520);}
   {const ft=G.focusTier,fc=['#0b0610','#050b0a','#06080f','#030604','#070803','#05070c','#0b0603'][ft];R3.tmpC.set(fc);sc.fog.color.lerp(R3.tmpC,Math.min(1,dt*2));sc.background.copy(sc.fog.color);}
-  if(R3.grade)R3.grade.uniforms.time.value=(t*61)%17;
+  if(R3.grade)R3.grade.uniforms.time.value=(t*61)%17;if(R3.grade)R3.grade.uniforms.vig.value=R3.camera.aspect<1?.45:.85;
   if(R3.composer)R3.composer.render();else R3.rn.render(sc,R3.camera);
   if(R3.probe>0&&--R3.probe===0)probeFrame();}
 
@@ -578,6 +578,9 @@ function updateCam3D(dt){const cam=R3.cam,C=R3.camera,b=focusBall(),asp=C.aspect
     else if(R3.camMode===2){const D=Math.max(352/(tv*asp),430/tv);tx=0;ty=e;tz=clamp(by-40,f-900+D*tv*.9,f+150-D*tv*.9);if(tier===3)tz=GY+340;px=0;py=ty+D*Math.sin(p);pz=tz+D*Math.cos(p);rate=5;}
     else{const F=frameLevel(tier,m.pitch,m.fov,asp),c=f-420,dz=clamp((by-c)*.07,-34,24),dx=bx*.05;px=dx;py=e+F.h;pz=F.zc+dz;tx=dx*1.6;ty=e;tz=pz-F.h*F.cs/F.sn;}}
   if(!R3.dbg&&!(G.demo&&G.mode==='title')){const ox=ZX(by),oz=ZZ(by);px+=ox;tx+=ox;pz+=oz;tz+=oz;}
+  // fog by distance: portrait pulls the camera back about twice as far to fit the table's width, which used to bury the
+  // table in fog. Scale the density so the table always sits in the same amount of it as the landscape view.
+  {const d=Math.hypot(px-tx,py-ty,pz-tz);R3.scene.fog.density=.0004*Math.min(1,1590/Math.max(1,d));}
   const k=1-Math.exp(-dt*rate);cam.t.x+=(tx-cam.t.x)*k;cam.t.y+=(ty-cam.t.y)*k;cam.t.z+=(tz-cam.t.z)*k;cam.p.x+=(px-cam.p.x)*k;cam.p.y+=(py-cam.p.y)*k;cam.p.z+=(pz-cam.p.z)*k;cam.fov+=(fov-cam.fov)*k;
   const sh=G.opt&&G.opt.shake?Math.min(18,G.cam.shake)*.3:0;C.position.set(cam.p.x+(sh?rand(-sh,sh):0),cam.p.y+(sh?rand(-sh,sh):0),cam.p.z);C.lookAt(cam.t.x,cam.t.y,cam.t.z);
   if(Math.abs(C.fov-cam.fov)>.01){C.fov=cam.fov;C.updateProjectionMatrix();}}

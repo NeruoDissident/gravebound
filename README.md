@@ -176,3 +176,8 @@ they check that everything runs and renders, not frame rate.
 
 - **No stretch on phones.** The table checks its real on-screen size every frame and resizes the canvas when it changes, instead of trusting the resize event (iOS fires it before rotation or the toolbar has settled, which left the canvas at the old aspect, stretched). Rotation and visual-viewport changes are also listened for.
 - **View button.** On touch, a 44 px view button sits at the top right under pause (icon only on narrow screens, icon and view name when there's room). The info chip by the Nudge button is gone on touch.
+
+## 0.21.2
+
+- **Portrait no longer dims.** Portrait pulls the camera back about twice as far to fit the table's width, and the fixed distance fog was swallowing the table (about 19% of its light got through, against 67% in landscape). Fog now scales with the camera's distance, and the vignette is softer in portrait.
+- **Nudge on touch.** The Nudge button is gone: the bottom-middle spot still nudges, it just isn't drawn. Double-tap either flip side to nudge (inside 0.23 s); mash and the tilt meter fills. Hold the right side and let go to launch.

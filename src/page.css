@@ -177,3 +177,5 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
   #gfx{display:none}
 }
 @media (pointer:coarse) and (max-width:600px){#camName{display:none}#camBtn{width:44px;padding:0}}
+/* the nudge zone at the bottom middle is invisible: same spot, same size, no button drawn */
+#tN{background:none;border:0;box-shadow:none;width:120px;height:72px;padding:0;color:transparent}

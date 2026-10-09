@@ -34,6 +34,18 @@ const srv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]
   ok('two thumbs flip both sides independently',two);
   await pg.evaluate(()=>{gfxInfo();});const cb=await pg.locator('#camBtn').boundingBox();ok('a 44 px view button up top on touch ('+(cb&&[Math.round(cb.y),Math.round(cb.width),Math.round(cb.height)])+')',cb&&cb.y<160&&cb.width>=44&&cb.height>=44);
   const v0=await pg.evaluate(()=>R3.camMode);await pg.tap('#camBtn');ok('tapping it changes the view',await pg.evaluate(v=>R3.camMode!==v,v0));
+  // nudge on touch: double-tap a flip zone; spaced taps never nudge; the bottom-middle zone is invisible but still nudges
+  const nd=await pg.evaluate(()=>{G.balls=[newBall(303,TY[2]+600,0,0)];G.plunge.ready=false;G.tilt=0;G.nudges=[];const L=document.getElementById('tL');
+    const tap=id=>{L.dispatchEvent(new PointerEvent('pointerdown',{pointerId:id,pointerType:'touch',bubbles:true}));L.dispatchEvent(new PointerEvent('pointerup',{pointerId:id,pointerType:'touch',bubbles:true}));};
+    tap(11);tap(12);return G.nudges.length;});
+  ok('double-tapping a flipper nudges ('+nd+')',nd===1);
+  await pg.evaluate(()=>{G.nudges=[];const L=document.getElementById('tL');L.dispatchEvent(new PointerEvent('pointerdown',{pointerId:21,pointerType:'touch',bubbles:true}));L.dispatchEvent(new PointerEvent('pointerup',{pointerId:21,pointerType:'touch',bubbles:true}));});
+  await pg.waitForTimeout(400);
+  const sp=await pg.evaluate(()=>{const L=document.getElementById('tL');L.dispatchEvent(new PointerEvent('pointerdown',{pointerId:22,pointerType:'touch',bubbles:true}));L.dispatchEvent(new PointerEvent('pointerup',{pointerId:22,pointerType:'touch',bubbles:true}));return G.nudges.length;});
+  ok('two taps 0.4 s apart are just flips',sp===0);
+  const tn=await pg.evaluate(()=>{const b=document.getElementById('tN'),cs=getComputedStyle(b),r=b.getBoundingClientRect();G.nudges=[];b.dispatchEvent(new PointerEvent('pointerdown',{pointerId:31,pointerType:'touch',bubbles:true}));return {txt:b.textContent,bg:cs.backgroundColor,bd:cs.borderTopWidth,w:r.width,h:r.height,n:G.nudges.length};});
+  ok('the bottom-middle nudge zone is invisible and still works ('+JSON.stringify(tn)+')',!tn.txt&&/rgba\(0, 0, 0, 0\)|transparent/.test(tn.bg)&&tn.bd==='0px'&&tn.w>=100&&tn.n===1);
+  const fogP=await pg.evaluate(()=>{R3.camMode=0;for(let i=0;i<30;i++)updateCam3D(.1);return R3.scene.fog.density;});
   // a rotation whose resize event never arrives (iOS): the canvas must still match the screen, never stretched
   await pg.evaluate(()=>{removeEventListener('resize',resize);if(window.visualViewport)visualViewport.removeEventListener('resize',resize);});
   await pg.setViewportSize({width:844,height:390});await pg.waitForTimeout(1200);
@@ -41,6 +53,7 @@ const srv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]
   ok('landscape after a missed resize: no stretch ('+asp.map(x=>+x.toFixed(3))+')',Math.abs(asp[0]-asp[1])<.01);
   await pg.setViewportSize({width:390,height:844});await pg.waitForTimeout(1200);
   const asp2=await pg.evaluate(()=>{const st=document.getElementById('stage');return [st.clientWidth/st.clientHeight,R3.camera.aspect];});ok('and back to portrait',Math.abs(asp2[0]-asp2[1])<.01);
+  await pg.setViewportSize({width:844,height:390});await pg.waitForTimeout(800);const fogL=await pg.evaluate(()=>{R3.camMode=0;for(let i=0;i<30;i++)updateCam3D(.1);return R3.scene.fog.density;});ok('portrait thins the fog to match landscape ('+fogP.toExponential(2)+' vs '+fogL.toExponential(2)+')',fogP<fogL*.7);await pg.setViewportSize({width:390,height:844});await pg.waitForTimeout(800);
   await pg.screenshot({path:path.join(root,'test/out/pwa-phone.png'),timeout:90000});
   ok('no page errors',!errs.length);console.log(log.join('\n'));console.log(errs.join('\n'));
   const f=log.filter(l=>l.startsWith('FAIL')).length;console.log(f+' failed of '+log.length);if(f)process.exitCode=1;await br.close();srv.close();})();

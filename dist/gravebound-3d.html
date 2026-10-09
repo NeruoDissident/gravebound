@@ -180,6 +180,8 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
   #gfx{display:none}
 }
 @media (pointer:coarse) and (max-width:600px){#camName{display:none}#camBtn{width:44px;padding:0}}
+/* the nudge zone at the bottom middle is invisible: same spot, same size, no button drawn */
+#tN{background:none;border:0;box-shadow:none;width:120px;height:72px;padding:0;color:transparent}
 </style>
 <div id="app">
   <aside class="side" id="journal" aria-label="Quest journal">
@@ -205,7 +207,7 @@ td{padding:6px;border-bottom:1px solid #ffffff10}td:nth-child(3),th:nth-child(3)
     </div>
     <div id="banner" aria-live="polite"></div>
     <div id="bonus" hidden></div>
-    <div id="touch" hidden><div id="tL"></div><div id="tR"></div><button id="tN" type="button">Nudge</button></div>
+    <div id="touch" hidden><div id="tL"></div><div id="tR"></div><button id="tN" type="button" aria-label="Nudge"></button></div>
     <button id="pauseBtn" type="button" hidden aria-label="Pause">II</button>
     <button id="camBtn" type="button" hidden aria-label="Change view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg><span id="camName"></span></button>
     <div id="gfx" hidden><span class="chip" id="gDev" hidden>Dev keys on</span><span class="chip" id="gInfo"></span></div>
@@ -1338,7 +1340,7 @@ function collideActors(b){
 function serve(){const hb=newBall(T.shooter.x,T.shooter.y,0,0);hb.hero=true;G.balls.push(hb);G.skill=irand(0,2);G.dirty=true;}
 function startBall(){const r=G.run;r.bb={kills:0,quests:0,ramps:0};G.chanceUsed=false;G.martyrUsed=false;Object.assign(G,{balls:[],tilt:0,fallen:false,hoardDone:false,slingRun:0,booms:[],zones:[],phase:0,nudgeCd:0,hidden:false,inGrave:false,graveLive:false,nudges:[],curse:{},buffs:{},combo:0,comboT:0,mb:null,save:0,sub:null});
   if(r.hp<G.mods.maxHp*.6)r.hp=Math.round(G.mods.maxHp*.6);r.mult=G.mods.multMin;r.kickback=true;r.shop=true;
-  T.sets.candles.lanes.forEach(l=>l.lit=false);G.lampShow=1.6;saveRun();serve();popup('Ball '+r.ballNum,r.ballsLeft>1?(r.ballsLeft-1)+' in reserve':'Last ball','info',r.ballNum===1&&r.time<1?(UI.touch?'Tap the left and right sides to flip. Hold Nudge and release to launch.':'Z and / flip. Hold Space and release to launch. Space also nudges.'):r.ballNum===1?'':'');relight();}
+  T.sets.candles.lanes.forEach(l=>l.lit=false);G.lampShow=1.6;saveRun();serve();popup('Ball '+r.ballNum,r.ballsLeft>1?(r.ballsLeft-1)+' in reserve':'Last ball','info',r.ballNum===1&&r.time<1?(UI.touch?'Tap the left and right sides to flip. Hold the right side and let go to launch. Double-tap a side to nudge.':'Z and / flip. Hold Space and release to launch. Space also nudges.'):r.ballNum===1?'':'');relight();}
 function updatePlunger(dt){const p=G.plunge;
   if(p.auto>0){p.auto-=dt;if(p.auto<=0)addBall('shooter');}
   const b=G.balls.find(b=>b.st==='live'&&b.x>586&&b.y>3040&&Math.abs(b.vy)<60);p.ready=!!b;
@@ -1760,7 +1762,7 @@ const A={ctx:null,sfx:null,mus:null,last:{},vol:store.get('vol',{m:.55,s:.8}),st
 };
 
 /* ================= UI, INPUT, LOOP ================= */
-const $=id=>document.getElementById(id),VERSION='3D build 0.21.1';
+const $=id=>document.getElementById(id),VERSION='3D build 0.21.2';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 G.opt=store.get('opt',{shake:!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)});
 const UI={cur:null,q:[],busy:false,eraseArmed:false,
@@ -1777,7 +1779,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
     let b='';for(let i=1;i<r.ballsLeft;i++)b+='<i></i>';$('hBalls').innerHTML=b;$('hBallN').textContent='Ball '+r.ballNum;
     $('hObj').textContent=G.inGrave?(T.banks.nails.segs.some(x=>x.on)?'Drive both coffin nails at the head of the coffin':'The lid is split. Shoot the light'):G.focusTier>=4?wingText():r.main?UI.objText(r.main):'The Hollow is quiet. For now.';
     const chips=[];const ch=(t,k)=>chips.push('<span class="chip '+(k||'')+'">'+esc(t)+'</span>');
-    if(G.pending.length)ch(G.pending[0]==='book'?'Level up waiting: shoot a scoop':G.pending[0]==='perk'?'A boon waits: shoot a scoop':'The Lantern waits','gold');if(r.mult>1)ch(r.mult+'x','gold');if(G.plunge.ready)ch(UI.touch?'Hold Nudge, release to launch':'Hold Space, release to launch','frost');if(G.save>0&&!G.plunge.ready)ch('Ball save '+Math.ceil(G.save)+'s','frost');if(r.shield)ch('Ward','gold');
+    if(G.pending.length)ch(G.pending[0]==='book'?'Level up waiting: shoot a scoop':G.pending[0]==='perk'?'A boon waits: shoot a scoop':'The Lantern waits','gold');if(r.mult>1)ch(r.mult+'x','gold');if(G.plunge.ready)ch(UI.touch?'Hold the right side, let go to launch':'Hold Space, release to launch','frost');if(G.save>0&&!G.plunge.ready)ch('Ball save '+Math.ceil(G.save)+'s','frost');if(r.shield)ch('Ward','gold');
     if(G.inGrave)ch('The lid closes in '+Math.ceil(G.graveT)+'s',G.graveT<8?'bad':'moss');else if(G.focusTier>=4)ch(WINGS[WING_KEYS[G.focusTier-4]].clock+Math.ceil(G.wingT||0)+'s',G.wingT<12?'bad':'moss');else if(G.wave.active)ch('Wave '+G.wave.active.n+' · '+G.wave.active.left+' left','bad');else if(g.open)ch('Grave open','moss');else if(g.hits>0)ch('Grave '+g.hits+'/'+g.need,'');
     if(armed)ch((G.balls.some(b=>b.pow)?c.shot:c.shot+' armed. Flip to release'),'violet');else if(r.charge>=33&&!G.plunge.ready)ch(r.charge>=100?'Cradle 1.5 s to Rally the party':'Cradle the ball: '+c.shot,'frost');
     if(G.rallyT>0)ch('Rally '+Math.ceil(G.rallyT)+'s','gold');for(const cs of G.casts)ch(spellDef(cs.id).name+' '+Math.ceil(cs.t)+'s','violet');
@@ -1825,7 +1827,7 @@ const UI={cur:null,q:[],busy:false,eraseArmed:false,
       h+='</div><nav class="row">'+btn('alone','Ride alone')+btn('new','Back')+'</nav></div>';}
     else if(name==='options'){h='<div class="pane"><h2>Options</h2><label for="optMusic">Music<input id="optMusic" type="range" min="0" max="100" value="'+Math.round(A.vol.m*100)+'"></label><label for="optSfx">Sound effects<input id="optSfx" type="range" min="0" max="100" value="'+Math.round(A.vol.s*100)+'"></label>'+
       '<label for="optShake" class="check"><input id="optShake" type="checkbox"'+(G.opt.shake?' checked':'')+'>Screen shake</label><label for="optAuto" class="check"><input id="optAuto" type="checkbox"'+(G.opt.autoPick?' checked':'')+'>Auto pick: level-ups, boons and hires are chosen for you, no interruptions</label><label for="optEndless" class="check"><input id="optEndless" type="checkbox"'+(G.opt.endless?' checked':'')+'>Endless: a new shadow rises after every campaign, instead of the run ending</label><nav>'+btn('gfxCam','View: '+CAMS[R3.camMode].name)+btn('gfxQual','Detail: '+(R3.q?R3.q.label:''))+btn('erase','Erase saved run and scores')+btn(UI.back||'title','Back')+'</nav></div>';}
-    else if(name==='controls'){h='<div class="pane"><h2>Controls</h2><dl class="keys"><dt>Left flippers</dt><dd>Z, Left Arrow or Left Shift</dd><dt>Right flippers</dt><dd>/, Right Arrow or Right Shift</dd><dt>Nudge</dt><dd>Space</dd><dt>Launch</dt><dd>Hold Space or the right flipper, then release</dd><dt>Class power</dt><dd>Hold the ball still on a raised flipper until the ring fills, then let it roll and flip</dd><dt>Pause</dt><dd>P or Esc</dd><dt>View, detail, full screen</dt><dd>C, Q and F</dd><dt>Touch</dt><dd>Left and right halves of the screen flip. The centre button nudges and launches.</dd></dl>'+
+    else if(name==='controls'){h='<div class="pane"><h2>Controls</h2><dl class="keys"><dt>Left flippers</dt><dd>Z, Left Arrow or Left Shift</dd><dt>Right flippers</dt><dd>/, Right Arrow or Right Shift</dd><dt>Nudge</dt><dd>Space</dd><dt>Launch</dt><dd>Hold Space or the right flipper, then release</dd><dt>Class power</dt><dd>Hold the ball still on a raised flipper until the ring fills, then let it roll and flip</dd><dt>Pause</dt><dd>P or Esc</dd><dt>View, detail, full screen</dt><dd>C, Q and F</dd><dt>Touch</dt><dd>Left and right halves of the screen flip. Hold the right half and let go to launch. Double-tap either half to nudge (mash and you will tilt). The bottom middle nudges too.</dd></dl>'+
       '<p class="lead">Every left flipper on the table moves together, and so does every right one. Flashing gold arrows are your main quest. Blue ones are side quests. Ramps climb to the level above; the gap between the upper flippers drops you to the level below.</p><nav class="row">'+btn(UI.back||'title','Back')+'</nav></div>';}
     else if(name==='pause'){const r=G.run,ex=q=>{const t=explainStep(qCur(q));return t?'<small class="what">'+esc(t)+'</small>':'';};h='<div class="pane doc"><h2>Paused</h2>'+(r.main?'<p class="lead">'+esc(UI.objText(r.main))+'</p>'+ex(r.main):'')+r.side.map(q=>'<p class="sqline"><b>'+esc(q.name)+'.</b> '+esc(UI.objText(q))+'</p>'+ex(q)).join('')+'<nav>'+btn('resume','Resume')+btn('help','How to play')+btn('options','Options')+btn('controls','Controls')+btn('abandon','Abandon run')+'</nav></div>';}
     else if(name==='help'){h='<div class="pane doc wide"><h2>How to play</h2>'+HELP.map(sec=>'<h3>'+esc(sec[0])+'</h3><p class="lead">'+esc(sec[1])+'</p>').join('')+'<h3>Every named shot</h3>'+glossary().map(g=>'<h4>'+esc(g[0].replace(/^the /,'The '))+'</h4><dl class="gloss">'+g[1].map(r=>'<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1].replace(r[0]+' is ','').replace(/^\w/,c=>c.toUpperCase()))+'</dd>').join('')+'</dl>').join('')+'<nav class="row">'+btn(UI.back||'title','Back')+'</nav></div>';}
@@ -1872,8 +1874,11 @@ function bindInput(){
   $('pauseBtn').addEventListener('click',()=>{A.init();togglePause();});
   $('camBtn').addEventListener('click',e=>{A.init();gfxKey('cam');e.currentTarget.blur();});
   // a flip zone keeps the finger that pressed it until that finger lifts, even if the thumb drifts off the zone
+  const DOUBLE_TAP=230,lastTap={};
   const zone=(el,side)=>{const ids=new Set();const up=e=>{if(!ids.delete(e.pointerId))return;if(!ids.size)setFlip(side,false);};
-    el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);try{el.setPointerCapture(e.pointerId);}catch(_){}setFlip(side,true);e.preventDefault();});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);};
+    el.addEventListener('pointerdown',e=>{A.init();ids.add(e.pointerId);try{el.setPointerCapture(e.pointerId);}catch(_){}setFlip(side,true);e.preventDefault();
+      // a second tap on the same side inside DOUBLE_TAP is a nudge: bang the cabinet. Mash and the tilt meter fills.
+      const now=performance.now();if(now-(lastTap[side]||-1e9)<DOUBLE_TAP){nudge();lastTap[side]=-1e9;}else lastTap[side]=now;});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);};
   zone($('tL'),-1);zone($('tR'),1);
   const tn=$('tN'),nup=()=>{G.in.n=false;};tn.addEventListener('pointerdown',e=>{A.init();try{tn.setPointerCapture(e.pointerId);}catch(_){}G.in.n=true;nudge();e.preventDefault();});tn.addEventListener('pointerup',nup);tn.addEventListener('pointercancel',nup);tn.addEventListener('lostpointercapture',nup);
   const showTouch=()=>{$('touch').hidden=false;UI.touch=true;gfxInfo();};if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)showTouch();
@@ -2755,7 +2760,7 @@ function frame3D(dt){if(!R3.ready)return;const D=R3.dyn,t=G.t,sc=R3.scene,run=G.
   updateCam3D(dt);
   {const m=R3.moon,c=R3.cam.t;m.target.position.set(0,c.y,c.z-120);m.position.set(-460,c.y+1200,c.z+520);}
   {const ft=G.focusTier,fc=['#0b0610','#050b0a','#06080f','#030604','#070803','#05070c','#0b0603'][ft];R3.tmpC.set(fc);sc.fog.color.lerp(R3.tmpC,Math.min(1,dt*2));sc.background.copy(sc.fog.color);}
-  if(R3.grade)R3.grade.uniforms.time.value=(t*61)%17;
+  if(R3.grade)R3.grade.uniforms.time.value=(t*61)%17;if(R3.grade)R3.grade.uniforms.vig.value=R3.camera.aspect<1?.45:.85;
   if(R3.composer)R3.composer.render();else R3.rn.render(sc,R3.camera);
   if(R3.probe>0&&--R3.probe===0)probeFrame();}
 
@@ -2774,6 +2779,9 @@ function updateCam3D(dt){const cam=R3.cam,C=R3.camera,b=focusBall(),asp=C.aspect
     else if(R3.camMode===2){const D=Math.max(352/(tv*asp),430/tv);tx=0;ty=e;tz=clamp(by-40,f-900+D*tv*.9,f+150-D*tv*.9);if(tier===3)tz=GY+340;px=0;py=ty+D*Math.sin(p);pz=tz+D*Math.cos(p);rate=5;}
     else{const F=frameLevel(tier,m.pitch,m.fov,asp),c=f-420,dz=clamp((by-c)*.07,-34,24),dx=bx*.05;px=dx;py=e+F.h;pz=F.zc+dz;tx=dx*1.6;ty=e;tz=pz-F.h*F.cs/F.sn;}}
   if(!R3.dbg&&!(G.demo&&G.mode==='title')){const ox=ZX(by),oz=ZZ(by);px+=ox;tx+=ox;pz+=oz;tz+=oz;}
+  // fog by distance: portrait pulls the camera back about twice as far to fit the table's width, which used to bury the
+  // table in fog. Scale the density so the table always sits in the same amount of it as the landscape view.
+  {const d=Math.hypot(px-tx,py-ty,pz-tz);R3.scene.fog.density=.0004*Math.min(1,1590/Math.max(1,d));}
   const k=1-Math.exp(-dt*rate);cam.t.x+=(tx-cam.t.x)*k;cam.t.y+=(ty-cam.t.y)*k;cam.t.z+=(tz-cam.t.z)*k;cam.p.x+=(px-cam.p.x)*k;cam.p.y+=(py-cam.p.y)*k;cam.p.z+=(pz-cam.p.z)*k;cam.fov+=(fov-cam.fov)*k;
   const sh=G.opt&&G.opt.shake?Math.min(18,G.cam.shake)*.3:0;C.position.set(cam.p.x+(sh?rand(-sh,sh):0),cam.p.y+(sh?rand(-sh,sh):0),cam.p.z);C.lookAt(cam.t.x,cam.t.y,cam.t.z);
   if(Math.abs(C.fov-cam.fov)>.01){C.fov=cam.fov;C.updateProjectionMatrix();}}
